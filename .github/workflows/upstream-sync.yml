@@ -1,0 +1,94 @@
+name: Sync Monarch Atlas with upstream graphify
+
+# Pulls Graphify-Labs/graphify (branch v8) into this repo every day. Our
+# history is our own: upstream's commits never enter it. Everything they
+# changed since the last sync (.upstream-sha) lands here as one commit, after
+# a smoke test that the Atlas viewer still renders. A patch that doesn't
+# apply cleanly is never pushed — it opens an issue naming the files.
+on:
+  schedule:
+    - cron: "17 6 * * *"   # daily, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch upstream
+        run: |
+          git config user.name "navneeth2017-create"
+          git config user.email "gafdistributiondev@gmail.com"
+          git remote add upstream https://github.com/Graphify-Labs/graphify.git
+          git fetch upstream v8
+      - name: Anything new upstream?
+        id: check
+        run: |
+          OLD=$(cat .upstream-sha); NEW=$(git rev-parse upstream/v8)
+          echo "old=$OLD" >> "$GITHUB_OUTPUT"; echo "new=$NEW" >> "$GITHUB_OUTPUT"
+          if [ "$OLD" = "$NEW" ]; then echo "uptodate=true" >> "$GITHUB_OUTPUT"; else echo "uptodate=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Apply upstream's changes as one patch
+        if: steps.check.outputs.uptodate == 'false'
+        id: merge
+        env:
+          OLD: ${{ steps.check.outputs.old }}
+          NEW: ${{ steps.check.outputs.new }}
+        run: |
+          # README.md is ours; everything else follows upstream. --3way uses the
+          # fetched upstream blobs so context shifts around our own edits still land.
+          git diff --binary "$OLD" "$NEW" -- . ':(exclude)README.md' > /tmp/up.patch
+          if [ ! -s /tmp/up.patch ] || git apply --3way --index /tmp/up.patch; then
+            echo "$NEW" > .upstream-sha && git add .upstream-sha
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only --diff-filter=U > /tmp/conflicts.txt || true
+            git reset --hard -q
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Smoke test the Atlas viewer
+        if: steps.merge.outputs.merged == 'true'
+        id: smoke
+        run: |
+          set -e
+          pip install -q -e .
+          python - <<'PY'
+          import networkx as nx, tempfile, os
+          from graphify.exporters.html import to_html
+          G = nx.Graph(); G.add_node("a", label="A", source_file="a.py"); G.add_node("b", label="B", source_file="b.py")
+          G.add_edge("a", "b", relation="calls", confidence="EXTRACTED")
+          out = os.path.join(tempfile.mkdtemp(), "graph.html")
+          assert to_html(G, {0: ["a", "b"]}, out, community_labels={0: "Test"}) is True
+          html = open(out).read()
+          assert "Monarch Atlas" in html and "id=\"settings\"" in html, "Atlas viewer missing from graph.html"
+          print("viewer ok")
+          PY
+      - name: Commit and push
+        if: steps.merge.outputs.merged == 'true'
+        env:
+          NEW: ${{ steps.check.outputs.new }}
+        run: |
+          git commit -q -m "Sync with upstream graphify ${NEW:0:7}"
+          git push origin HEAD:main
+      - name: Open an issue when a human is needed
+        if: steps.check.outputs.uptodate == 'false' && (steps.merge.outputs.merged == 'false' || failure())
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OLD: ${{ steps.check.outputs.old }}
+          NEW: ${{ steps.check.outputs.new }}
+        run: |
+          TITLE="Upstream sync needs a hand ($(date -u +%Y-%m-%d))"
+          if gh issue list --state open --search "$TITLE" --json number | grep -q number; then exit 0; fi
+          BODY="Applying Graphify-Labs/graphify v8 ($OLD → $NEW) did not go through."
+          if [ -s /tmp/conflicts.txt ]; then BODY="$BODY\n\nConflicting files:\n\`\`\`\n$(cat /tmp/conflicts.txt)\n\`\`\`"; else BODY="$BODY\n\nThe patch applied but the Atlas viewer smoke test failed — see the workflow log."; fi
+          BODY="$BODY\n\nTo resolve locally:\n\`\`\`\ngit remote add upstream https://github.com/Graphify-Labs/graphify.git && git fetch upstream v8\ngit diff --binary $OLD $NEW -- . ':(exclude)README.md' | git apply --3way\n# fix conflicts, then\necho $NEW > .upstream-sha && git commit -am 'Sync with upstream graphify' && git push origin main\n\`\`\`\nOur changes live in graphify/exporters/atlas_html.py, graphify/atlas_merge.py, a hook at the end of to_html in graphify/exporters/html.py, pyproject.toml (scripts) and README.md — see the merge map in README.md."
+          printf "%b" "$BODY" | gh issue create --title "$TITLE" --body-file -
