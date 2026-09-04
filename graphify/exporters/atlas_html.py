@@ -145,8 +145,9 @@ const V3=(()=>{
     const mk=(N,size,color,opacity)=>{const p=new Float32Array(N*3);const rng=seeded(N);
       for(let i=0;i<N;i++){const r=R*(0.8+rng()*0.6),t=rng()*Math.PI*2,u=rng()*2-1,q=Math.sqrt(1-u*u);p[i*3]=r*q*Math.cos(t);p[i*3+1]=r*q*Math.sin(t);p[i*3+2]=r*u;}
       const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));
-      const pts=new THREE.Points(g,new THREE.PointsMaterial({color,size,sizeAttenuation:false,transparent:true,opacity,fog:false,depthWrite:false}));scene.add(pts);starLayers.push(pts);};
-    mk(5000,1.4,0xc9cde0,0.75);mk(700,2.4,0xf2f4ff,0.95);mk(90,3.6,0xffe9c4,1);
+      // glowTex is defined further down; buildStars() only runs from build(), after everything is set up
+      const pts=new THREE.Points(g,new THREE.PointsMaterial({color,size,map:glowTex,alphaTest:0.05,sizeAttenuation:false,transparent:true,opacity,fog:false,depthWrite:false,blending:THREE.AdditiveBlending}));scene.add(pts);starLayers.push(pts);};
+    mk(5000,2.6,0xc9cde0,0.8);mk(700,4.2,0xf2f4ff,0.95);mk(90,6.5,0xffe9c4,1);
   }
   const glowTex=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');const g=x.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.25,'rgba(255,255,255,.55)');g.addColorStop(0.6,'rgba(255,255,255,.12)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,128,128);const t=new THREE.CanvasTexture(c);return t;})();
   const seeded=seed=>{let s=(seed*9301+49297)%233280;return()=>{s=(s*9301+49297)%233280;return s/233280;};};
