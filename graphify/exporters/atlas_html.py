@@ -121,7 +121,7 @@ RAW_EDGES.forEach((e,i)=>{e._i=i;if(outAdj[e.from])outAdj[e.from].push(e);if(inA
 const LEG={};LEGEND.forEach(g=>LEG[g.cid]=g);
 let view='3d';try{view=localStorage.getItem('atlas.view')||'3d';}catch(e){}
 if(!window.THREE)view='2d';
-const state={labels:true,monarchs:true,idle:true,nsize:1,lw:1,inferred:true,hidden:new Set(),rotate:true,speed:0.5,spacing:1,live:false,repel:2600,center:0.35,dist:80};
+const state={labels:true,monarchs:true,walkers:true,idle:true,nsize:1,lw:1,inferred:true,hidden:new Set(),rotate:true,speed:0.5,spacing:1,live:false,repel:2600,center:0.35,dist:80};
 const edgeVisible=e=>state.inferred||e.confidence==='EXTRACTED';
 const nodeVisible=id=>!state.hidden.has(base[id].community);
 
@@ -134,6 +134,16 @@ const V3=(()=>{
   const scene=new THREE.Scene();scene.background=new THREE.Color(0x0c0c11);scene.fog=new THREE.FogExp2(0x0c0c11,0.00038);
   const camera=new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,0.5,40000);camera.up.set(0,0,1);
   const controls=new THREE.OrbitControls(camera,renderer.domElement);
+  controls.screenSpacePanning=true;if(controls.listenToKeyEvents)controls.listenToKeyEvents(window);
+  window.addEventListener('keydown',ev=>{if(ev.key==='Shift')controls.mouseButtons.LEFT=THREE.MOUSE.PAN;});
+  window.addEventListener('keyup',ev=>{if(ev.key==='Shift')controls.mouseButtons.LEFT=THREE.MOUSE.ROTATE;});
+  // pixels per world unit at distance 1 (screen-size gates for labels, monarchs, kinesins)
+  const pxPer=()=>(window.innerHeight/2)/Math.tan(camera.fov*Math.PI/360);
+  // the settings panel covers the right edge: shift the projection so the scene sits in the middle of what you can actually see
+  function fitView(){const W=window.innerWidth,H=window.innerHeight;let sb=0;const p=document.getElementById('settings');
+    if(p&&W>720&&getComputedStyle(p).display!=='none'){const r=p.getBoundingClientRect();if(r.width>0)sb=Math.max(0,W-r.left);}
+    camera.setViewOffset(W,H,sb/2,0,W,H);camera.updateProjectionMatrix();renderer.setSize(W,H);}
+  fitView();
   controls.enableDamping=true;controls.dampingFactor=0.07;controls.rotateSpeed=0.6;controls.zoomSpeed=0.9;controls.autoRotate=state.rotate;controls.autoRotateSpeed=state.speed;controls.maxDistance=30000;
   scene.add(new THREE.AmbientLight(0xffffff,0.55));
   const key=new THREE.DirectionalLight(0xffffff,0.75);key.position.set(0.4,0.8,1);scene.add(key);
@@ -149,12 +159,12 @@ const V3=(()=>{
       const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));
       // glowTex is defined further down; buildStars() only runs from build(), after everything is set up
       const pts=new THREE.Points(g,new THREE.PointsMaterial({color,size,map:glowTex,alphaTest:0.05,sizeAttenuation:false,transparent:true,opacity,fog:false,depthWrite:false,blending:THREE.AdditiveBlending}));scene.add(pts);starLayers.push(pts);};
-    mk(5000,2.6,0xc9cde0,0.8);mk(700,4.2,0xf2f4ff,0.95);mk(90,6.5,0xffe9c4,1);
+    mk(4200,2.0,0xc9cde0,0.5);mk(520,3.2,0xf2f4ff,0.7);mk(70,4.8,0xffe9c4,0.85);
   }
   const glowTex=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');const g=x.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.25,'rgba(255,255,255,.55)');g.addColorStop(0.6,'rgba(255,255,255,.12)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,128,128);const t=new THREE.CanvasTexture(c);return t;})();
   const seeded=seed=>{let s=(seed*9301+49297)%233280;return()=>{s=(s*9301+49297)%233280;return s/233280;};};
   // ── layout: solar systems on a galaxy ──
-  const systems=[],sysOf={},sysN={},sysRank={},sunRealm={},pos={},sunOf={},radiusOf={};
+  const systems=[],sysOf={},sysN={},sysRank={},sunRealm={},pos={},sunOf={},radiusOf={},sysBySun={};
   const groupsOf={};RAW_NODES.forEach(n=>{const c=n.community==null?-1:n.community;(groupsOf[c]=groupsOf[c]||[]).push(n.id);});
   Object.keys(groupsOf).forEach(k=>{const cid=+k,ids=groupsOf[k].slice().sort((a,b)=>base[b].degree-base[a].degree||String(a).localeCompare(String(b)));
     const g=LEG[cid]||{color:'#9e9e9e',label:cid===-1?'Unclustered':'Community '+cid};systems.push({cid,color:g.color,label:g.label,ids,n:ids.length,realm:base[ids[0]].realm||''});ids.forEach(id=>{sysOf[id]=cid;sysN[id]=ids.length;});});
@@ -176,7 +186,7 @@ const V3=(()=>{
       let i=1,k=0,R=0;
       while(i<s.n){k++;const cap=Math.round(6+5.5*k);R=(9+6.5*k)*sp;const cnt=Math.min(cap,s.n-i);const off=rng()*Math.PI*2;
         for(let j=0;j<cnt;j++,i++){const a=off+Math.PI*2*j/cnt;local[s.ids[i]]=new THREE.Vector3(R*Math.cos(a),R*Math.sin(a),(rng()-0.5)*3*sp);}}
-      s.r=(s.n===1?8:R+6);s.tilt=new THREE.Euler((rng()-0.5)*1.3,(rng()-0.5)*1.3,rng()*Math.PI);s.local=local;
+      s.r=(s.n===1?8:R+6);sysBySun[sun]=s;s.tilt=new THREE.Euler((rng()-0.5)*1.3,(rng()-0.5)*1.3,rng()*Math.PI);s.local=local;
     });
     // each realm is its own galaxy: systems spiral out from the realm's centre
     const byRealm={};systems.forEach(s=>{(byRealm[s.realm]=byRealm[s.realm]||[]).push(s);});
@@ -229,6 +239,7 @@ const V3=(()=>{
     edgeList.forEach((e,i)=>{const a=pos[e.from],b=pos[e.to];P.set([a.x,a.y,a.z,b.x,b.y,b.z],i*6);(edgeSlots[e.from]=edgeSlots[e.from]||[]).push(i);(edgeSlots[e.to]=edgeSlots[e.to]||[]).push(i);paintEdge(C,i,e,false);});
     edgeGeom=new THREE.BufferGeometry();edgeGeom.setAttribute('position',new THREE.BufferAttribute(P,3));edgeColor=new THREE.BufferAttribute(C,3);edgeGeom.setAttribute('color',edgeColor);
     lines=new THREE.LineSegments(edgeGeom,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:Math.min(1,0.55*state.lw),depthWrite:false}));scene.add(lines);
+    buildWalkers();
   }
   function paintEdge(C,i,e,hot){
     if(hot){C.set([1,1,1,1,1,1],i*6);return;}
@@ -293,7 +304,7 @@ const V3=(()=>{
   // ── labels projection ──
   const _v=new THREE.Vector3();
   function projectLabels(){
-    const W=window.innerWidth,H=window.innerHeight,cam=camera.position,taken=[];
+    const W=window.innerWidth,H=window.innerHeight,cam=camera.position,taken=[],ppu=pxPer();
     const fits=(x,y,w,h)=>{for(const r of taken){if(x<r.x+r.w&&x+w>r.x&&y<r.y+r.h&&y+h>r.y)return false;}taken.push({x,y,w,h});return true;};
     const off=d=>d.classList.remove('on');
     const put=(d,x,y,w,h)=>{if(x<-w||x>W+w||y<-h||y>H+h||!fits(x-w/2,y-h/2,w,h)){off(d);return;}d.style.transform=`translate(-50%,-50%) translate(${x|0}px,${y|0}px)`;d.classList.add('on');};
@@ -308,6 +319,8 @@ const V3=(()=>{
       const dist=cam.distanceTo(p);const near=R?dist<R.r*1.6:dist<galaxyR*1.3;
       if(!near&&sysRank[id]>=(HAS_REALMS?6:36)){off(sunLbl[id]);continue;}
       if(sysN[id]<3&&dist>galaxyR*0.9){off(sunLbl[id]);continue;}
+      if(focused!=null&&sysOf[id]!==focused){off(sunLbl[id]);continue;}   // inside a system only that system is named — no clutter from the neighbours
+      const sys=sysBySun[id];if(sys&&sys.r*ppu/dist<(sysRank[id]<6?7:15)){off(sunLbl[id]);continue;}   // too small on screen to deserve a name
       _v.copy(p).project(camera);if(_v.z>1){off(sunLbl[id]);continue;}
       cands.push({id,rank:sysRank[id],x:(_v.x+1)/2*W,y:(1-_v.y)/2*H-12});}
     cands.sort((a,b)=>a.rank-b.rank);
@@ -315,7 +328,7 @@ const V3=(()=>{
     // member names inside the focused system, best-connected first
     const pl=[];
     for(const id in planetLbl){const p=pos[id];const dist=cam.distanceTo(p);_v.copy(p).project(camera);
-      if(_v.z>1||dist>420*state.spacing){off(planetLbl[id]);continue;}pl.push({id,deg:base[id].degree,x:(_v.x+1)/2*W,y:(1-_v.y)/2*H-rPlanet(id)*1.2-9});}
+      if(_v.z>1||dist>420*state.spacing||rPlanet(id)*ppu/dist<2.2){off(planetLbl[id]);continue;}pl.push({id,deg:base[id].degree,x:(_v.x+1)/2*W,y:(1-_v.y)/2*H-rPlanet(id)*1.2-9});}
     pl.sort((a,b)=>b.deg-a.deg);
     for(const c of pl){const d=planetLbl[c.id];const [w,h]=box(d.textContent,11,6);put(d,c.x,c.y,w,h);}
   }
@@ -323,11 +336,15 @@ const V3=(()=>{
   let running=false;
   function frame(){if(!running)return;requestAnimationFrame(frame);
     if(tw){let k=Math.min(1,(performance.now()-tw.s)/tw.ms);k=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;camera.position.lerpVectors(tw.p0,tw.p1,k);controls.target.lerpVectors(tw.t0,tw.t1,k);if(k>=1){tw=null;controls.autoRotate=state.rotate;}}
-    const nowT=performance.now(),dt=Math.min(0.05,(nowT-lastT)/1000);lastT=nowT;updateMonarchs(dt,nowT);idleStep(dt,nowT);
-    controls.update();if(pendingPick)pick();projectLabels();renderer.render(scene,camera);}
+    const nowT=performance.now(),dt=Math.min(0.05,(nowT-lastT)/1000);lastT=nowT;updateMonarchs(dt,nowT);updateWalkers(dt);idleStep(dt,nowT);
+    controls.update();if(pendingPick)pick();autoUnfocus();projectLabels();renderer.render(scene,camera);}
+  // zoom right out of a system (or a galaxy) by hand and the focus lets go, so the map stops dimming and labelling around it
+  function autoUnfocus(){if(tw||idle)return;const cam=camera.position;
+    if(focused!=null){const s=systems.find(x=>x.cid===focused);if(s&&cam.distanceTo(s.c)>s.r*12){setFocused(null);}}
+    if(focused==null&&focusedRealm!=null&&multi()){const R=realmList.find(r=>r.name===focusedRealm);if(R&&cam.distanceTo(R.c)>R.r*5){focusedRealm=null;updateCrumb();}}}
   function start(){if(running)return;running=true;frame();}
   function stop(){running=false;}
-  window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+  window.addEventListener('resize',fitView);
   window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName))flyHome();});
 
   // ── monarchs: a few butterflies drifting through the galaxy ──
@@ -406,7 +423,7 @@ const V3=(()=>{
   }
   function buildMonarchs(){
     monarchs.forEach(m=>monarchGroup.remove(m.g));monarchs.length=0;
-    const count=HAS_REALMS&&realmList.length>1?8:5;
+    const count=HAS_REALMS&&realmList.length>1?14:6;
     const base=Math.min(26,Math.max(5,galaxyR*0.013));
     for(let i=0;i<count;i++){
       const size=base*(0.8+seedRng()*0.5);
@@ -415,7 +432,7 @@ const V3=(()=>{
       const realm=i%Math.max(1,realmList.length);const homeSys=(realmList[realm]&&realmList[realm].systems.length)?realmList[realm].systems[Math.floor(seedRng()*realmList[realm].systems.length)]:null;
       const start=homeSys?homeSys.c.clone().add(new THREE.Vector3(seedRng()-0.5,seedRng()-0.5,(seedRng()-0.5)*0.5).multiplyScalar(homeSys.r*1.5)):new THREE.Vector3((seedRng()-0.5)*galaxyR,(seedRng()-0.5)*galaxyR,0);
       const m={g,pivots,size,realm,pos:start,vel:new THREE.Vector3(),
-        speed:Math.max(size*1.3,galaxyR*0.022)*(0.85+seedRng()*0.3),phase:seedRng()*6.28,amp:1,ampT:1,modeAt:0,seed:seedRng()*100,heading:0,bank:0,target:null,tNext:0};
+        speed:Math.max(size*1.3,galaxyR*0.022)*(0.85+seedRng()*0.3),k:1,phase:seedRng()*6.28,amp:1,ampT:1,modeAt:0,seed:seedRng()*100,heading:0,bank:0,target:null,tNext:0};
       g.position.copy(m.pos);monarchGroup.add(g);monarchs.push(m);
     }
   }
@@ -439,7 +456,60 @@ const V3=(()=>{
       let turn=m.heading-prevHeading;turn=Math.atan2(Math.sin(turn),Math.cos(turn));
       m.bank+=(-turn*18-m.bank)*Math.min(1,dt*3);m.bank=Math.max(-0.9,Math.min(0.9,m.bank));
       m.g.position.copy(m.pos);m.g.position.z+=Math.sin(t*1.7+m.seed)*m.size*0.12;
+      // from far away a monarch grows (up to 6×) so it stays a visible speck of orange; up close it is its true size
+      const dCam=camera.position.distanceTo(m.g.position);m.k=Math.min(6,Math.max(1,(20*dCam/pxPer())/m.size));m.g.scale.setScalar(m.k);
       if(m.vel.lengthSq()>1e-6){_look.copy(m.g.position).add(m.vel);m.g.lookAt(_look);m.g.rotateZ(m.bank);}
+    }
+  }
+  // ── kinesins: like the motor protein, a two-footed carrier walks hand-over-hand along a connection with a
+  // packet of data on its back. Only some links get one, and they only show once you're close enough to see them.
+  const walkerGroup=new THREE.Group();scene.add(walkerGroup);const walkers=[];
+  const HEAD_GEO=new THREE.SphereGeometry(1,10,8),CARGO_GEO=new THREE.IcosahedronGeometry(1,0),STALK_GEO=new THREE.CylinderGeometry(1,1,1,6);
+  const HEAD_MAT=new THREE.MeshLambertMaterial({color:0xdde3f2,emissive:0x2a3350}),STALK_MAT=new THREE.MeshLambertMaterial({color:0xbfc7dc});
+  const wRng=seeded(777);const _wa=new THREE.Vector3(),_wb=new THREE.Vector3(),_wb2=new THREE.Vector3(),_wq=new THREE.Quaternion(),_Y=new THREE.Vector3(0,1,0);
+  function walkerEdgeOK(i){const e=edgeList[i];if(!e||e.confidence!=='EXTRACTED'||sysOf[e.from]!==sysOf[e.to])return false;return pos[e.from].distanceTo(pos[e.to])>state.nsize*6;}
+  function walkerSetEdge(w,i,fromId){const e=edgeList[i];w.i=i;w.a=fromId;w.b=e.from===fromId?e.to:e.from;
+    w.dir=pos[w.b].clone().sub(pos[w.a]);w.len=w.dir.length();w.dir.normalize();
+    const t=new THREE.Vector3().crossVectors(w.dir,new THREE.Vector3(0,0,1));if(t.lengthSq()<1e-6)t.set(1,0,0);t.normalize();
+    w.n=new THREE.Vector3().crossVectors(t,w.dir).normalize();w.s=w.u*1.2;w.p=0;
+    w.cargo.material.color.set(base[w.a].color);w.cargo.material.emissive.set(base[w.a].color);}
+  function buildWalkers(){
+    walkers.forEach(w=>walkerGroup.remove(w.g));walkers.length=0;
+    const ok=[];for(let i=0;i<edgeList.length;i++)if(walkerEdgeOK(i))ok.push(i);
+    const count=Math.min(48,Math.max(0,Math.round(edgeList.length/80)),ok.length);
+    for(let k=0;k<count;k++){
+      const i=ok.splice(Math.floor(wRng()*ok.length),1)[0];const e=edgeList[i];
+      const u=1.5*state.nsize,g=new THREE.Group();
+      const heads=[0,1].map(()=>{const h=new THREE.Mesh(HEAD_GEO,HEAD_MAT);h.scale.setScalar(0.2*u);g.add(h);return h;});
+      const legs=[0,1].map(()=>{const l=new THREE.Mesh(STALK_GEO,STALK_MAT);g.add(l);return l;});
+      const stalk=new THREE.Mesh(STALK_GEO,STALK_MAT);g.add(stalk);
+      const cargo=new THREE.Mesh(CARGO_GEO,new THREE.MeshLambertMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:0.5,transparent:true,opacity:0.88}));cargo.scale.setScalar(0.5*u);g.add(cargo);
+      const w={g,heads,legs,stalk,cargo,u,L:0.45*u,period:0.5+wRng()*0.25,lead:0,i:-1};walkerSetEdge(w,i,wRng()<0.5?e.from:e.to);w.s=wRng()*Math.max(w.u,w.len-2*w.u);
+      walkerGroup.add(g);walkers.push(w);}
+  }
+  function updateWalkers(dt){
+    if(!walkerGroup.visible||!walkers.length)return;const ppu=pxPer(),cam=camera.position;
+    for(const w of walkers){
+      w.p+=dt/w.period;
+      while(w.p>=1){w.p-=1;w.s+=w.L;w.lead=1-w.lead;}
+      if(w.s+w.L>w.len-w.u*0.8){   // reached the far node: carry on down another of its links, or turn back
+        const opts=(edgeSlots[w.b]||[]).filter(j=>j!==w.i&&walkerEdgeOK(j));
+        if(opts.length)walkerSetEdge(w,opts[Math.floor(wRng()*opts.length)],w.b);else walkerSetEdge(w,w.i,w.b);}
+      _wa.copy(pos[w.a]).addScaledVector(w.dir,w.s);
+      const dist=cam.distanceTo(_wa);const px=w.u*2.2*ppu/dist;w.g.visible=px>5;if(!w.g.visible)continue;
+      const e=w.p<0.5?2*w.p*w.p:1-Math.pow(-2*w.p+2,2)/2;                            // the swinging foot eases through its step
+      w.heads[w.lead].position.copy(_wa);                                                  // planted foot
+      w.heads[1-w.lead].position.copy(pos[w.a]).addScaledVector(w.dir,w.s-w.L+2*w.L*e).addScaledVector(w.n,Math.sin(w.p*Math.PI)*w.L*0.55);
+      _wb.copy(pos[w.a]).addScaledVector(w.dir,w.s+w.L*(e-0.5));                        // where the stalk meets the feet
+      const lean=Math.sin((w.p+0.25)*Math.PI*2)*0.08;const stalkLen=w.u*1.5;
+      w.stalk.scale.set(0.05*w.u,stalkLen,0.05*w.u);w.stalk.quaternion.copy(_wq.setFromUnitVectors(_Y,_wa.copy(w.n).addScaledVector(w.dir,lean).normalize()));
+      w.stalk.position.copy(_wb).addScaledVector(_wa,stalkLen/2);
+      w.cargo.position.copy(_wb).addScaledVector(_wa,stalkLen+0.35*w.u);
+      w.cargo.rotation.y+=dt*0.8;
+      // neck linkers: a thin leg from each foot up to the base of the stalk
+      for(let f=0;f<2;f++){const leg=w.legs[f],foot=w.heads[f].position;_wb2.copy(_wb).addScaledVector(_wa,w.u*0.32).sub(foot);const len=_wb2.length();
+        leg.scale.set(0.035*w.u,len,0.035*w.u);leg.quaternion.copy(_wq.setFromUnitVectors(_Y,_wb2.normalize()));leg.position.copy(foot).addScaledVector(_wb2,len/2);}
+      w.cargo.material.opacity=0.6+0.28*Math.min(1,(px-5)/10);
     }
   }
   let lastT=performance.now();
@@ -460,7 +530,7 @@ const V3=(()=>{
     _fwdN.copy(m.vel);if(_fwdN.lengthSq()<1e-6)_fwdN.set(1,0,0);_fwdN.normalize();
     _side.crossVectors(_fwdN,_upZ).normalize();
     const sway=Math.sin(now/1000*0.22+m.seed)*1.4;
-    _des.copy(m.g.position).addScaledVector(_fwdN,-m.size*4.6).addScaledVector(_upZ,m.size*1.5).addScaledVector(_side,m.size*sway);
+    const sz=m.size*(m.k||1);_des.copy(m.g.position).addScaledVector(_fwdN,-sz*4.6).addScaledVector(_upZ,sz*1.5).addScaledVector(_side,sz*sway);
     const k=1-Math.exp(-dt*(0.5+1.6*settling));
     camera.position.lerp(_des,k);
     controls.target.lerp(m.g.position,1-Math.exp(-dt*(1+3*settling)));
@@ -470,6 +540,8 @@ const V3=(()=>{
     setMonarchs(on){monarchGroup.visible=!!on;},rebuildMonarchs:buildMonarchs,
     setIdle(on){state.idle=!!on;if(!on&&idle)endIdle();},setIdleAfter(ms){idleAfter=ms;},isIdle(){return idle;},
     peekMonarch(i){const m=monarchs[i||0];if(!m)return;tw=null;controls.autoRotate=false;controls.target.copy(m.g.position);camera.position.copy(m.g.position).add(new THREE.Vector3(m.size*1.6,-m.size*2.6,m.size*1.4));controls.update();},
+    fitView,setWalkers(on){walkerGroup.visible=!!on;},walkerCount(){return walkers.length;},walkerNode(i){const w=walkers[i||0];return w?w.a:null;},
+    peekWalker(i){const w=walkers[i||0];if(!w)return;tw=null;controls.autoRotate=false;const c=w.cargo.position.clone();controls.target.copy(c);camera.position.copy(c).addScaledVector(w.n,w.u*1.2).addScaledVector(new THREE.Vector3().crossVectors(w.dir,w.n),w.u*7);controls.update();},
     setSpeed(v){controls.autoRotateSpeed=v;},setRotate(on){controls.autoRotate=on;},
     setLineOpacity(){if(lines)lines.material.opacity=Math.min(1,0.55*state.lw);},
     relabel(){if(focused!=null)showSystemLabels(focused);},
@@ -540,6 +612,7 @@ document.getElementById('grp-none').addEventListener('click',()=>{LEGEND.forEach
 document.getElementById('inferred').addEventListener('change',ev=>{state.inferred=ev.target.checked;if(V3)V3.buildEdges();if(network)window.__apply2D();});
 document.getElementById('labels').addEventListener('change',ev=>{state.labels=ev.target.checked;if(V3)V3.relabel();if(network)window.__apply2D();});
 document.getElementById('monarchs').addEventListener('change',ev=>{state.monarchs=ev.target.checked;if(V3)V3.setMonarchs(state.monarchs);});
+document.getElementById('walkers').addEventListener('change',ev=>{state.walkers=ev.target.checked;if(V3)V3.setWalkers(state.walkers);});
 const slider=(id,fmt,fn)=>{const el=document.getElementById(id),v=document.getElementById(id+'-v');el.addEventListener('input',()=>{v.textContent=fmt(parseFloat(el.value));fn(parseFloat(el.value));});};
 slider('nsize',x=>x.toFixed(1),x=>{state.nsize=x;if(V3)V3.build();if(network)network.setOptions({nodes:{scaling:{min:4*x,max:36*x}}});});
 slider('lw',x=>x.toFixed(1),x=>{state.lw=x;if(V3)V3.setLineOpacity();if(network)window.__lw2D();});
@@ -552,7 +625,7 @@ slider('f-repel',x=>String(x),x=>{state.repel=x;if(network)window.__physics2D();
 slider('f-dist',x=>String(x),x=>{state.dist=x;if(network)window.__physics2D();});
 document.getElementById('live').addEventListener('change',ev=>{state.live=ev.target.checked;if(network)window.__physics2D();});
 const panel=document.getElementById('settings'),minBtn=document.getElementById('min');
-minBtn.addEventListener('click',()=>{panel.classList.toggle('min');minBtn.textContent=panel.classList.contains('min')?'+':'–';});
+minBtn.addEventListener('click',()=>{panel.classList.toggle('min');minBtn.textContent=panel.classList.contains('min')?'+':'–';if(V3)V3.fitView();});
 document.getElementById('home').addEventListener('click',()=>{if(view==='3d'&&V3)V3.flyHome();else if(network)network.fit({animation:{duration:500}});});
 
 // ── preview card ──
@@ -641,7 +714,7 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
 <div id="brand"><div class="mark">🦋</div><div class="name">Monarch Atlas<small>{title}</small></div></div>
 <div id="crumb"><i id="crumb-dot"></i><span id="crumb-name"></span><button id="crumb-back">‹ Back to galaxy</button></div>
 <div id="idle-hint">🦋 Riding along with a monarch — move the mouse to take over</div>
-<div id="stats">{stats} · click a group to fly in · double-click a sun to dive · Esc to zoom out</div>
+<div id="stats">{stats} · click a group to fly in · double-click a sun to dive · Esc to zoom out · drag to orbit · shift-drag or right-drag to move</div>
 <div id="settings">
   <div class="bar"><b>Graph</b><span class="seg"><button data-v="3d" class="on">3D</button><button data-v="2d">2D</button></span><button id="home" title="Reset view">⌂</button><button id="min" title="Collapse">–</button></div>
   <details open><summary>Filters</summary><div class="body">
@@ -656,7 +729,8 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
   </div></details>
   <details><summary>Display</summary><div class="body">
     <label class="row"><span>Labels<span class="sub only-3d">Names appear once you fly into a group</span></span><input class="tg" type="checkbox" id="labels" checked></label>
-    <label class="row only-3d"><span>Monarchs<span class="sub">A few butterflies drifting between the systems</span></span><input class="tg" type="checkbox" id="monarchs" checked></label>
+    <label class="row only-3d"><span>Monarchs<span class="sub">Butterflies drifting between the systems</span></span><input class="tg" type="checkbox" id="monarchs" checked></label>
+    <label class="row only-3d"><span>Kinesins<span class="sub">Tiny carriers walking data along some links — zoom in to watch them work</span></span><input class="tg" type="checkbox" id="walkers" checked></label>
     <div class="rng"><div class="top"><span>Node size</span><span id="nsize-v">1.0</span></div><input type="range" id="nsize" min="0.4" max="2.5" step="0.1" value="1"></div>
     <div class="rng"><div class="top"><span class="only-3d">Link brightness</span><span class="only-2d">Link thickness</span><span id="lw-v">1.0</span></div><input type="range" id="lw" min="0.2" max="2.5" step="0.1" value="1"></div>
   </div></details>
