@@ -119,7 +119,7 @@ RAW_EDGES.forEach((e,i)=>{e._i=i;if(outAdj[e.from])outAdj[e.from].push(e);if(inA
 const LEG={};LEGEND.forEach(g=>LEG[g.cid]=g);
 let view='3d';try{view=localStorage.getItem('atlas.view')||'3d';}catch(e){}
 if(!window.THREE)view='2d';
-const state={labels:true,nsize:1,lw:1,inferred:true,hidden:new Set(),rotate:true,speed:0.5,spacing:1,live:false,repel:2600,center:0.35,dist:80};
+const state={labels:true,monarchs:true,nsize:1,lw:1,inferred:true,hidden:new Set(),rotate:true,speed:0.5,spacing:1,live:false,repel:2600,center:0.35,dist:80};
 const edgeVisible=e=>state.inferred||e.confidence==='EXTRACTED';
 const nodeVisible=id=>!state.hidden.has(base[id].community);
 
@@ -311,13 +311,124 @@ const V3=(()=>{
   let running=false;
   function frame(){if(!running)return;requestAnimationFrame(frame);
     if(tw){let k=Math.min(1,(performance.now()-tw.s)/tw.ms);k=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;camera.position.lerpVectors(tw.p0,tw.p1,k);controls.target.lerpVectors(tw.t0,tw.t1,k);if(k>=1){tw=null;controls.autoRotate=state.rotate;}}
+    const nowT=performance.now(),dt=Math.min(0.05,(nowT-lastT)/1000);lastT=nowT;updateMonarchs(dt,nowT);
     controls.update();if(pendingPick)pick();projectLabels();renderer.render(scene,camera);}
   function start(){if(running)return;running=true;frame();}
   function stop(){running=false;}
   window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
   window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName))flyHome();});
-  build();camera.position.copy(homeCam());controls.target.set(0,0,0);controls.update();
+
+  // ── monarchs: a few butterflies drifting through the galaxy ──
+  // Built from primitives (no model to load): a body, four wings with a
+  // hand-drawn monarch pattern, a slow flap with glide pauses, banking on
+  // turns. They wander between systems and favour the one you're in.
+  const monarchGroup=new THREE.Group();scene.add(monarchGroup);
+  const monarchs=[];
+  function wingTexture(kind){
+    // 512px canvas per wing. Base (where it meets the body) is the left edge;
+    // the forewing's tip points to the top-right (forward), the hindwing hangs back.
+    const S=512,c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d');
+    const path=new Path2D();
+    if(kind==='fore'){path.moveTo(10,330);path.bezierCurveTo(40,180,200,20,470,26);path.bezierCurveTo(500,60,478,190,420,290);path.bezierCurveTo(360,380,150,390,10,330);}
+    else{path.moveTo(10,200);path.bezierCurveTo(90,80,330,70,450,180);path.bezierCurveTo(500,290,420,460,250,486);path.bezierCurveTo(120,496,10,380,10,200);}
+    const base=kind==='fore'?[10,330]:[10,200];
+    // orange with a warm gradient: deeper at the base, brighter at the tip
+    const grad=x.createLinearGradient(0,0,S,0);grad.addColorStop(0,'#c9640f');grad.addColorStop(.35,'#ec8a1e');grad.addColorStop(1,'#f7a23a');
+    x.fillStyle=grad;x.fill(path);
+    x.save();x.clip(path);
+    // veins: fine dark lines fanning from the base, with a few cross-veins
+    x.strokeStyle='rgba(22,12,6,.95)';x.lineCap='round';x.lineWidth=3.2;
+    const tips=kind==='fore'?[[470,26],[476,100],[456,190],[420,290],[340,352],[240,380],[130,372]]:[[450,180],[470,120],[478,260],[420,380],[330,450],[220,486],[110,470]];
+    tips.forEach(([tx,ty],i)=>{x.beginPath();x.moveTo(base[0],base[1]);const bend=kind==='fore'?-26:14;x.quadraticCurveTo((base[0]+tx)*0.55,(base[1]+ty)*0.5+bend*(i-3)/3,tx,ty);x.stroke();});
+    x.lineWidth=2.2;
+    const cross=kind==='fore'?[[300,110,330,200],[330,200,300,300],[190,220,200,320]]:[[290,150,330,250],[330,250,280,360],[170,220,190,340]];
+    cross.forEach(([a,b,c2,d])=>{x.beginPath();x.moveTo(a,b);x.quadraticCurveTo((a+c2)/2+18,(b+d)/2,c2,d);x.stroke();});
+    // veins thicken into the black margin band
+    x.lineWidth=46;x.strokeStyle='#120d09';x.stroke(path);
+    // forewing apex is black with pale spots
+    if(kind==='fore'){x.fillStyle='#120d09';x.beginPath();x.moveTo(330,60);x.bezierCurveTo(400,20,470,26,470,26);x.bezierCurveTo(500,60,478,190,440,250);x.bezierCurveTo(400,190,360,130,330,60);x.fill();}
+    // two rows of white spots along the margin
+    x.fillStyle='rgba(255,250,240,.96)';
+    const outer=kind==='fore'?[[458,60],[470,110],[458,160],[436,214],[402,270],[352,322],[290,356],[220,372],[150,368]]:[[452,150],[468,210],[466,275],[434,350],[380,410],[300,458],[210,478],[120,458]];
+    outer.forEach(([px,py],i)=>{x.beginPath();x.arc(px,py,i%2?4.2:6,0,7);x.fill();});
+    const inner=kind==='fore'?[[430,120],[416,176],[386,236],[344,286],[290,322]]:[[428,190],[436,260],[402,330],[344,392],[268,432]];
+    inner.forEach(([px,py])=>{x.beginPath();x.arc(px,py,3.2,0,7);x.fill();});
+    if(kind==='fore'){x.fillStyle='rgba(255,190,110,.9)';[[372,96],[400,140],[352,132]].forEach(([px,py])=>{x.beginPath();x.arc(px,py,9,0,7);x.fill();});}
+    // soft dark shading at the base, like real scales
+    const sh=x.createRadialGradient(base[0],base[1],10,base[0],base[1],260);sh.addColorStop(0,'rgba(40,16,4,.55)');sh.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=sh;x.fillRect(0,0,S,S);
+    x.restore();
+    const t=new THREE.CanvasTexture(c);t.anisotropy=8;return t;
+  }
+  const WING_TEX={fore:wingTexture('fore'),hind:wingTexture('hind')};
+  const WING_GEO=new THREE.PlaneGeometry(1,1,1,1);WING_GEO.translate(0.5,0,0);WING_GEO.rotateX(Math.PI/2);   // x∈[0,1] out from the body, tip forward (+z)
+  const BODY_GEO=new THREE.CylinderGeometry(0.045,0.028,1,8);BODY_GEO.rotateX(Math.PI/2);
+  const seedRng=seeded(4242);
+  function makeMonarch(size){
+    const g=new THREE.Group();
+    const body=new THREE.Mesh(BODY_GEO,new THREE.MeshLambertMaterial({color:0x17120e}));body.scale.set(size*1.3,size*1.3,size*0.6);g.add(body);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(0.05*size,8,8),new THREE.MeshLambertMaterial({color:0x1a1410}));head.position.z=size*0.3;g.add(head);
+    const ant=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(-0.09*size,0.06*size,0.22*size),new THREE.Vector3(0,0,0),new THREE.Vector3(0.09*size,0.06*size,0.22*size)]);
+    const antL=new THREE.LineSegments(ant,new THREE.LineBasicMaterial({color:0x1a1410}));antL.position.z=size*0.3;g.add(antL);
+    const wingMat=k=>new THREE.MeshBasicMaterial({map:WING_TEX[k],transparent:true,alphaTest:0.5,side:THREE.DoubleSide});
+    const pivots=[];
+    [-1,1].forEach(side=>{
+      const pv=new THREE.Group();
+      const fore=new THREE.Mesh(WING_GEO,wingMat('fore'));fore.scale.set(side*size*0.5,1,size*0.4);fore.position.set(0,size*0.008,size*0.06);
+      const hind=new THREE.Mesh(WING_GEO,wingMat('hind'));hind.scale.set(side*size*0.4,1,size*0.42);hind.position.set(0,-size*0.008,-size*0.16);
+      pv.add(fore);pv.add(hind);g.add(pv);pivots.push({pv,side});
+    });
+    return {g,pivots};
+  }
+  function monarchTarget(m,now){
+    const pool=systems.filter(s=>s.n>=2&&nodeVisible(s.sun));
+    let s=null;
+    if(focused!=null&&seedRng()<0.5)s=systems.find(x=>x.cid===focused);
+    if(!s&&pool.length)s=pool[Math.floor(seedRng()*pool.length)];
+    const c=s?s.c:new THREE.Vector3(),r=s?s.r:galaxyR*0.5;
+    const d=new THREE.Vector3(seedRng()-0.5,seedRng()-0.5,(seedRng()-0.5)*0.7).normalize();
+    m.target=c.clone().add(d.multiplyScalar(r*(0.7+seedRng()*0.9)));
+    m.tNext=now+6+seedRng()*10;
+  }
+  function buildMonarchs(){
+    monarchs.forEach(m=>monarchGroup.remove(m.g));monarchs.length=0;
+    const count=HAS_REALMS&&realmList.length>1?8:5;
+    const base=Math.min(26,Math.max(5,galaxyR*0.013));
+    for(let i=0;i<count;i++){
+      const size=base*(0.8+seedRng()*0.5);
+      const {g,pivots}=makeMonarch(size);g.up.set(0,0,1);
+      const m={g,pivots,size,pos:new THREE.Vector3((seedRng()-0.5)*galaxyR,(seedRng()-0.5)*galaxyR,(seedRng()-0.5)*galaxyR*0.3),vel:new THREE.Vector3(),
+        speed:size*(1.1+seedRng()*0.5),phase:seedRng()*6.28,amp:1,ampT:1,modeAt:0,seed:seedRng()*100,heading:0,bank:0,target:null,tNext:0};
+      g.position.copy(m.pos);monarchGroup.add(g);monarchs.push(m);
+    }
+  }
+  const _fwd=new THREE.Vector3(),_look=new THREE.Vector3();
+  function updateMonarchs(dt,now){
+    if(!monarchGroup.visible)return;
+    const t=now/1000;
+    for(const m of monarchs){
+      if(!m.target||t>m.tNext||m.pos.distanceTo(m.target)<m.size*2.5)monarchTarget(m,t);
+      // flap or glide: a few seconds of each, eased
+      if(t>m.modeAt){m.ampT=seedRng()<0.62?1:0.14;m.modeAt=t+1.5+seedRng()*3.5;}
+      m.amp+=(m.ampT-m.amp)*Math.min(1,dt*2.2);
+      m.phase+=dt*(m.amp>0.5?10.5:5.5);
+      const flap=0.2+m.amp*0.95*Math.sin(m.phase);
+      m.pivots.forEach(({pv,side})=>{pv.rotation.z=side*flap;});
+      // steer toward the target smoothly; slower while gliding
+      _fwd.copy(m.target).sub(m.pos).normalize().multiplyScalar(m.speed*(0.7+0.4*m.amp));
+      m.vel.lerp(_fwd,Math.min(1,dt*0.7));
+      m.pos.addScaledVector(m.vel,dt);
+      const prevHeading=m.heading;m.heading=Math.atan2(m.vel.y,m.vel.x);
+      let turn=m.heading-prevHeading;turn=Math.atan2(Math.sin(turn),Math.cos(turn));
+      m.bank+=(-turn*18-m.bank)*Math.min(1,dt*3);m.bank=Math.max(-0.9,Math.min(0.9,m.bank));
+      m.g.position.copy(m.pos);m.g.position.z+=Math.sin(t*1.7+m.seed)*m.size*0.12;
+      if(m.vel.lengthSq()>1e-6){_look.copy(m.g.position).add(m.vel);m.g.lookAt(_look);m.g.rotateZ(m.bank);}
+    }
+  }
+  let lastT=performance.now();
+  build();buildMonarchs();camera.position.copy(homeCam());controls.target.set(0,0,0);controls.update();
   return {start,stop,build,buildEdges,repaintEdges,flyToSystem,flyToNode,flyToRealm,flyHome,
+    setMonarchs(on){monarchGroup.visible=!!on;},rebuildMonarchs:buildMonarchs,
+    peekMonarch(i){const m=monarchs[i||0];if(!m)return;tw=null;controls.autoRotate=false;controls.target.copy(m.g.position);camera.position.copy(m.g.position).add(new THREE.Vector3(m.size*1.6,-m.size*2.6,m.size*1.4));controls.update();},
     setSpeed(v){controls.autoRotateSpeed=v;},setRotate(on){controls.autoRotate=on;},
     setLineOpacity(){if(lines)lines.material.opacity=Math.min(1,0.55*state.lw);},
     relabel(){if(focused!=null)showSystemLabels(focused);},
@@ -387,11 +498,12 @@ document.getElementById('grp-all').addEventListener('click',()=>{state.hidden.cl
 document.getElementById('grp-none').addEventListener('click',()=>{LEGEND.forEach(g=>state.hidden.add(g.cid));renderGroups();applyVisibility();});
 document.getElementById('inferred').addEventListener('change',ev=>{state.inferred=ev.target.checked;if(V3)V3.buildEdges();if(network)window.__apply2D();});
 document.getElementById('labels').addEventListener('change',ev=>{state.labels=ev.target.checked;if(V3)V3.relabel();if(network)window.__apply2D();});
+document.getElementById('monarchs').addEventListener('change',ev=>{state.monarchs=ev.target.checked;if(V3)V3.setMonarchs(state.monarchs);});
 const slider=(id,fmt,fn)=>{const el=document.getElementById(id),v=document.getElementById(id+'-v');el.addEventListener('input',()=>{v.textContent=fmt(parseFloat(el.value));fn(parseFloat(el.value));});};
 slider('nsize',x=>x.toFixed(1),x=>{state.nsize=x;if(V3)V3.build();if(network)network.setOptions({nodes:{scaling:{min:4*x,max:36*x}}});});
 slider('lw',x=>x.toFixed(1),x=>{state.lw=x;if(V3)V3.setLineOpacity();if(network)window.__lw2D();});
 slider('speed',x=>x.toFixed(1),x=>{state.speed=x;if(V3)V3.setSpeed(x);});
-slider('spacing',x=>x.toFixed(2),x=>{state.spacing=x;if(V3)V3.build();});
+slider('spacing',x=>x.toFixed(2),x=>{state.spacing=x;if(V3){V3.build();V3.rebuildMonarchs();}});
 document.getElementById('rotate').addEventListener('change',ev=>{state.rotate=ev.target.checked;if(V3)V3.setRotate(state.rotate);});
 slider('f-center',x=>x.toFixed(2),x=>{state.center=x;if(network)window.__physics2D();});
 slider('f-repel',x=>String(x),x=>{state.repel=x;if(network)window.__physics2D();});
@@ -501,6 +613,7 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
   </div></details>
   <details><summary>Display</summary><div class="body">
     <label class="row"><span>Labels<span class="sub only-3d">Names appear once you fly into a group</span></span><input class="tg" type="checkbox" id="labels" checked></label>
+    <label class="row only-3d"><span>Monarchs<span class="sub">A few butterflies drifting between the systems</span></span><input class="tg" type="checkbox" id="monarchs" checked></label>
     <div class="rng"><div class="top"><span>Node size</span><span id="nsize-v">1.0</span></div><input type="range" id="nsize" min="0.4" max="2.5" step="0.1" value="1"></div>
     <div class="rng"><div class="top"><span class="only-3d">Link brightness</span><span class="only-2d">Link thickness</span><span id="lw-v">1.0</span></div><input type="range" id="lw" min="0.2" max="2.5" step="0.1" value="1"></div>
   </div></details>
