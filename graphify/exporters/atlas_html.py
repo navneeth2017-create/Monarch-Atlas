@@ -136,10 +136,18 @@ const V3=(()=>{
   scene.add(new THREE.AmbientLight(0xffffff,0.55));
   const key=new THREE.DirectionalLight(0xffffff,0.75);key.position.set(0.4,0.8,1);scene.add(key);
   const rim=new THREE.DirectionalLight(0xE8873B,0.25);rim.position.set(-1,-0.4,-0.6);scene.add(rim);
-  // stars
-  (()=>{const N=3200,p=new Float32Array(N*3);for(let i=0;i<N;i++){const r=9000+Math.random()*9000,t=Math.random()*Math.PI*2,u=Math.random()*2-1,s=Math.sqrt(1-u*u);p[i*3]=r*s*Math.cos(t);p[i*3+1]=r*s*Math.sin(t);p[i*3+2]=r*u;}
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));
-    scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0x8a8aa0,size:14,sizeAttenuation:true,transparent:true,opacity:0.55,fog:false})));})();
+  // stars: rebuilt after layout so the sky scales with the scene. Fixed pixel
+  // size so they're evenly bright in every direction, with a few brighter ones.
+  let starLayers=[];
+  function buildStars(){
+    starLayers.forEach(o=>{scene.remove(o);o.geometry.dispose();o.material.dispose();});starLayers=[];
+    const R=Math.max(400,galaxyR)*7;
+    const mk=(N,size,color,opacity)=>{const p=new Float32Array(N*3);const rng=seeded(N);
+      for(let i=0;i<N;i++){const r=R*(0.8+rng()*0.6),t=rng()*Math.PI*2,u=rng()*2-1,q=Math.sqrt(1-u*u);p[i*3]=r*q*Math.cos(t);p[i*3+1]=r*q*Math.sin(t);p[i*3+2]=r*u;}
+      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));
+      const pts=new THREE.Points(g,new THREE.PointsMaterial({color,size,sizeAttenuation:false,transparent:true,opacity,fog:false,depthWrite:false}));scene.add(pts);starLayers.push(pts);};
+    mk(5000,1.4,0xc9cde0,0.75);mk(700,2.4,0xf2f4ff,0.95);mk(90,3.6,0xffe9c4,1);
+  }
   const glowTex=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');const g=x.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.25,'rgba(255,255,255,.55)');g.addColorStop(0.6,'rgba(255,255,255,.12)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,128,128);const t=new THREE.CanvasTexture(c);return t;})();
   const seeded=seed=>{let s=(seed*9301+49297)%233280;return()=>{s=(s*9301+49297)%233280;return s/233280;};};
   // ── layout: solar systems on a galaxy ──
@@ -205,6 +213,7 @@ const V3=(()=>{
       const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:s.color,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false}));sp.position.copy(pos[id]);sp.scale.set(r*6,r*6,1);scene.add(sp);glows.push(sp);
       const d=document.createElement('div');d.className='lbl sun';d.textContent=s.label;d.dataset.id=id;d.addEventListener('click',()=>flyToSystem(s.cid));lblLayer.appendChild(d);sunLbl[id]=d;});
     suns.instanceMatrix.needsUpdate=true;if(suns.instanceColor)suns.instanceColor.needsUpdate=true;scene.add(suns);
+    buildStars();
     if(HAS_REALMS&&realmList.length>1)realmList.forEach(R=>{if(!R.name)return;const d=document.createElement('div');d.className='lbl realm';d.textContent=R.name;d.style.color=R.meta.color||'#fff';d.addEventListener('click',()=>flyToRealm(R.name));lblLayer.appendChild(d);realmLbl.push({d,R});
       const neb=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:R.meta.color||'#888',transparent:true,opacity:0.09,blending:THREE.AdditiveBlending,depthWrite:false}));neb.position.copy(R.c);neb.scale.set(R.r*2.4,R.r*2.4,1);scene.add(neb);glows.push(neb);});
     buildEdges();
@@ -380,14 +389,17 @@ const V3=(()=>{
     return {g,pivots};
   }
   function monarchTarget(m,now){
-    const pool=systems.filter(s=>s.n>=2&&nodeVisible(s.sun));
+    const visible=s=>s.n>=2&&nodeVisible(s.sun);
+    const home=realmList[m.realm]&&realmList[m.realm].systems.filter(visible);
+    const pool=systems.filter(visible);
     let s=null;
-    if(focused!=null&&seedRng()<0.5)s=systems.find(x=>x.cid===focused);
-    if(!s&&pool.length)s=pool[Math.floor(seedRng()*pool.length)];
+    if(focused!=null&&seedRng()<0.35)s=systems.find(x=>x.cid===focused);          // a visitor drops by the system you're in
+    if(!s&&home&&home.length&&seedRng()<0.8)s=home[Math.floor(seedRng()*home.length)]; // mostly roam their own galaxy
+    if(!s&&pool.length)s=pool[Math.floor(seedRng()*pool.length)];                    // now and then cross to another
     const c=s?s.c:new THREE.Vector3(),r=s?s.r:galaxyR*0.5;
     const d=new THREE.Vector3(seedRng()-0.5,seedRng()-0.5,(seedRng()-0.5)*0.7).normalize();
     m.target=c.clone().add(d.multiplyScalar(r*(0.7+seedRng()*0.9)));
-    m.tNext=now+6+seedRng()*10;
+    m.tNext=now+30+seedRng()*30;   // long enough to actually get there
   }
   function buildMonarchs(){
     monarchs.forEach(m=>monarchGroup.remove(m.g));monarchs.length=0;
@@ -396,8 +408,11 @@ const V3=(()=>{
     for(let i=0;i<count;i++){
       const size=base*(0.8+seedRng()*0.5);
       const {g,pivots}=makeMonarch(size);g.up.set(0,0,1);
-      const m={g,pivots,size,pos:new THREE.Vector3((seedRng()-0.5)*galaxyR,(seedRng()-0.5)*galaxyR,(seedRng()-0.5)*galaxyR*0.3),vel:new THREE.Vector3(),
-        speed:size*(1.1+seedRng()*0.5),phase:seedRng()*6.28,amp:1,ampT:1,modeAt:0,seed:seedRng()*100,heading:0,bank:0,target:null,tNext:0};
+      // spawn spread out: each one starts in its own galaxy, at a random system there
+      const realm=i%Math.max(1,realmList.length);const homeSys=(realmList[realm]&&realmList[realm].systems.length)?realmList[realm].systems[Math.floor(seedRng()*realmList[realm].systems.length)]:null;
+      const start=homeSys?homeSys.c.clone().add(new THREE.Vector3(seedRng()-0.5,seedRng()-0.5,(seedRng()-0.5)*0.5).multiplyScalar(homeSys.r*1.5)):new THREE.Vector3((seedRng()-0.5)*galaxyR,(seedRng()-0.5)*galaxyR,0);
+      const m={g,pivots,size,realm,pos:start,vel:new THREE.Vector3(),
+        speed:Math.max(size*1.3,galaxyR*0.022)*(0.85+seedRng()*0.3),phase:seedRng()*6.28,amp:1,ampT:1,modeAt:0,seed:seedRng()*100,heading:0,bank:0,target:null,tNext:0};
       g.position.copy(m.pos);monarchGroup.add(g);monarchs.push(m);
     }
   }
@@ -406,7 +421,7 @@ const V3=(()=>{
     if(!monarchGroup.visible)return;
     const t=now/1000;
     for(const m of monarchs){
-      if(!m.target||t>m.tNext||m.pos.distanceTo(m.target)<m.size*2.5)monarchTarget(m,t);
+      if(!m.target||t>m.tNext||m.pos.distanceTo(m.target)<m.size*4)monarchTarget(m,t);
       // flap or glide: a few seconds of each, eased
       if(t>m.modeAt){m.ampT=seedRng()<0.62?1:0.14;m.modeAt=t+1.5+seedRng()*3.5;}
       m.amp+=(m.ampT-m.amp)*Math.min(1,dt*2.2);
