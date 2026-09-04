@@ -50,6 +50,8 @@ STYLES = """<style>
   #crumb.on{display:flex} body[data-view="2d"] #crumb{display:none} #crumb i{width:9px;height:9px;border-radius:50%;display:inline-block}
   #crumb button{background:var(--bg-3);border:1px solid var(--border-2);color:var(--text);border-radius:14px;padding:3px 10px;font:inherit;font-size:12px;cursor:pointer}
   #crumb button:hover{border-color:var(--accent);color:var(--accent-2)}
+  #idle-hint{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(36,36,40,.85);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12.5px;color:var(--muted);opacity:0;pointer-events:none;transition:opacity .6s;z-index:4}
+  #idle-hint.on{opacity:1}
   #settings{position:absolute;top:14px;right:14px;width:300px;max-height:calc(100vh - 28px);overflow:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.45);font-size:13px;z-index:4}
   #settings.min details{display:none}
   .bar{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 12px;border-bottom:1px solid var(--border);gap:8px}
@@ -119,7 +121,7 @@ RAW_EDGES.forEach((e,i)=>{e._i=i;if(outAdj[e.from])outAdj[e.from].push(e);if(inA
 const LEG={};LEGEND.forEach(g=>LEG[g.cid]=g);
 let view='3d';try{view=localStorage.getItem('atlas.view')||'3d';}catch(e){}
 if(!window.THREE)view='2d';
-const state={labels:true,monarchs:true,nsize:1,lw:1,inferred:true,hidden:new Set(),rotate:true,speed:0.5,spacing:1,live:false,repel:2600,center:0.35,dist:80};
+const state={labels:true,monarchs:true,idle:true,nsize:1,lw:1,inferred:true,hidden:new Set(),rotate:true,speed:0.5,spacing:1,live:false,repel:2600,center:0.35,dist:80};
 const edgeVisible=e=>state.inferred||e.confidence==='EXTRACTED';
 const nodeVisible=id=>!state.hidden.has(base[id].community);
 
@@ -260,7 +262,7 @@ const V3=(()=>{
   function select(id){selected=id;showCard(id);}
   // ── camera ──
   let tw=null,focused=null;
-  function flyTo(p,t,ms){tw={p0:camera.position.clone(),p1:p.clone(),t0:controls.target.clone(),t1:t.clone(),s:performance.now(),ms:ms||1600};controls.autoRotate=false;}
+  function flyTo(p,t,ms){if(idle)endIdle();lastInput=performance.now();tw={p0:camera.position.clone(),p1:p.clone(),t0:controls.target.clone(),t1:t.clone(),s:performance.now(),ms:ms||1600};controls.autoRotate=false;}
   function homeCam(){const R=galaxyR;return new THREE.Vector3(0,-R*1.9,R*1.45);}
   let focusedRealm=null;
   function flyHome(){setFocused(null);focusedRealm=null;updateCrumb();flyTo(homeCam(),new THREE.Vector3(0,0,0),1500);}
@@ -321,7 +323,7 @@ const V3=(()=>{
   let running=false;
   function frame(){if(!running)return;requestAnimationFrame(frame);
     if(tw){let k=Math.min(1,(performance.now()-tw.s)/tw.ms);k=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;camera.position.lerpVectors(tw.p0,tw.p1,k);controls.target.lerpVectors(tw.t0,tw.t1,k);if(k>=1){tw=null;controls.autoRotate=state.rotate;}}
-    const nowT=performance.now(),dt=Math.min(0.05,(nowT-lastT)/1000);lastT=nowT;updateMonarchs(dt,nowT);
+    const nowT=performance.now(),dt=Math.min(0.05,(nowT-lastT)/1000);lastT=nowT;updateMonarchs(dt,nowT);idleStep(dt,nowT);
     controls.update();if(pendingPick)pick();projectLabels();renderer.render(scene,camera);}
   function start(){if(running)return;running=true;frame();}
   function stop(){running=false;}
@@ -441,9 +443,32 @@ const V3=(()=>{
     }
   }
   let lastT=performance.now();
+  // ── idle tour: leave the page alone and the camera rides along with a monarch ──
+  const idleEl=document.getElementById('idle-hint');
+  let idle=false,idleAfter=45000,lastInput=performance.now(),follow=null,followSince=0,followUntil=0;
+  const _des=new THREE.Vector3(),_side=new THREE.Vector3(),_fwdN=new THREE.Vector3(),_upZ=new THREE.Vector3(0,0,1);
+  function touch(){lastInput=performance.now();if(idle)endIdle();}
+  ['pointerdown','pointermove','wheel','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,touch,{passive:true}));
+  function pickFollow(now){const alive=monarchs.filter(m=>m!==follow);follow=alive.length?alive[Math.floor(seedRng()*alive.length)]:monarchs[0];followSince=now;followUntil=now+40000+seedRng()*25000;}
+  function beginIdle(now){if(!monarchs.length||!monarchGroup.visible)return;idle=true;tw=null;controls.autoRotate=false;tip.style.display='none';setHover(null);pickFollow(now);idleEl.classList.add('on');}
+  function endIdle(){idle=false;follow=null;controls.autoRotate=state.rotate;idleEl.classList.remove('on');}
+  function idleStep(dt,now){
+    if(!state.idle||!monarchGroup.visible){if(idle)endIdle();return;}
+    if(!idle){if(!tw&&now-lastInput>idleAfter)beginIdle(now);return;}
+    if(!follow||now>followUntil)pickFollow(now);
+    const m=follow;const settling=Math.min(1,(now-followSince)/4500);            // ease in over the first seconds, then hold close
+    _fwdN.copy(m.vel);if(_fwdN.lengthSq()<1e-6)_fwdN.set(1,0,0);_fwdN.normalize();
+    _side.crossVectors(_fwdN,_upZ).normalize();
+    const sway=Math.sin(now/1000*0.22+m.seed)*1.4;
+    _des.copy(m.g.position).addScaledVector(_fwdN,-m.size*4.6).addScaledVector(_upZ,m.size*1.5).addScaledVector(_side,m.size*sway);
+    const k=1-Math.exp(-dt*(0.5+1.6*settling));
+    camera.position.lerp(_des,k);
+    controls.target.lerp(m.g.position,1-Math.exp(-dt*(1+3*settling)));
+  }
   build();buildMonarchs();camera.position.copy(homeCam());controls.target.set(0,0,0);controls.update();
   return {start,stop,build,buildEdges,repaintEdges,flyToSystem,flyToNode,flyToRealm,flyHome,
     setMonarchs(on){monarchGroup.visible=!!on;},rebuildMonarchs:buildMonarchs,
+    setIdle(on){state.idle=!!on;if(!on&&idle)endIdle();},setIdleAfter(ms){idleAfter=ms;},isIdle(){return idle;},
     peekMonarch(i){const m=monarchs[i||0];if(!m)return;tw=null;controls.autoRotate=false;controls.target.copy(m.g.position);camera.position.copy(m.g.position).add(new THREE.Vector3(m.size*1.6,-m.size*2.6,m.size*1.4));controls.update();},
     setSpeed(v){controls.autoRotateSpeed=v;},setRotate(on){controls.autoRotate=on;},
     setLineOpacity(){if(lines)lines.material.opacity=Math.min(1,0.55*state.lw);},
@@ -521,6 +546,7 @@ slider('lw',x=>x.toFixed(1),x=>{state.lw=x;if(V3)V3.setLineOpacity();if(network)
 slider('speed',x=>x.toFixed(1),x=>{state.speed=x;if(V3)V3.setSpeed(x);});
 slider('spacing',x=>x.toFixed(2),x=>{state.spacing=x;if(V3){V3.build();V3.rebuildMonarchs();}});
 document.getElementById('rotate').addEventListener('change',ev=>{state.rotate=ev.target.checked;if(V3)V3.setRotate(state.rotate);});
+document.getElementById('idle').addEventListener('change',ev=>{if(V3)V3.setIdle(ev.target.checked);});
 slider('f-center',x=>x.toFixed(2),x=>{state.center=x;if(network)window.__physics2D();});
 slider('f-repel',x=>String(x),x=>{state.repel=x;if(network)window.__physics2D();});
 slider('f-dist',x=>String(x),x=>{state.dist=x;if(network)window.__physics2D();});
@@ -614,6 +640,7 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
 <div id="tip"></div>
 <div id="brand"><div class="mark">🦋</div><div class="name">Monarch Atlas<small>{title}</small></div></div>
 <div id="crumb"><i id="crumb-dot"></i><span id="crumb-name"></span><button id="crumb-back">‹ Back to galaxy</button></div>
+<div id="idle-hint">🦋 Riding along with a monarch — move the mouse to take over</div>
 <div id="stats">{stats} · click a group to fly in · double-click a sun to dive · Esc to zoom out</div>
 <div id="settings">
   <div class="bar"><b>Graph</b><span class="seg"><button data-v="3d" class="on">3D</button><button data-v="2d">2D</button></span><button id="home" title="Reset view">⌂</button><button id="min" title="Collapse">–</button></div>
@@ -635,6 +662,7 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
   </div></details>
   <details class="only-3d"><summary>Motion</summary><div class="body">
     <label class="row"><span>Auto-rotate<span class="sub">Slow orbit around the galaxy</span></span><input class="tg" type="checkbox" id="rotate" checked></label>
+    <label class="row"><span>Idle tour<span class="sub">Left alone for 45 s, the camera rides along with a monarch</span></span><input class="tg" type="checkbox" id="idle" checked></label>
     <div class="rng"><div class="top"><span>Rotate speed</span><span id="speed-v">0.5</span></div><input type="range" id="speed" min="0" max="3" step="0.1" value="0.5"></div>
     <div class="rng"><div class="top"><span>System spacing</span><span id="spacing-v">1.00</span></div><input type="range" id="spacing" min="0.6" max="2" step="0.05" value="1"></div>
   </div></details>
