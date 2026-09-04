@@ -515,7 +515,7 @@ const V3=(()=>{
   let lastT=performance.now();
   // ── idle tour: leave the page alone and the camera rides along with a monarch ──
   const idleEl=document.getElementById('idle-hint');
-  let idle=false,idleAfter=45000,lastInput=performance.now(),follow=null,followSince=0,followUntil=0;
+  let idle=false,idleAfter=10000,lastInput=performance.now(),follow=null,followSince=0,followUntil=0;
   const _des=new THREE.Vector3(),_side=new THREE.Vector3(),_fwdN=new THREE.Vector3(),_upZ=new THREE.Vector3(0,0,1);
   function touch(){lastInput=performance.now();if(idle)endIdle();}
   ['pointerdown','pointermove','wheel','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,touch,{passive:true}));
@@ -736,7 +736,7 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
   </div></details>
   <details class="only-3d"><summary>Motion</summary><div class="body">
     <label class="row"><span>Auto-rotate<span class="sub">Slow orbit around the galaxy</span></span><input class="tg" type="checkbox" id="rotate" checked></label>
-    <label class="row"><span>Idle tour<span class="sub">Left alone for 45 s, the camera rides along with a monarch</span></span><input class="tg" type="checkbox" id="idle" checked></label>
+    <label class="row"><span>Idle tour<span class="sub">Left alone for 10 s, the camera rides along with a monarch</span></span><input class="tg" type="checkbox" id="idle" checked></label>
     <div class="rng"><div class="top"><span>Rotate speed</span><span id="speed-v">0.5</span></div><input type="range" id="speed" min="0" max="3" step="0.1" value="0.5"></div>
     <div class="rng"><div class="top"><span>System spacing</span><span id="spacing-v">1.00</span></div><input type="range" id="spacing" min="0.6" max="2" step="0.05" value="1"></div>
   </div></details>
