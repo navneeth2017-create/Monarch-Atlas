@@ -52,6 +52,8 @@ STYLES = """<style>
   #crumb button:hover{border-color:var(--accent);color:var(--accent-2)}
   #idle-hint{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(36,36,40,.85);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12.5px;color:var(--muted);opacity:0;pointer-events:none;transition:opacity .6s;z-index:4}
   #idle-hint.on{opacity:1}
+  #ride-hint{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(36,36,40,.88);border:1px solid var(--accent);border-radius:20px;padding:7px 16px;font-size:12.5px;color:var(--text);opacity:0;pointer-events:none;transition:opacity .4s;z-index:4;white-space:nowrap}
+  #ride-hint.on{opacity:1;pointer-events:auto} #ride-hint kbd{font:inherit;padding:0 5px;border:1px solid var(--border-2);border-radius:4px;background:rgba(255,255,255,.06)} #ride-hint button{margin-left:10px;border:1px solid var(--border-2);background:none;color:var(--accent);border-radius:12px;padding:2px 9px;font:inherit;cursor:pointer}
   #settings{position:absolute;top:14px;right:14px;width:300px;max-height:calc(100vh - 28px);overflow:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.45);font-size:13px;z-index:4}
   #settings.min details{display:none}
   .bar{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 12px;border-bottom:1px solid var(--border);gap:8px}
@@ -96,7 +98,8 @@ STYLES = """<style>
   #card .act{margin-top:10px;display:flex;gap:8px} #card .act button{background:var(--bg-3);border:1px solid var(--border-2);color:var(--text);border-radius:6px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
   #card .act button:hover{border-color:var(--accent);color:var(--accent-2)}
   ::-webkit-scrollbar{width:8px} ::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:4px}
-  @media (max-width:720px){#settings{width:min(300px,calc(100vw - 28px))} #card{width:calc(100vw - 28px)}}
+  @media (min-width:721px){#idle-hint,#ride-hint{left:calc((100vw - 314px)/2)}}
+  @media (max-width:720px){#ride-hint{white-space:normal;max-width:calc(100vw - 28px);text-align:center} #settings{width:min(300px,calc(100vw - 28px))} #card{width:calc(100vw - 28px)}}
 </style>"""
 
 
@@ -255,7 +258,13 @@ const V3=(()=>{
   // ── hover / select ──
   const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(-9,-9);let hover=null,pendingPick=false,selected=null;
   function idAt(hit){if(!hit)return null;return hit.object===planets?planetIds[hit.instanceId]:sunIds[hit.instanceId];}
-  function pick(){pendingPick=false;ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects([planets,suns].filter(Boolean));const id=idAt(hits[0]);if(id!==hover){setHover(id);}}
+  let hoverM=null;
+  function pick(){pendingPick=false;ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects([planets,suns].filter(Boolean));
+    // a monarch under the pointer wins over whatever is behind it (never the one you're riding — it's right in front of the camera)
+    let mh=null;if(monarchGroup.visible){const h=ray.intersectObject(monarchGroup,true)[0];if(h&&(!hits[0]||h.distance<hits[0].distance)){let o=h.object;while(o&&o.parent!==monarchGroup)o=o.parent;mh=monarchs.find(m=>m.g===o)||null;if(mh===ride)mh=null;}}
+    if(mh!==hoverM){hoverM=mh;if(hoverM){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML='<b>🦋 Monarch</b><span>click to ride it · steer with the arrow keys or WASD</span>';tip.style.display='block';}else{tip.style.display='none';renderer.domElement.style.cursor='';}}
+    if(hoverM)return;
+    const id=idAt(hits[0]);if(id!==hover){setHover(id);}}
   function scaleSlot(id,k){const sl=slotOf[id];if(!sl)return;const mesh=sl.mesh==='p'?planets:suns;const r=(sl.mesh==='p'?rPlanet(id):rSun(systems.find(x=>x.sun===id)))*k;_m.makeScale(r,r,r).setPosition(pos[id]);mesh.setMatrixAt(sl.i,_m);mesh.instanceMatrix.needsUpdate=true;}
   function setHover(id){
     if(hover){scaleSlot(hover,1);(edgeSlots[hover]||[]).forEach(i=>paintEdge(edgeColor.array,i,edgeList[i],false));if(edgeColor)edgeColor.needsUpdate=true;}
@@ -268,12 +277,12 @@ const V3=(()=>{
   renderer.domElement.addEventListener('mouseleave',()=>{setHover(null);});
   let downAt=null;
   renderer.domElement.addEventListener('pointerdown',ev=>{downAt=[ev.clientX,ev.clientY];});
-  renderer.domElement.addEventListener('click',ev=>{if(!downAt||Math.hypot(ev.clientX-downAt[0],ev.clientY-downAt[1])>4)return;pick();if(hover)select(hover);});
-  renderer.domElement.addEventListener('dblclick',ev=>{pick();if(hover)flyToSystem(sysOf[hover]);else flyHome();});
+  renderer.domElement.addEventListener('click',ev=>{if(!downAt||Math.hypot(ev.clientX-downAt[0],ev.clientY-downAt[1])>4)return;pick();if(hoverM){beginRide(hoverM);return;}if(hover)select(hover);});
+  renderer.domElement.addEventListener('dblclick',ev=>{if(ride)return;pick();if(hover)flyToSystem(sysOf[hover]);else flyHome();});
   function select(id){selected=id;showCard(id);}
   // ── camera ──
   let tw=null,focused=null;
-  function flyTo(p,t,ms){if(idle)endIdle();lastInput=performance.now();tw={p0:camera.position.clone(),p1:p.clone(),t0:controls.target.clone(),t1:t.clone(),s:performance.now(),ms:ms||1600};controls.autoRotate=false;}
+  function flyTo(p,t,ms){if(idle)endIdle();if(ride)endRide();lastInput=performance.now();tw={p0:camera.position.clone(),p1:p.clone(),t0:controls.target.clone(),t1:t.clone(),s:performance.now(),ms:ms||1600};controls.autoRotate=false;}
   function homeCam(){const R=galaxyR;return new THREE.Vector3(0,-R*1.9,R*1.45);}
   let focusedRealm=null;
   function flyHome(){setFocused(null);focusedRealm=null;updateCrumb();flyTo(homeCam(),new THREE.Vector3(0,0,0),1500);}
@@ -336,7 +345,7 @@ const V3=(()=>{
   let running=false;
   function frame(){if(!running)return;requestAnimationFrame(frame);
     if(tw){let k=Math.min(1,(performance.now()-tw.s)/tw.ms);k=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;camera.position.lerpVectors(tw.p0,tw.p1,k);controls.target.lerpVectors(tw.t0,tw.t1,k);if(k>=1){tw=null;controls.autoRotate=state.rotate;}}
-    const nowT=performance.now(),dt=Math.min(0.05,(nowT-lastT)/1000);lastT=nowT;updateMonarchs(dt,nowT);updateWalkers(dt);idleStep(dt,nowT);
+    const nowT=performance.now(),dt=Math.min(0.05,(nowT-lastT)/1000);lastT=nowT;updateMonarchs(dt,nowT);rideStep(dt);updateWalkers(dt);idleStep(dt,nowT);
     controls.update();if(pendingPick)pick();autoUnfocus();projectLabels();renderer.render(scene,camera);}
   // zoom right out of a system (or a galaxy) by hand and the focus lets go, so the map stops dimming and labelling around it
   function autoUnfocus(){if(tw||idle)return;const cam=camera.position;
@@ -345,7 +354,7 @@ const V3=(()=>{
   function start(){if(running)return;running=true;frame();}
   function stop(){running=false;}
   window.addEventListener('resize',fitView);
-  window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName))flyHome();});
+  window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName)){if(ride)endRide();else flyHome();}});
 
   // ── monarchs: a few butterflies drifting through the galaxy ──
   // Built from primitives (no model to load): a body, four wings with a
@@ -441,6 +450,7 @@ const V3=(()=>{
     if(!monarchGroup.visible)return;
     const t=now/1000;
     for(const m of monarchs){
+      if(m===ride){rideSteer(m,dt);continue;}
       if(!m.target||t>m.tNext||m.pos.distanceTo(m.target)<m.size*4)monarchTarget(m,t);
       // flap or glide: a few seconds of each, eased
       if(t>m.modeAt){m.ampT=seedRng()<0.62?1:0.14;m.modeAt=t+1.5+seedRng()*3.5;}
@@ -512,6 +522,49 @@ const V3=(()=>{
       w.cargo.material.opacity=0.6+0.28*Math.min(1,(px-5)/10);
     }
   }
+  // ── ride a monarch: click one and you're flying it — arrows / WASD steer, Shift boosts, Space hovers, Esc hops off ──
+  const rideEl=document.getElementById('ride-hint');
+  let ride=null,rideHeading=0,ridePitch=0;const keys=new Set();
+  const keyName=ev=>ev.key.length===1?ev.key.toLowerCase():ev.key;
+  window.addEventListener('keydown',ev=>{if(!ride||/INPUT|TEXTAREA/.test(ev.target.tagName))return;keys.add(keyName(ev));if(/^Arrow|^ $/.test(ev.key))ev.preventDefault();});
+  window.addEventListener('keyup',ev=>{keys.delete(keyName(ev));});
+  window.addEventListener('blur',()=>keys.clear());
+  const held=(...ks)=>ks.some(k=>keys.has(k));
+  function beginRide(m){if(!m)return;if(idle)endIdle();ride=m;tw=null;controls.autoRotate=false;controls.enabled=false;keys.clear();
+    hoverM=null;setHover(null);tip.style.display='none';renderer.domElement.style.cursor='';
+    rideHeading=Math.atan2(m.vel.y,m.vel.x)||0;ridePitch=0;m.target=null;rideEl.classList.add('on');
+    // start right behind it, no lerp-in from across the map
+    rideCam(m,1);}
+  function endRide(){const m=ride;if(!m)return;ride=null;keys.clear();controls.enabled=true;controls.autoRotate=false;
+    controls.target.copy(m.g.position);controls.update();monarchTarget(m,performance.now()/1000);lastInput=performance.now();rideEl.classList.remove('on');}
+  document.getElementById('ride-off').addEventListener('click',endRide);
+  function rideSteer(m,dt){
+    const turn=(held('ArrowLeft','a')?1:0)-(held('ArrowRight','d')?1:0);
+    const climb=(held('ArrowUp','w')?1:0)-(held('ArrowDown','s')?1:0);
+    const boost=held('Shift'),hover=held(' ');
+    rideHeading+=turn*dt*1.7;
+    ridePitch+=(climb*0.8-ridePitch)*Math.min(1,dt*3);
+    const sp=m.speed*(boost?2.8:hover?0.12:1.25);
+    _fwd.set(Math.cos(rideHeading)*Math.cos(ridePitch),Math.sin(rideHeading)*Math.cos(ridePitch),Math.sin(ridePitch)).multiplyScalar(sp);
+    m.vel.lerp(_fwd,Math.min(1,dt*3.5));
+    m.pos.addScaledVector(m.vel,dt);
+    if(m.pos.length()>galaxyR*1.8)m.pos.setLength(galaxyR*1.8);       // the universe has an edge
+    // wings: beat hard on a boost or a climb, fold into a glide when hovering or diving
+    m.ampT=hover?0.1:(boost||climb>0)?1:(climb<0?0.2:m.ampT);if(!hover&&!boost&&climb===0&&performance.now()/1000>m.modeAt){m.ampT=seedRng()<0.62?1:0.14;m.modeAt=performance.now()/1000+1.5+seedRng()*3.5;}
+    m.amp+=(m.ampT-m.amp)*Math.min(1,dt*2.2);
+    m.phase+=dt*(m.amp>0.5?10.5:5.5);
+    const flap=0.2+m.amp*0.95*Math.sin(m.phase);
+    m.pivots.forEach(({pv,side})=>{pv.rotation.z=side*flap;});
+    m.bank+=(-turn*0.55-m.bank)*Math.min(1,dt*3);
+    m.g.position.copy(m.pos);m.g.scale.setScalar(1);m.k=1;
+    if(m.vel.lengthSq()>1e-6){_look.copy(m.g.position).add(m.vel);m.g.lookAt(_look);m.g.rotateZ(m.bank);}
+  }
+  const _rd=new THREE.Vector3(),_rf=new THREE.Vector3();
+  function rideCam(m,k){
+    _rf.copy(m.vel);if(_rf.lengthSq()<1e-6)_rf.set(Math.cos(rideHeading),Math.sin(rideHeading),0);_rf.normalize();
+    const sz=m.size;_rd.copy(m.g.position).addScaledVector(_rf,-sz*4.2).addScaledVector(_upZ,sz*1.5);
+    camera.position.lerp(_rd,k);controls.target.copy(m.g.position).addScaledVector(_rf,sz*2.5);}
+  function rideStep(dt){if(!ride)return;rideCam(ride,1-Math.exp(-dt*6));}
   let lastT=performance.now();
   // ── idle tour: leave the page alone and the camera rides along with a monarch ──
   const idleEl=document.getElementById('idle-hint');
@@ -523,6 +576,7 @@ const V3=(()=>{
   function beginIdle(now){if(!monarchs.length||!monarchGroup.visible)return;idle=true;tw=null;controls.autoRotate=false;tip.style.display='none';setHover(null);pickFollow(now);idleEl.classList.add('on');}
   function endIdle(){idle=false;follow=null;controls.autoRotate=state.rotate;idleEl.classList.remove('on');}
   function idleStep(dt,now){
+    if(ride)return;
     if(!state.idle||!monarchGroup.visible){if(idle)endIdle();return;}
     if(!idle){if(!tw&&now-lastInput>idleAfter)beginIdle(now);return;}
     if(!follow||now>followUntil)pickFollow(now);
@@ -537,7 +591,8 @@ const V3=(()=>{
   }
   build();buildMonarchs();camera.position.copy(homeCam());controls.target.set(0,0,0);controls.update();
   return {start,stop,build,buildEdges,repaintEdges,flyToSystem,flyToNode,flyToRealm,flyHome,
-    setMonarchs(on){monarchGroup.visible=!!on;},rebuildMonarchs:buildMonarchs,
+    setMonarchs(on){monarchGroup.visible=!!on;if(!on&&ride)endRide();},rebuildMonarchs(){if(ride)endRide();buildMonarchs();},
+    ride(i){beginRide(monarchs[i||0]);},hopOff:endRide,isRiding(){return !!ride;},ridePos(){return ride?ride.pos.toArray():null;},
     setIdle(on){state.idle=!!on;if(!on&&idle)endIdle();},setIdleAfter(ms){idleAfter=ms;},isIdle(){return idle;},
     peekMonarch(i){const m=monarchs[i||0];if(!m)return;tw=null;controls.autoRotate=false;controls.target.copy(m.g.position);camera.position.copy(m.g.position).add(new THREE.Vector3(m.size*1.6,-m.size*2.6,m.size*1.4));controls.update();},
     fitView,setWalkers(on){walkerGroup.visible=!!on;},walkerCount(){return walkers.length;},walkerNode(i){const w=walkers[i||0];return w?w.a:null;},
@@ -714,6 +769,7 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
 <div id="brand"><div class="mark">🦋</div><div class="name">Monarch Atlas<small>{title}</small></div></div>
 <div id="crumb"><i id="crumb-dot"></i><span id="crumb-name"></span><button id="crumb-back">‹ Back to galaxy</button></div>
 <div id="idle-hint">🦋 Riding along with a monarch — move the mouse to take over</div>
+<div id="ride-hint">🦋 You are the monarch &nbsp; <kbd>← →</kbd> <kbd>A D</kbd> turn &nbsp; <kbd>↑ ↓</kbd> <kbd>W S</kbd> climb / dive &nbsp; <kbd>Shift</kbd> boost &nbsp; <kbd>Space</kbd> hover<button id="ride-off">Esc · hop off</button></div>
 <div id="stats">{stats} · click a group to fly in · double-click a sun to dive · Esc to zoom out · drag to orbit · shift-drag or right-drag to move</div>
 <div id="settings">
   <div class="bar"><b>Graph</b><span class="seg"><button data-v="3d" class="on">3D</button><button data-v="2d">2D</button></span><button id="home" title="Reset view">⌂</button><button id="min" title="Collapse">–</button></div>
