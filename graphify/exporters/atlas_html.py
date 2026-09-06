@@ -486,7 +486,7 @@ const V3=(()=>{
   function buildWalkers(){
     walkers.forEach(w=>walkerGroup.remove(w.g));walkers.length=0;
     const ok=[];for(let i=0;i<edgeList.length;i++)if(walkerEdgeOK(i))ok.push(i);
-    const count=Math.min(48,Math.max(0,Math.round(edgeList.length/80)),ok.length);
+    const count=Math.min(150,Math.max(0,Math.round(edgeList.length/25)),ok.length);
     for(let k=0;k<count;k++){
       const i=ok.splice(Math.floor(wRng()*ok.length),1)[0];const e=edgeList[i];
       const u=1.5*state.nsize,g=new THREE.Group();
