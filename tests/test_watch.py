@@ -163,6 +163,32 @@ def test_check_update_does_not_clear_flag(tmp_path):
     assert flag.exists()
 
 
+@pytest.mark.parametrize(
+    ("no_cluster", "change_topology"),
+    [(True, False), (False, False), (False, True)],
+    ids=["no-cluster", "unchanged-topology", "clustered-rebuild"],
+)
+def test_code_rebuild_preserves_semantic_update_flag(
+    tmp_path, no_cluster, change_topology
+):
+    """An AST-only rebuild cannot clear pending semantic work (#3294)."""
+    source = tmp_path / "app.py"
+    source.write_text("def before(): pass\n", encoding="utf-8")
+    assert _rebuild_code(
+        tmp_path, no_cluster=no_cluster, acquire_lock=False
+    ) is True
+
+    flag = tmp_path / "graphify-out" / "needs_update"
+    flag.write_text("docs/PRD.md\n", encoding="utf-8")
+    if change_topology:
+        source.write_text("def after(): pass\n", encoding="utf-8")
+
+    assert _rebuild_code(
+        tmp_path, no_cluster=no_cluster, acquire_lock=False
+    ) is True
+    assert flag.read_text(encoding="utf-8") == "docs/PRD.md\n"
+
+
 def test_watch_raises_without_watchdog(tmp_path, monkeypatch):
     import builtins
     real_import = builtins.__import__
@@ -633,6 +659,61 @@ def test_rebuild_honors_persisted_no_gitignore(tmp_path):
     graph = json.loads((corpus / "graphify-out" / "graph.json").read_text())
     sources = {Path(str(node.get("source_file", ""))).as_posix() for node in graph["nodes"]}
     assert any(source.endswith("generated/gen.py") for source in sources)
+
+
+def test_no_cluster_rebuild_disambiguates_colliding_file_labels(tmp_path):
+    """The raw update path keeps the same display labels as a fresh extract.
+
+    File nodes with the same basename need directory-qualified labels (#2032),
+    including after an incremental no-cluster rebuild.
+    """
+    import json
+    from graphify.watch import _rebuild_code
+
+    corpus = tmp_path / "corpus"
+    (corpus / "pkg_a").mkdir(parents=True)
+    (corpus / "pkg_b").mkdir()
+    (corpus / "pkg_a" / "errors.ts").write_text(
+        "export class AlphaError {}\n", encoding="utf-8"
+    )
+    (corpus / "pkg_b" / "errors.ts").write_text(
+        "export class BetaError {}\n", encoding="utf-8"
+    )
+    entry = corpus / "entry.ts"
+    entry.write_text(
+        'import { AlphaError } from "./pkg_a/errors.js";\n'
+        'import { BetaError } from "./pkg_b/errors.js";\n'
+        "export const errors = [AlphaError, BetaError];\n",
+        encoding="utf-8",
+    )
+
+    assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
+    graph_path = corpus / "graphify-out" / "graph.json"
+    graph = json.loads(graph_path.read_text(encoding="utf-8"))
+    labels = {
+        node["label"]
+        for node in graph["nodes"]
+        if node.get("id") in {"pkg_a_errors", "pkg_b_errors"}
+    }
+    assert labels == {"pkg_a/errors.ts", "pkg_b/errors.ts"}
+
+    entry.write_text(
+        entry.read_text(encoding="utf-8") + "export const count = errors.length;\n",
+        encoding="utf-8",
+    )
+    assert _rebuild_code(
+        corpus,
+        changed_paths=[entry],
+        no_cluster=True,
+        acquire_lock=False,
+    ) is True
+    graph = json.loads(graph_path.read_text(encoding="utf-8"))
+    labels = {
+        node["label"]
+        for node in graph["nodes"]
+        if node.get("id") in {"pkg_a_errors", "pkg_b_errors"}
+    }
+    assert labels == {"pkg_a/errors.ts", "pkg_b/errors.ts"}
 
 
 def test_graphify_root_preserves_absolute_when_user_supplied(tmp_path):
