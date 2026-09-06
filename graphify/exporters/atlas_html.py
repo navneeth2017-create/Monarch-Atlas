@@ -28,14 +28,14 @@ THREE_TAGS = (
 STYLES = """<style>
   :root { --bg:#1b1b1f; --bg-2:#242428; --bg-3:#2d2d32; --border:#3a3a40; --border-2:#4a4a52;
     --text:#e2e2e6; --muted:#9a9aa3; --faint:#6b6b74; --accent:#E8873B; --accent-2:#f3a866;
-    --font:"Inter",-apple-system,"Segoe UI",Roboto,sans-serif; }
-  html,body{height:100%} body{margin:0;background:#0c0c11;color:var(--text);font-family:var(--font);font-size:13px;line-height:1.45;overflow:hidden}
+    --font:"Inter",-apple-system,"Segoe UI",Roboto,sans-serif; --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; --lbl:#c9c9d0; --lbl-sun:#e6e6ea; --halo:#000; }
+  html,body{height:100%} body{margin:0;background:var(--sky,#0c0c11);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.45;overflow:hidden}
   #graph,#graph3d{position:absolute;inset:0} #graph{background:var(--bg)} #graph3d canvas{display:block}
   body[data-view="3d"] #graph{display:none} body[data-view="2d"] #graph3d{display:none} body[data-view="2d"] #labels{display:none}
   #labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-  .lbl{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:11px;color:#c9c9d0;text-shadow:0 1px 2px #000,0 0 6px #000;opacity:0;transition:opacity .15s;will-change:transform;pointer-events:none}
+  .lbl{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:11px;color:var(--lbl);text-shadow:0 1px 2px var(--halo),0 0 6px var(--halo);opacity:0;transition:opacity .15s;will-change:transform;pointer-events:none}
   .lbl.on{opacity:1;pointer-events:auto;cursor:pointer} .lbl.on:hover{color:#fff} .lbl.dim{opacity:.3}
-  .lbl.sun{font-weight:500;font-size:11.5px;color:#e6e6ea}
+  .lbl.sun{font-weight:500;font-size:11.5px;color:var(--lbl-sun)}
   .lbl.realm{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:3px 9px;border-radius:12px;background:rgba(12,12,17,.55);border:1px solid rgba(255,255,255,.08)} .lbl.realm.on:hover{border-color:rgba(255,255,255,.3)}
   .grp-h{display:flex;align-items:center;gap:8px;margin:8px 0 2px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);cursor:pointer} .grp-h:hover{color:#fff} .grp-h .sw{width:8px;height:8px}
   .realm-row{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer} .realm-row:hover{color:#fff} .realm-row .c{color:var(--faint);font-size:11px;margin-left:auto}
@@ -98,6 +98,32 @@ STYLES = """<style>
   #card .act{margin-top:10px;display:flex;gap:8px} #card .act button{background:var(--bg-3);border:1px solid var(--border-2);color:var(--text);border-radius:6px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
   #card .act button:hover{border-color:var(--accent);color:var(--accent-2)}
   ::-webkit-scrollbar{width:8px} ::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:4px}
+  /* ── skins: everything visual hangs off the CSS variables above plus body[data-skin] ── */
+  #fx{position:absolute;inset:0;pointer-events:none;z-index:1;display:none} #fx canvas{display:block;width:100%;height:100%}
+  #fx .ck{position:absolute;width:26px;height:26px;border:2px solid var(--accent);opacity:.55} #fx .tl{left:14px;top:14px;border-right:0;border-bottom:0} #fx .tr{right:14px;top:14px;border-left:0;border-bottom:0} #fx .bl{left:14px;bottom:14px;border-right:0;border-top:0} #fx .br{right:14px;bottom:14px;border-left:0;border-top:0}
+  body[data-skin="jarvis"] #fx,body[data-skin="matrix"] #fx{display:block}
+  body[data-skin="jarvis"] #fx::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px)}
+  body[data-skin="jarvis"] #fx::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,20,30,.55) 100%)}
+  body[data-skin="matrix"] #fx .ck{display:none}
+  body[data-skin="jarvis"] .lbl,body[data-skin="matrix"] .lbl{font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em}
+  body[data-skin="jarvis"] .lbl.realm,body[data-skin="matrix"] .lbl.realm{border-color:var(--accent);background:rgba(0,0,0,.55);border-radius:3px}
+  body[data-skin="jarvis"] #brand .name,body[data-skin="matrix"] #brand .name{font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase}
+  body[data-skin="paper"] .lbl{text-shadow:0 0 3px #fff,0 0 6px #fff,0 0 10px #fff} body[data-skin="paper"] .lbl.on:hover{color:#000}
+  body[data-skin="paper"] .lbl.realm{background:rgba(255,255,255,.78);border-color:rgba(0,0,0,.12)} body[data-skin="paper"] .lbl.realm.on:hover{border-color:rgba(0,0,0,.4)}
+  body[data-skin="paper"] #tip,body[data-skin="paper"] #crumb,body[data-skin="paper"] #idle-hint,body[data-skin="paper"] #ride-hint{background:rgba(255,255,255,.95)}
+  body[data-skin="paper"] #brand .name,body[data-skin="paper"] #stats{text-shadow:none} body[data-skin="paper"] #tip b{color:#111} body[data-skin="paper"] .grp-h:hover,body[data-skin="paper"] .realm-row:hover{color:#000}
+  body[data-skin="synthwave"] .lbl{font-style:italic;letter-spacing:.03em}
+  #skins{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
+  #skins.on{display:flex}
+  #skins .box{width:min(1040px,calc(100vw - 40px));max-height:calc(100vh - 40px);overflow:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  #skins .hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)} #skins .hd b{font-size:15px} #skins .hd span{color:var(--muted);font-size:12.5px;flex:1} #skins .hd button{background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+  #skins .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;padding:16px 18px 18px}
+  .skin{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg);cursor:pointer;transition:transform .12s,border-color .12s;display:flex;flex-direction:column}
+  .skin:hover{transform:translateY(-2px);border-color:var(--border-2)} .skin.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .skin svg{display:block;width:100%;aspect-ratio:16/9;background:#000}
+  .skin .meta{padding:10px 12px 12px} .skin .meta b{font-size:14px;display:flex;align-items:center;gap:8px} .skin .meta b em{font-style:normal;font-size:10.5px;color:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:0 7px;margin-left:auto}
+  .skin .meta p{margin:3px 0 8px;color:var(--muted);font-size:12px} .skin .chips{display:flex;flex-wrap:wrap;gap:5px} .skin .chips i{font-style:normal;font-size:11px;color:var(--text);background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:2px 8px}
+  #skin-row{display:flex;align-items:center;gap:8px;padding:6px 0} #skin-row b{font-weight:500} #skin-row button{margin-left:auto;background:var(--bg-3);border:1px solid var(--border-2);color:var(--text);border-radius:6px;padding:3px 10px;font:inherit;font-size:12px;cursor:pointer} #skin-row button:hover{border-color:var(--accent);color:var(--accent-2)}
   @media (min-width:721px){#idle-hint,#ride-hint{left:calc((100vw - 314px)/2)}}
   @media (max-width:720px){#settings{width:min(300px,calc(100vw - 28px))} #card{width:calc(100vw - 28px)}}
 </style>"""
@@ -124,6 +150,39 @@ RAW_EDGES.forEach((e,i)=>{e._i=i;if(outAdj[e.from])outAdj[e.from].push(e);if(inA
 const LEG={};LEGEND.forEach(g=>LEG[g.cid]=g);
 let view='3d';try{view=localStorage.getItem('atlas.view')||'3d';}catch(e){}
 if(!window.THREE)view='2d';
+// ══════════════════════════════════════════ skins ══
+// Every skin is the same 3D universe — solar systems in galaxies — dressed differently:
+// colours, sky, node style, link glow, and a few props of its own (HUD rings, a neon grid, rain).
+const SKINS={
+  monarch:{name:'Monarch',mark:'🦋',tag:'Night sky, warm orange, butterflies on the wing.',
+    css:{bg:'#1b1b1f','bg-2':'#242428','bg-3':'#2d2d32',border:'#3a3a40','border-2':'#4a4a52',text:'#e2e2e6',muted:'#9a9aa3',faint:'#6b6b74',accent:'#E8873B','accent-2':'#f3a866',sky:'#0c0c11',lbl:'#c9c9d0','lbl-sun':'#e6e6ea',halo:'#000'},
+    sky:0x0c0c11,fog:0.00038,rim:0xE8873B,ambient:0.55,stars:[[4200,2.0,0xc9cde0,0.5],[520,3.2,0xf2f4ff,0.7],[70,4.8,0xffe9c4,0.85]],nebula:0.09,fade:0x0c0c11,line:0.55,sunEmissive:0x6a6a6a,wire:false,monarchs:true,extras:null,
+    pv:{stars:'#dfe3ff',cols:['#6ea8ff','#ff8a5b','#7ed957','#ffd166','#c77dff'],butterfly:true},
+    features:['Solar-system galaxies','Ride a butterfly','Walk a kinesin','Nebulae & starfield','Idle tour']},
+  jarvis:{name:'JARVIS',mark:'◎',tag:'Cyan holographic HUD. Wireframe nodes, targeting rings, scanlines.',
+    css:{bg:'#04141a','bg-2':'#061c24','bg-3':'#0a2a34',border:'#0f3d4a','border-2':'#155566',text:'#c8f4f8',muted:'#6fbfca',faint:'#3f8e99',accent:'#19d3e0','accent-2':'#7be9f1',sky:'#020b10',lbl:'#8fe6ee','lbl-sun':'#c9fbff',halo:'#001318',font:'var(--mono)'},
+    sky:0x020b10,fog:0.00030,rim:0x19d3e0,ambient:0.9,stars:[[900,1.6,0x19d3e0,0.35],[60,3.0,0x9ff5fb,0.6]],nebula:0.05,fade:0x02141a,line:0.8,sunEmissive:0x19b8c4,wire:true,monarchs:false,extras:'hud',
+    pv:{stars:'#19d3e0',cols:['#19d3e0','#5fe8f0','#0fa9b6','#9ff5fb','#3ecfd9'],rings:true,wire:true,scan:true},
+    features:['Wireframe hologram nodes','Targeting rings on the focused system','Scanline & vignette overlay','Cyan data carriers','Monospace readouts']},
+  synthwave:{name:'Synthwave',mark:'🌴',tag:'Magenta and violet, a neon grid floor and a setting sun.',
+    css:{bg:'#170b30','bg-2':'#1f1040','bg-3':'#2a1755',border:'#3a2372','border-2':'#4c2f8f',text:'#f3e7ff',muted:'#b79ae0',faint:'#7d63b0',accent:'#ff3fd0','accent-2':'#ff8de6',sky:'#0d0620',lbl:'#e6cfff','lbl-sun':'#fff0ff',halo:'#1a0040'},
+    sky:0x0d0620,fog:0.00030,rim:0xff3fd0,ambient:0.6,stars:[[3000,1.9,0xd7b6ff,0.5],[300,3.0,0xff9de8,0.7]],nebula:0.16,fade:0x1a0a3a,line:0.85,sunEmissive:0xff5fdc,wire:false,monarchs:true,extras:'synth',
+    pv:{stars:'#e0c3ff',cols:['#ff3fd0','#7c4dff','#00e5ff','#ffb347','#ff5e5e'],grid:true,sun:true,butterfly:true},
+    features:['Neon grid floor','Retro horizon sun','Glowing links & nebulae','Butterflies & carriers','Idle tour']},
+  matrix:{name:'Matrix',mark:'▚',tag:'Green phosphor on black, digital rain behind the graph.',
+    css:{bg:'#050a06','bg-2':'#08120a','bg-3':'#0d1d10',border:'#153a1c',border:'#153a1c','border-2':'#1f5228',text:'#c9ffd2',muted:'#6fcf84',faint:'#3f8a4f',accent:'#3cff6a','accent-2':'#9dffb4',sky:'#000000',lbl:'#8fe8a3','lbl-sun':'#d6ffde',halo:'#001a05',font:'var(--mono)'},
+    sky:0x000000,fog:0.00034,rim:0x3cff6a,ambient:0.6,stars:[[1200,1.6,0x3cff6a,0.25]],nebula:0.04,fade:0x000000,line:0.7,sunEmissive:0x2fbf55,wire:false,monarchs:false,extras:null,
+    pv:{stars:'#3cff6a',cols:['#3cff6a','#9dffb4','#1fa84a','#c9ffd2','#2fd35e'],rain:true},
+    features:['Digital rain overlay','Terminal type','Green phosphor palette','Data carriers']},
+  paper:{name:'Paper',mark:'✎',tag:'Light, clean and printable. The same universe on a bright page.',
+    css:{bg:'#ffffff','bg-2':'#f6f4ee','bg-3':'#ebe8df',border:'#d9d5c9','border-2':'#c4bfae',text:'#1f1f24',muted:'#6b6a63',faint:'#9a978c',accent:'#c2410c','accent-2':'#ea580c',sky:'#f6f4ee',lbl:'#2a2a30','lbl-sun':'#111',halo:'#fff'},
+    sky:0xf6f4ee,fog:0.00022,rim:0xffffff,ambient:1.0,stars:[],nebula:0.0,fade:0xf6f4ee,line:0.6,sunEmissive:0x777777,wire:false,monarchs:true,extras:null,
+    pv:{cols:['#2563eb','#dc2626','#16a34a','#d97706','#7c3aed'],paper:true,butterfly:true},
+    features:['Light background','Print-friendly','High-contrast labels','Butterflies & carriers']},
+};
+const DEFAULT_SKIN=(window.__ATLAS_SKIN__&&SKINS[window.__ATLAS_SKIN__])?window.__ATLAS_SKIN__:'monarch';
+let skinKey=DEFAULT_SKIN;try{const u=new URLSearchParams(location.search).get('skin');skinKey=(u&&SKINS[u])?u:(SKINS[localStorage.getItem('atlas.skin')]?localStorage.getItem('atlas.skin'):DEFAULT_SKIN);}catch(e){}
+let SKIN=SKINS[skinKey];
 const state={labels:true,monarchs:true,walkers:true,idle:true,nsize:1,lw:1,inferred:true,hidden:new Set(),rotate:true,speed:0.5,spacing:1,live:false,repel:2600,center:0.35,dist:80};
 const edgeVisible=e=>state.inferred||e.confidence==='EXTRACTED';
 const nodeVisible=id=>!state.hidden.has(base[id].community);
@@ -134,7 +193,7 @@ const V3=(()=>{
   const el=document.getElementById('graph3d'),lblLayer=document.getElementById('labels'),tip=document.getElementById('tip');
   const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.setSize(window.innerWidth,window.innerHeight);el.appendChild(renderer.domElement);
-  const scene=new THREE.Scene();scene.background=new THREE.Color(0x0c0c11);scene.fog=new THREE.FogExp2(0x0c0c11,0.00038);
+  const scene=new THREE.Scene();scene.background=new THREE.Color(SKIN.sky);scene.fog=new THREE.FogExp2(SKIN.sky,SKIN.fog);
   const camera=new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,0.5,40000);camera.up.set(0,0,1);
   const controls=new THREE.OrbitControls(camera,renderer.domElement);
   controls.screenSpacePanning=true;if(controls.listenToKeyEvents)controls.listenToKeyEvents(window);
@@ -148,9 +207,9 @@ const V3=(()=>{
     camera.setViewOffset(W,H,sb/2,0,W,H);camera.updateProjectionMatrix();renderer.setSize(W,H);}
   fitView();
   controls.enableDamping=true;controls.dampingFactor=0.07;controls.rotateSpeed=0.6;controls.zoomSpeed=0.9;controls.autoRotate=state.rotate;controls.autoRotateSpeed=state.speed;controls.maxDistance=30000;
-  scene.add(new THREE.AmbientLight(0xffffff,0.55));
+  const ambient=new THREE.AmbientLight(0xffffff,SKIN.ambient);scene.add(ambient);
   const key=new THREE.DirectionalLight(0xffffff,0.75);key.position.set(0.4,0.8,1);scene.add(key);
-  const rim=new THREE.DirectionalLight(0xE8873B,0.25);rim.position.set(-1,-0.4,-0.6);scene.add(rim);
+  const rim=new THREE.DirectionalLight(SKIN.rim,0.25);rim.position.set(-1,-0.4,-0.6);scene.add(rim);
   // stars: rebuilt after layout so the sky scales with the scene. Fixed pixel
   // size so they're evenly bright in every direction, with a few brighter ones.
   let starLayers=[];
@@ -162,7 +221,7 @@ const V3=(()=>{
       const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));
       // glowTex is defined further down; buildStars() only runs from build(), after everything is set up
       const pts=new THREE.Points(g,new THREE.PointsMaterial({color,size,map:glowTex,alphaTest:0.05,sizeAttenuation:false,transparent:true,opacity,fog:false,depthWrite:false,blending:THREE.AdditiveBlending}));scene.add(pts);starLayers.push(pts);};
-    mk(4200,2.0,0xc9cde0,0.5);mk(520,3.2,0xf2f4ff,0.7);mk(70,4.8,0xffe9c4,0.85);
+    (SKIN.stars||[]).forEach(a=>mk(...a));
   }
   const glowTex=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');const g=x.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.25,'rgba(255,255,255,.55)');g.addColorStop(0.6,'rgba(255,255,255,.12)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,128,128);const t=new THREE.CanvasTexture(c);return t;})();
   const seeded=seed=>{let s=(seed*9301+49297)%233280;return()=>{s=(s*9301+49297)%233280;return s/233280;};};
@@ -212,7 +271,7 @@ const V3=(()=>{
   // ── meshes ──
   const geo=new THREE.SphereGeometry(1,16,12);
   let planets=null,suns=null,lines=null,glows=[],planetIds=[],sunIds=[],slotOf={},edgeSlots={},edgeGeom=null,edgeColor=null,edgeList=[];
-  const _m=new THREE.Matrix4(),_c=new THREE.Color(),_s=new THREE.Vector3();
+  const _m=new THREE.Matrix4(),_c=new THREE.Color(),_s=new THREE.Vector3(),_fade=new THREE.Color(SKIN.fade);
   const rPlanet=id=>(1.1+2.4*Math.sqrt(base[id].degree/maxDeg))*state.nsize;
   const rSun=s=>(3.6+3.2*Math.sqrt(s.n/maxN))*state.nsize;
   function clearMeshes(){[planets,suns,lines].forEach(o=>{if(o){scene.remove(o);if(o.geometry&&o!==planets&&o!==suns)o.geometry.dispose();o.material.dispose();}});glows.forEach(g=>{scene.remove(g);g.material.dispose();});glows=[];lblLayer.innerHTML='';sunLbl={};planetLbl={};realmLbl=[];}
@@ -221,18 +280,19 @@ const V3=(()=>{
     clearMeshes();layout();
     planetIds=[];sunIds=[];slotOf={};
     systems.forEach(s=>{if(nodeVisible(s.sun))sunIds.push(s.sun);s.ids.slice(1).forEach(id=>{if(nodeVisible(id))planetIds.push(id);});});
-    planets=new THREE.InstancedMesh(geo,new THREE.MeshLambertMaterial({color:0xffffff}),Math.max(1,planetIds.length));planets.count=planetIds.length;planets.name='planets';
+    const bodyMat=emis=>SKIN.wire?new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:0.9}):new THREE.MeshLambertMaterial(emis?{color:0xffffff,emissive:emis}:{color:0xffffff});
+    planets=new THREE.InstancedMesh(geo,bodyMat(null),Math.max(1,planetIds.length));planets.count=planetIds.length;planets.name='planets';
     planetIds.forEach((id,i)=>{slotOf[id]={mesh:'p',i};_m.makeScale(rPlanet(id),rPlanet(id),rPlanet(id)).setPosition(pos[id]);planets.setMatrixAt(i,_m);planets.setColorAt(i,_c.set(base[id].color));});
     planets.instanceMatrix.needsUpdate=true;if(planets.instanceColor)planets.instanceColor.needsUpdate=true;scene.add(planets);
-    suns=new THREE.InstancedMesh(geo,new THREE.MeshLambertMaterial({color:0xffffff,emissive:0x6a6a6a}),Math.max(1,sunIds.length));suns.count=sunIds.length;suns.name='suns';
+    suns=new THREE.InstancedMesh(geo,bodyMat(SKIN.sunEmissive),Math.max(1,sunIds.length));suns.count=sunIds.length;suns.name='suns';
     sunIds.forEach((id,i)=>{const s=systems.find(x=>x.sun===id);slotOf[id]={mesh:'s',i};const r=rSun(s);_m.makeScale(r,r,r).setPosition(pos[id]);suns.setMatrixAt(i,_m);suns.setColorAt(i,_c.set(s.color).lerp(new THREE.Color(0xffffff),0.2));
       const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:s.color,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false}));sp.position.copy(pos[id]);sp.scale.set(r*6,r*6,1);scene.add(sp);glows.push(sp);
       const d=document.createElement('div');d.className='lbl sun';d.textContent=s.label;d.dataset.id=id;d.addEventListener('click',()=>flyToSystem(s.cid));lblLayer.appendChild(d);sunLbl[id]=d;});
     suns.instanceMatrix.needsUpdate=true;if(suns.instanceColor)suns.instanceColor.needsUpdate=true;scene.add(suns);
     buildStars();
     if(HAS_REALMS&&realmList.length>1)realmList.forEach(R=>{if(!R.name)return;const d=document.createElement('div');d.className='lbl realm';d.textContent=R.name;d.style.color=R.meta.color||'#fff';d.addEventListener('click',()=>flyToRealm(R.name));lblLayer.appendChild(d);realmLbl.push({d,R});
-      const neb=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:R.meta.color||'#888',transparent:true,opacity:0.09,blending:THREE.AdditiveBlending,depthWrite:false}));neb.position.copy(R.c);neb.scale.set(R.r*2.4,R.r*2.4,1);scene.add(neb);glows.push(neb);});
-    buildEdges();
+      const neb=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:R.meta.color||'#888',transparent:true,opacity:SKIN.nebula,blending:THREE.AdditiveBlending,depthWrite:false}));neb.position.copy(R.c);neb.scale.set(R.r*2.4,R.r*2.4,1);if(SKIN.nebula>0){scene.add(neb);glows.push(neb);}});
+    buildEdges();buildExtras();
     if(focused!=null)showSystemLabels(focused);
   }
   function buildEdges(){
@@ -241,29 +301,33 @@ const V3=(()=>{
     const P=new Float32Array(edgeList.length*6),C=new Float32Array(edgeList.length*6);edgeSlots={};
     edgeList.forEach((e,i)=>{const a=pos[e.from],b=pos[e.to];P.set([a.x,a.y,a.z,b.x,b.y,b.z],i*6);(edgeSlots[e.from]=edgeSlots[e.from]||[]).push(i);(edgeSlots[e.to]=edgeSlots[e.to]||[]).push(i);paintEdge(C,i,e,false);});
     edgeGeom=new THREE.BufferGeometry();edgeGeom.setAttribute('position',new THREE.BufferAttribute(P,3));edgeColor=new THREE.BufferAttribute(C,3);edgeGeom.setAttribute('color',edgeColor);
-    lines=new THREE.LineSegments(edgeGeom,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:Math.min(1,0.55*state.lw),depthWrite:false}));scene.add(lines);
+    lines=new THREE.LineSegments(edgeGeom,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:Math.min(1,SKIN.line*state.lw),depthWrite:false}));scene.add(lines);
     buildWalkers();
   }
   function paintEdge(C,i,e,hot){
     if(hot){C.set([1,1,1,1,1,1],i*6);return;}
     const cross=sysOf[e.from]!==sysOf[e.to];const inf=e.confidence!=='EXTRACTED';
-    _c.set(base[e.from].color).lerp(new THREE.Color(0x0c0c11),inf?0.72:(cross?0.45:0.55));
+    _c.set(base[e.from].color).lerp(_fade,inf?0.72:(cross?0.45:0.55));
     if(cross&&!inf)_c.lerp(new THREE.Color(0xffffff),0.12);
     const xr=HAS_REALMS&&base[e.from].realm!==base[e.to].realm;
     if(xr)_c.set(base[e.from].color).lerp(new THREE.Color(0xffffff),0.55);
-    if(focused!=null&&sysOf[e.from]!==focused&&sysOf[e.to]!==focused)_c.lerp(new THREE.Color(0x0c0c11),xr?0.5:0.8);
+    if(focused!=null&&sysOf[e.from]!==focused&&sysOf[e.to]!==focused)_c.lerp(_fade,xr?0.5:0.8);
     C.set([_c.r,_c.g,_c.b,_c.r,_c.g,_c.b],i*6);
   }
   function repaintEdges(){if(!edgeColor)return;edgeList.forEach((e,i)=>paintEdge(edgeColor.array,i,e,false));edgeColor.needsUpdate=true;}
   // ── hover / select ──
   const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(-9,-9);let hover=null,pendingPick=false,selected=null;
   function idAt(hit){if(!hit)return null;return hit.object===planets?planetIds[hit.instanceId]:sunIds[hit.instanceId];}
-  let hoverM=null;
+  let hoverM=null,hoverW=null;
   function pick(){pendingPick=false;ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects([planets,suns].filter(Boolean));
     // a monarch under the pointer wins over whatever is behind it (never the one you're riding — it's right in front of the camera)
     let mh=null;if(monarchGroup.visible){const h=ray.intersectObject(monarchGroup,true)[0];if(h&&(!hits[0]||h.distance<hits[0].distance)){let o=h.object;while(o&&o.parent!==monarchGroup)o=o.parent;mh=monarchs.find(m=>m.g===o)||null;if(mh===ride)mh=null;}}
     if(mh!==hoverM){hoverM=mh;if(hoverM){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML='<b>🦋 Monarch</b><span>click to ride it · steer with the arrow keys or WASD</span>';tip.style.display='block';}else{tip.style.display='none';renderer.domElement.style.cursor='';}}
     if(hoverM)return;
+    // a kinesin under the pointer (only the visible, zoomed-in ones can be hit)
+    let wh=null;if(walkerGroup.visible&&!mh){const h=ray.intersectObject(walkerGroup,true)[0];if(h&&(!hits[0]||h.distance<hits[0].distance)){let o=h.object;while(o&&o.parent!==walkerGroup)o=o.parent;wh=walkers.find(w=>w.g===o)||null;if(wh===walk)wh=null;}}
+    if(wh!==hoverW){hoverW=wh;if(hoverW){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML='<b>🧬 Kinesin</b><span>click to take it for a walk · arrows or WASD steer</span>';tip.style.display='block';}else if(!hoverM){tip.style.display='none';renderer.domElement.style.cursor='';}}
+    if(hoverW)return;
     const id=idAt(hits[0]);if(id!==hover){setHover(id);}}
   function scaleSlot(id,k){const sl=slotOf[id];if(!sl)return;const mesh=sl.mesh==='p'?planets:suns;const r=(sl.mesh==='p'?rPlanet(id):rSun(systems.find(x=>x.sun===id)))*k;_m.makeScale(r,r,r).setPosition(pos[id]);mesh.setMatrixAt(sl.i,_m);mesh.instanceMatrix.needsUpdate=true;}
   function setHover(id){
@@ -277,12 +341,12 @@ const V3=(()=>{
   renderer.domElement.addEventListener('mouseleave',()=>{setHover(null);});
   let downAt=null;
   renderer.domElement.addEventListener('pointerdown',ev=>{downAt=[ev.clientX,ev.clientY];});
-  renderer.domElement.addEventListener('click',ev=>{if(!downAt||Math.hypot(ev.clientX-downAt[0],ev.clientY-downAt[1])>4)return;pick();if(hoverM){beginRide(hoverM);return;}if(hover)select(hover);});
-  renderer.domElement.addEventListener('dblclick',ev=>{if(ride)return;pick();if(hover)flyToSystem(sysOf[hover]);else flyHome();});
+  renderer.domElement.addEventListener('click',ev=>{if(!downAt||Math.hypot(ev.clientX-downAt[0],ev.clientY-downAt[1])>4)return;pick();if(hoverM){beginRide(hoverM);return;}if(hoverW){beginWalk(hoverW);return;}if(hover)select(hover);});
+  renderer.domElement.addEventListener('dblclick',ev=>{if(ride||walk)return;pick();if(hover)flyToSystem(sysOf[hover]);else flyHome();});
   function select(id){selected=id;showCard(id);}
   // ── camera ──
   let tw=null,focused=null;
-  function flyTo(p,t,ms){if(idle)endIdle();if(ride)endRide();lastInput=performance.now();tw={p0:camera.position.clone(),p1:p.clone(),t0:controls.target.clone(),t1:t.clone(),s:performance.now(),ms:ms||1600};controls.autoRotate=false;}
+  function flyTo(p,t,ms){if(idle)endIdle();if(ride)endRide();if(walk)endWalk();lastInput=performance.now();tw={p0:camera.position.clone(),p1:p.clone(),t0:controls.target.clone(),t1:t.clone(),s:performance.now(),ms:ms||1600};controls.autoRotate=false;}
   function homeCam(){const R=galaxyR;return new THREE.Vector3(0,-R*1.9,R*1.45);}
   let focusedRealm=null;
   function flyHome(){setFocused(null);focusedRealm=null;updateCrumb();flyTo(homeCam(),new THREE.Vector3(0,0,0),1500);}
@@ -345,7 +409,7 @@ const V3=(()=>{
   let running=false;
   function frame(){if(!running)return;requestAnimationFrame(frame);
     if(tw){let k=Math.min(1,(performance.now()-tw.s)/tw.ms);k=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;camera.position.lerpVectors(tw.p0,tw.p1,k);controls.target.lerpVectors(tw.t0,tw.t1,k);if(k>=1){tw=null;controls.autoRotate=state.rotate;}}
-    const nowT=performance.now(),dt=Math.min(0.05,(nowT-lastT)/1000);lastT=nowT;updateMonarchs(dt,nowT);rideStep(dt);updateWalkers(dt);idleStep(dt,nowT);
+    const nowT=performance.now(),dt=Math.min(0.05,(nowT-lastT)/1000);lastT=nowT;updateMonarchs(dt,nowT);rideStep(dt);updateWalkers(dt);walkStep(dt);extrasStep(dt,nowT);idleStep(dt,nowT);
     controls.update();if(pendingPick)pick();autoUnfocus();projectLabels();renderer.render(scene,camera);}
   // zoom right out of a system (or a galaxy) by hand and the focus lets go, so the map stops dimming and labelling around it
   function autoUnfocus(){if(tw||idle)return;const cam=camera.position;
@@ -354,7 +418,7 @@ const V3=(()=>{
   function start(){if(running)return;running=true;frame();}
   function stop(){running=false;}
   window.addEventListener('resize',fitView);
-  window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName)){if(ride)endRide();else flyHome();}});
+  window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName)){if(document.getElementById('skins').classList.contains('on'))return;if(ride)endRide();else if(walk)endWalk();else flyHome();}});
 
   // ── monarchs: a few butterflies drifting through the galaxy ──
   // Built from primitives (no model to load): a body, four wings with a
@@ -476,7 +540,7 @@ const V3=(()=>{
   const walkerGroup=new THREE.Group();scene.add(walkerGroup);const walkers=[];
   const HEAD_GEO=new THREE.SphereGeometry(1,10,8),CARGO_GEO=new THREE.IcosahedronGeometry(1,0),STALK_GEO=new THREE.CylinderGeometry(1,1,1,6);
   const HEAD_MAT=new THREE.MeshLambertMaterial({color:0xdde3f2,emissive:0x2a3350}),STALK_MAT=new THREE.MeshLambertMaterial({color:0xbfc7dc});
-  const wRng=seeded(777);const _wa=new THREE.Vector3(),_wb=new THREE.Vector3(),_wb2=new THREE.Vector3(),_wq=new THREE.Quaternion(),_Y=new THREE.Vector3(0,1,0);
+  const wRng=seeded(777);const _wa=new THREE.Vector3(),_wb=new THREE.Vector3(),_wb2=new THREE.Vector3(),_wr=new THREE.Vector3(),_wq=new THREE.Quaternion(),_Y=new THREE.Vector3(0,1,0);
   function walkerEdgeOK(i){const e=edgeList[i];if(!e||e.confidence!=='EXTRACTED'||sysOf[e.from]!==sysOf[e.to])return false;return pos[e.from].distanceTo(pos[e.to])>state.nsize*6;}
   function walkerSetEdge(w,i,fromId){const e=edgeList[i];w.i=i;w.a=fromId;w.b=e.from===fromId?e.to:e.from;
     w.dir=pos[w.b].clone().sub(pos[w.a]);w.len=w.dir.length();w.dir.normalize();
@@ -484,7 +548,7 @@ const V3=(()=>{
     w.n=new THREE.Vector3().crossVectors(t,w.dir).normalize();w.s=w.u*1.2;w.p=0;
     w.cargo.material.color.set(base[w.a].color);w.cargo.material.emissive.set(base[w.a].color);}
   function buildWalkers(){
-    walkers.forEach(w=>walkerGroup.remove(w.g));walkers.length=0;
+    if(walk)endWalk();idleW=null;walkers.forEach(w=>walkerGroup.remove(w.g));walkers.length=0;
     const ok=[];for(let i=0;i<edgeList.length;i++)if(walkerEdgeOK(i))ok.push(i);
     const count=Math.min(150,Math.max(0,Math.round(edgeList.length/25)),ok.length);
     for(let k=0;k<count;k++){
@@ -500,13 +564,18 @@ const V3=(()=>{
   function updateWalkers(dt){
     if(!walkerGroup.visible||!walkers.length)return;const ppu=pxPer(),cam=camera.position;
     for(const w of walkers){
-      w.p+=dt/w.period;
+      const ctl=w===walk;
+      const mult=ctl?(held(' ')?0:held('Shift')?2.6:(held('ArrowUp','w')?1.7:0.7)):1;
+      w.p+=dt/w.period*mult;
       while(w.p>=1){w.p-=1;w.s+=w.L;w.lead=1-w.lead;}
       if(w.s+w.L>w.len-w.u*0.8){   // reached the far node: carry on down another of its links, or turn back
         const opts=(edgeSlots[w.b]||[]).filter(j=>j!==w.i&&walkerEdgeOK(j));
-        if(opts.length)walkerSetEdge(w,opts[Math.floor(wRng()*opts.length)],w.b);else walkerSetEdge(w,w.i,w.b);}
+        let next=opts.length?opts[Math.floor(wRng()*opts.length)]:null;
+        if(ctl&&opts.length){const bias=(held('ArrowRight','d')?1:0)-(held('ArrowLeft','a')?1:0);
+          if(bias){_wr.set(bias,0,0).applyQuaternion(camera.quaternion);let best=-2;for(const j of opts){const e=edgeList[j];const other=e.from===w.b?e.to:e.from;_wb2.copy(pos[other]).sub(pos[w.b]).normalize();const d=_wb2.dot(_wr);if(d>best){best=d;next=j;}}}}
+        if(next!=null)walkerSetEdge(w,next,w.b);else walkerSetEdge(w,w.i,w.b);}
       _wa.copy(pos[w.a]).addScaledVector(w.dir,w.s);
-      const dist=cam.distanceTo(_wa);const px=w.u*2.2*ppu/dist;w.g.visible=px>5;if(!w.g.visible)continue;
+      const dist=cam.distanceTo(_wa);const px=w.u*2.2*ppu/dist;w.g.visible=px>5||ctl||w===idleW;if(!w.g.visible)continue;
       const e=w.p<0.5?2*w.p*w.p:1-Math.pow(-2*w.p+2,2)/2;                            // the swinging foot eases through its step
       w.heads[w.lead].position.copy(_wa);                                                  // planted foot
       w.heads[1-w.lead].position.copy(pos[w.a]).addScaledVector(w.dir,w.s-w.L+2*w.L*e).addScaledVector(w.n,Math.sin(w.p*Math.PI)*w.L*0.55);
@@ -528,18 +597,17 @@ const V3=(()=>{
   const TRICKS={q:{type:'roll',dir:1,dur:0.75},e:{type:'roll',dir:-1,dur:0.75},f:{type:'loop',dir:1,dur:1.25},g:{type:'loop',dir:-1,dur:1.25},x:{type:'spin',dir:1,dur:0.8}};
   function startTrick(k){if(!ride||trick||!TRICKS[k])return;trick=Object.assign({t:0},TRICKS[k]);}
   const keyName=ev=>ev.key.length===1?ev.key.toLowerCase():ev.key;
-  window.addEventListener('keydown',ev=>{if(!ride||/INPUT|TEXTAREA/.test(ev.target.tagName))return;keys.add(keyName(ev));if(/^Arrow|^ $/.test(ev.key))ev.preventDefault();if(!ev.repeat)startTrick(keyName(ev));});
+  window.addEventListener('keydown',ev=>{if((!ride&&!walk)||/INPUT|TEXTAREA/.test(ev.target.tagName))return;keys.add(keyName(ev));if(/^Arrow|^ $/.test(ev.key))ev.preventDefault();if(ride&&!ev.repeat)startTrick(keyName(ev));});
   window.addEventListener('keyup',ev=>{keys.delete(keyName(ev));});
   window.addEventListener('blur',()=>keys.clear());
   const held=(...ks)=>ks.some(k=>keys.has(k));
-  function beginRide(m){if(!m)return;if(idle)endIdle();ride=m;trick=null;tw=null;controls.autoRotate=false;controls.enabled=false;keys.clear();
+  function beginRide(m){if(!m)return;if(idle)endIdle();if(walk)endWalk();ride=m;trick=null;tw=null;controls.autoRotate=false;controls.enabled=false;keys.clear();
     hoverM=null;setHover(null);tip.style.display='none';renderer.domElement.style.cursor='';
     rideHeading=Math.atan2(m.vel.y,m.vel.x)||0;ridePitch=0;m.target=null;rideEl.classList.add('on');
     // start right behind it, no lerp-in from across the map
     rideCam(m,1);}
   function endRide(){const m=ride;if(!m)return;ride=null;trick=null;m.g.up.set(0,0,1);keys.clear();controls.enabled=true;controls.autoRotate=false;
     controls.target.copy(m.g.position);controls.update();monarchTarget(m,performance.now()/1000);lastInput=performance.now();rideEl.classList.remove('on');}
-  document.getElementById('ride-off').addEventListener('click',endRide);
   const _up=new THREE.Vector3();
   function rideSteer(m,dt){
     const turn=(held('ArrowLeft','a')?1:0)-(held('ArrowRight','d')?1:0);
@@ -572,6 +640,27 @@ const V3=(()=>{
     if(side){_up.set(-Math.sin(rideHeading),Math.cos(rideHeading),0);m.g.position.addScaledVector(_up,side);}
     if(m.vel.lengthSq()>1e-6){_look.copy(m.g.position).add(m.vel);m.g.lookAt(_look);m.g.rotateZ(m.bank+extraRoll);}
   }
+  // ── walk a kinesin: click one and you're it. ↑/W hurry, ↓/S turn around, ←/→ pick the link at the next node, Shift sprint, Space rest, J jump to another galaxy ──
+  let walk=null,idleW=null;const _wc=new THREE.Vector3(),_ws=new THREE.Vector3(),_wt=new THREE.Vector3();
+  const RIDE_HTML=document.getElementById('ride-hint').innerHTML;
+  const WALK_HTML='🧬 <kbd>↑</kbd><kbd>W</kbd> hurry &nbsp; <kbd>↓</kbd><kbd>S</kbd> turn around &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next link &nbsp; <kbd>Shift</kbd> sprint &nbsp; <kbd>Space</kbd> rest &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · let go</button>';
+  function setHint(html){const el=document.getElementById('ride-hint');el.innerHTML=html;el.querySelector('#ride-off').addEventListener('click',()=>{if(ride)endRide();if(walk)endWalk();});}
+  function beginWalk(w){if(!w)return;if(idle)endIdle();if(ride)endRide();walk=w;tw=null;controls.autoRotate=false;controls.enabled=false;keys.clear();
+    hoverW=null;setHover(null);tip.style.display='none';renderer.domElement.style.cursor='';setHint(WALK_HTML);rideEl.classList.add('on');walkCam(w,1);}
+  function endWalk(){const w=walk;if(!w)return;walk=null;keys.clear();controls.enabled=true;controls.autoRotate=false;controls.target.copy(w.cargo.position);controls.update();lastInput=performance.now();rideEl.classList.remove('on');setHint(RIDE_HTML);}
+  function walkTurn(w){walkerSetEdge(w,w.i,w.b);w.s=Math.max(w.u,w.len-w.s);}
+  function walkJump(w){   // hop to a random link in a different galaxy (or anywhere else in a single map)
+    const here=w.a&&base[w.a].realm;const ok=[];for(let i=0;i<edgeList.length;i++){if(!walkerEdgeOK(i))continue;if(multi()&&base[edgeList[i].from].realm===here)continue;ok.push(i);}
+    if(!ok.length)return;const i=ok[Math.floor(wRng()*ok.length)],e=edgeList[i];walkerSetEdge(w,i,wRng()<0.5?e.from:e.to);w.s=w.u*1.2;
+    const sys=systems.find(x=>x.cid===sysOf[w.a]);if(sys){setFocused(sys.cid);}walkCam(w,1);}
+  window.addEventListener('keydown',ev=>{if(!walk||ev.repeat||/INPUT|TEXTAREA/.test(ev.target.tagName))return;const k=keyName(ev);if(k==='ArrowDown'||k==='s')walkTurn(walk);if(k==='j')walkJump(walk);});
+  function walkCam(w,k){
+    _ws.crossVectors(w.dir,w.n).normalize();
+    _wc.copy(pos[w.a]).addScaledVector(w.dir,w.s);const u=w.u;
+    _wt.copy(_wc).addScaledVector(w.n,u*1.85);   // where the cargo sits — computed, since a far-off kinesin's mesh hasn't been placed yet
+    _wc.addScaledVector(w.n,u*2.6).addScaledVector(w.dir,-u*5).addScaledVector(_ws,u*3.2);
+    camera.position.lerp(_wc,k);controls.target.lerp(_wt,Math.min(1,k*1.5));}
+  function walkStep(dt){if(!walk)return;walkCam(walk,1-Math.exp(-dt*7));}
   const _rd=new THREE.Vector3(),_rf=new THREE.Vector3();
   function rideCam(m,k){
     // the camera trails the heading (yaw only), so loops and dives play out in front of you instead of throwing the view around
@@ -579,6 +668,35 @@ const V3=(()=>{
     const sz=m.size,back=held('Shift')?5.6:4.2;_rd.copy(m.g.position).addScaledVector(_rf,-sz*back).addScaledVector(_upZ,sz*1.4);
     camera.position.lerp(_rd,k);controls.target.copy(m.g.position).addScaledVector(_rf,sz*1.2);}
   function rideStep(dt){if(!ride)return;rideCam(ride,1-Math.exp(-dt*9));}
+  // ── skin props: JARVIS targeting rings, the synthwave grid + sun ──
+  const extras=new THREE.Group();scene.add(extras);let hudRings=[];
+  function ringLine(r,dash,gap,op){const pts=[];for(let i=0;i<=128;i++){const a=i/128*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0));}
+    const g=new THREE.BufferGeometry().setFromPoints(pts);const m=dash?new THREE.LineDashedMaterial({color:SKIN.rim,dashSize:dash,gapSize:gap,transparent:true,opacity:op,fog:false}):new THREE.LineBasicMaterial({color:SKIN.rim,transparent:true,opacity:op,fog:false});
+    const l=new THREE.Line(g,m);if(dash)l.computeLineDistances();return l;}
+  function buildExtras(){
+    while(extras.children.length){const o=extras.children.pop();if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}}hudRings=[];
+    if(SKIN.extras==='hud'){
+      // three rings that sit on whatever you're looking at and turn at their own pace, plus a fixed outer reticle around the whole galaxy
+      [[1,0.12,0.06,0.85,0.35],[1.18,0.02,0.05,0.5,-0.22],[1.36,0.3,0.12,0.35,0.12]].forEach(([r,d,g,op,spd])=>{const l=ringLine(r,d,g,op);l.userData.spd=spd;extras.add(l);hudRings.push(l);});
+      const tick=new THREE.Group();for(let i=0;i<36;i++){const a=i/36*Math.PI*2,len=i%9===0?0.12:0.05;const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(Math.cos(a)*1.5,Math.sin(a)*1.5,0),new THREE.Vector3(Math.cos(a)*(1.5+len),Math.sin(a)*(1.5+len),0)]);tick.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:SKIN.rim,transparent:true,opacity:0.5,fog:false})));}
+      tick.userData.spd=-0.05;extras.add(tick);hudRings.push(tick);
+    }
+    if(SKIN.extras==='synth'){
+      const size=Math.max(400,galaxyR)*9,grid=new THREE.GridHelper(size,90,0xff3fd0,0x7a2ea8);grid.rotation.x=Math.PI/2;grid.position.z=-galaxyR*0.7;grid.material.transparent=true;grid.material.opacity=0.42;extras.add(grid);
+      const c=document.createElement('canvas');c.width=256;c.height=256;const x=c.getContext('2d');const g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#ffe066');g.addColorStop(0.55,'#ff5fa8');g.addColorStop(1,'#a03cff');x.fillStyle=g;x.beginPath();x.arc(128,128,124,0,7);x.fill();
+      x.globalCompositeOperation='destination-out';for(let y=150;y<256;y+=14){x.fillRect(0,y,256,Math.min(9,(y-140)/9));}
+      const sun=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,opacity:0.95,depthWrite:false,fog:false}));sun.position.set(0,galaxyR*7,-galaxyR*0.45);sun.scale.set(galaxyR*2.6,galaxyR*2.6,1);extras.add(sun);
+    }
+  }
+  function extrasStep(dt,now){
+    if(!hudRings.length)return;
+    let c=null,r=galaxyR*1.05;
+    if(focused!=null){const s=systems.find(x=>x.cid===focused);if(s){c=s.c;r=s.r*1.5;}}
+    else if(focusedRealm!=null&&multi()){const R=realmList.find(x=>x.name===focusedRealm);if(R){c=R.c;r=R.r*1.15;}}
+    c=c||new THREE.Vector3();
+    for(const l of hudRings){l.position.lerp(c,1-Math.exp(-dt*5));const k=l.scale.x+(r-l.scale.x)*(1-Math.exp(-dt*5));l.scale.set(k,k,k);
+      l.quaternion.copy(camera.quaternion);l.rotateZ(now/1000*l.userData.spd*Math.PI*2);}
+  }
   let lastT=performance.now();
   // ── idle tour: leave the page alone and the camera rides along with a monarch ──
   const idleEl=document.getElementById('idle-hint');
@@ -586,14 +704,18 @@ const V3=(()=>{
   const _des=new THREE.Vector3(),_side=new THREE.Vector3(),_fwdN=new THREE.Vector3(),_upZ=new THREE.Vector3(0,0,1);
   function touch(){lastInput=performance.now();if(idle)endIdle();}
   ['pointerdown','pointermove','wheel','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,touch,{passive:true}));
-  function pickFollow(now){const alive=monarchs.filter(m=>m!==follow);follow=alive.length?alive[Math.floor(seedRng()*alive.length)]:monarchs[0];followSince=now;followUntil=now+40000+seedRng()*25000;}
-  function beginIdle(now){if(!monarchs.length||!monarchGroup.visible)return;idle=true;tw=null;controls.autoRotate=false;tip.style.display='none';setHover(null);pickFollow(now);idleEl.classList.add('on');}
-  function endIdle(){idle=false;follow=null;controls.autoRotate=state.rotate;idleEl.classList.remove('on');}
+  function pickFollow(now){const ms=monarchGroup.visible?monarchs.filter(m=>m!==follow):[],ws=walkerGroup.visible?walkers.filter(w=>w!==follow):[];
+    const useW=ws.length&&(!ms.length||seedRng()<0.5);const pool=useW?ws:ms;follow=pool.length?pool[Math.floor(seedRng()*pool.length)]:null;idleW=useW?follow:null;
+    followSince=now;followUntil=now+(useW?25000:40000)+seedRng()*25000;idleEl.textContent=useW?'🧬 Watching a kinesin at work — move the mouse to take over':'🦋 Riding along with a monarch — move the mouse to take over';}
+  function beginIdle(now){if(!((monarchs.length&&monarchGroup.visible)||(walkers.length&&walkerGroup.visible)))return;idle=true;tw=null;controls.autoRotate=false;tip.style.display='none';setHover(null);pickFollow(now);idleEl.classList.add('on');}
+  function endIdle(){idle=false;follow=null;idleW=null;controls.autoRotate=state.rotate;idleEl.classList.remove('on');}
   function idleStep(dt,now){
-    if(ride)return;
-    if(!state.idle||!monarchGroup.visible){if(idle)endIdle();return;}
+    if(ride||walk)return;
+    if(!state.idle||!(monarchGroup.visible||walkerGroup.visible)){if(idle)endIdle();return;}
     if(!idle){if(!tw&&now-lastInput>idleAfter)beginIdle(now);return;}
     if(!follow||now>followUntil)pickFollow(now);
+    if(!follow)return;
+    if(idleW){const settling=Math.min(1,(now-followSince)/3000);walkCam(idleW,1-Math.exp(-dt*(0.8+3*settling)));return;}
     const m=follow;const settling=Math.min(1,(now-followSince)/4500);            // ease in over the first seconds, then hold close
     _fwdN.copy(m.vel);if(_fwdN.lengthSq()<1e-6)_fwdN.set(1,0,0);_fwdN.normalize();
     _side.crossVectors(_fwdN,_upZ).normalize();
@@ -603,16 +725,18 @@ const V3=(()=>{
     camera.position.lerp(_des,k);
     controls.target.lerp(m.g.position,1-Math.exp(-dt*(1+3*settling)));
   }
-  build();buildMonarchs();camera.position.copy(homeCam());controls.target.set(0,0,0);controls.update();
+  build();buildMonarchs();monarchGroup.visible=state.monarchs&&SKIN.monarchs!==false;camera.position.copy(homeCam());controls.target.set(0,0,0);controls.update();
   return {start,stop,build,buildEdges,repaintEdges,flyToSystem,flyToNode,flyToRealm,flyHome,
-    setMonarchs(on){monarchGroup.visible=!!on;if(!on&&ride)endRide();},rebuildMonarchs(){if(ride)endRide();buildMonarchs();},
+    setMonarchs(on){monarchGroup.visible=!!on&&SKIN.monarchs!==false;if(!on&&ride)endRide();if(idle)endIdle();},rebuildMonarchs(){if(ride)endRide();buildMonarchs();},
     ride(i){beginRide(monarchs[i||0]);},hopOff:endRide,isRiding(){return !!ride;},ridePos(){return ride?ride.pos.toArray():null;},trick:startTrick,inTrick(){return trick?trick.type:null;},rideUp(){return ride?ride.g.up.toArray():null;},
     setIdle(on){state.idle=!!on;if(!on&&idle)endIdle();},setIdleAfter(ms){idleAfter=ms;},isIdle(){return idle;},
     peekMonarch(i){const m=monarchs[i||0];if(!m)return;tw=null;controls.autoRotate=false;controls.target.copy(m.g.position);camera.position.copy(m.g.position).add(new THREE.Vector3(m.size*1.6,-m.size*2.6,m.size*1.4));controls.update();},
-    fitView,setWalkers(on){walkerGroup.visible=!!on;},walkerCount(){return walkers.length;},walkerNode(i){const w=walkers[i||0];return w?w.a:null;},
+    fitView,setWalkers(on){walkerGroup.visible=!!on;if(!on&&walk)endWalk();if(idle)endIdle();},walkerCount(){return walkers.length;},walkerNode(i){const w=walkers[i||0];return w?w.a:null;},walkIt(i){beginWalk(walkers[i||0]);},walkDbg(){const w=walk;if(!w)return null;const v=w.cargo.position.clone().project(camera);return {vis:w.g.visible,cam:camera.position.toArray().map(x=>+x.toFixed(1)),cargo:w.cargo.position.toArray().map(x=>+x.toFixed(1)),tgt:controls.target.toArray().map(x=>+x.toFixed(1)),ndc:[+v.x.toFixed(2),+v.y.toFixed(2),+v.z.toFixed(3)],dist:+camera.position.distanceTo(w.cargo.position).toFixed(1),u:w.u,scale:w.g.scale.x};},isWalking(){return !!walk;},walkPos(){return walk?[walk.a,walk.b,+walk.s.toFixed(1)]:null;},walkRealm(){return walk?base[walk.a].realm:null;},
     peekWalker(i){const w=walkers[i||0];if(!w)return;tw=null;controls.autoRotate=false;const c=w.cargo.position.clone();controls.target.copy(c);camera.position.copy(c).addScaledVector(w.n,w.u*1.2).addScaledVector(new THREE.Vector3().crossVectors(w.dir,w.n),w.u*7);controls.update();},
     setSpeed(v){controls.autoRotateSpeed=v;},setRotate(on){controls.autoRotate=on;},
-    setLineOpacity(){if(lines)lines.material.opacity=Math.min(1,0.55*state.lw);},
+    setLineOpacity(){if(lines)lines.material.opacity=Math.min(1,SKIN.line*state.lw);},
+    reskin(){_fade.set(SKIN.fade);scene.background.set(SKIN.sky);scene.fog.color.set(SKIN.sky);scene.fog.density=SKIN.fog;rim.color.set(SKIN.rim);ambient.intensity=SKIN.ambient;
+      if(ride)endRide();if(walk)endWalk();build();buildMonarchs();monarchGroup.visible=state.monarchs&&SKIN.monarchs!==false;},
     relabel(){if(focused!=null)showSystemLabels(focused);},
     systems};
 })();
@@ -693,6 +817,53 @@ slider('f-center',x=>x.toFixed(2),x=>{state.center=x;if(network)window.__physics
 slider('f-repel',x=>String(x),x=>{state.repel=x;if(network)window.__physics2D();});
 slider('f-dist',x=>String(x),x=>{state.dist=x;if(network)window.__physics2D();});
 document.getElementById('live').addEventListener('change',ev=>{state.live=ev.target.checked;if(network)window.__physics2D();});
+// ── skins: apply + picker ──
+function previewSVG(s){
+  const W=240,H=135,pv=s.pv||{};let _r=11;const rng=()=>{_r=(_r*9301+49297)%233280;return _r/233280;};let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="sun-${s.name}"><stop offset="0" stop-color="#ffe066"/><stop offset=".55" stop-color="#ff5fa8"/><stop offset="1" stop-color="#a03cff"/></radialGradient><pattern id="scan-${s.name}" width="1" height="3" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="rgba(0,0,0,.35)"/></pattern></defs><rect width="${W}" height="${H}" fill="${s.css.sky}"/>`;
+  if(pv.stars)for(let i=0;i<80;i++)o+=`<circle cx="${(rng()*W).toFixed(1)}" cy="${(rng()*H).toFixed(1)}" r="${(0.4+rng()*0.7).toFixed(2)}" fill="${pv.stars}" opacity="${(0.3+rng()*0.6).toFixed(2)}"/>`;
+  if(pv.rain)for(let i=0;i<26;i++){const x=i*9.4+2,n=3+Math.floor(rng()*9),y0=rng()*H;for(let k=0;k<n;k++)o+=`<rect x="${x}" y="${((y0+k*7)%H).toFixed(1)}" width="3.5" height="5" fill="${s.css.accent}" opacity="${(0.12+0.5*(k/n)).toFixed(2)}"/>`;}
+  if(pv.sun)o+=`<circle cx="120" cy="52" r="30" fill="url(#sun-${s.name})"/>`+[62,70,77,83].map((y,i)=>`<rect x="88" y="${y}" width="64" height="${2+i}" fill="${s.css.sky}"/>`).join('');
+  if(pv.grid){for(let i=0;i<=8;i++){const x=i*30;o+=`<line x1="${x}" y1="${H}" x2="${120+(x-120)*0.25}" y2="82" stroke="${s.css.accent}" stroke-opacity=".35"/>`;}for(let i=0;i<5;i++){const y=82+i*i*3.2;o+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${s.css.accent}" stroke-opacity=".3"/>`;}}
+  if(pv.paper){for(let x=0;x<W;x+=16)o+=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#000" stroke-opacity=".045"/>`;for(let y=0;y<H;y+=16)o+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#000" stroke-opacity=".045"/>`;}
+  const sys=[[74,64,24],[158,48,17],[128,102,13]],cols=pv.cols;
+  o+=`<g stroke="${s.css.accent}" stroke-opacity=".45"><line x1="74" y1="64" x2="158" y2="48"/><line x1="74" y1="64" x2="128" y2="102"/><line x1="158" y1="48" x2="128" y2="102"/></g>`;
+  sys.forEach(([cx,cy,r],si)=>{o+=`<circle cx="${cx}" cy="${cy}" r="${r*0.6}" fill="${cols[si%cols.length]}" opacity=".14"/>`;
+    for(let k=0;k<9;k++){const a=k/9*6.28+si,rr=r*(0.55+0.45*((k*7)%3)/2),x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr*0.7,c=cols[(k+si)%cols.length];
+      o+=pv.wire?`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="none" stroke="${c}" stroke-width=".8"/>`:`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="${c}"/>`;
+      if(k%3===0)o+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${c}" stroke-opacity=".35"/>`;}
+    o+=`<circle cx="${cx}" cy="${cy}" r="4.2" fill="${pv.wire?s.css.accent:'#fff'}"/>`;});
+  if(pv.rings)o+=`<g fill="none" stroke="${s.css.accent}"><circle cx="74" cy="64" r="30" stroke-dasharray="7 4" opacity=".8"/><circle cx="74" cy="64" r="36" stroke-dasharray="1 5" opacity=".55"/><circle cx="74" cy="64" r="42" stroke-dasharray="14 8" opacity=".35"/></g><g stroke="${s.css.accent}" opacity=".6"><path d="M6 6h14M6 6v14M234 6h-14M234 6v14M6 129h14M6 129v-14M234 129h-14M234 129v-14" fill="none" stroke-width="1.5"/></g>`;
+  if(pv.butterfly)o+=`<text x="188" y="112" font-size="16">🦋</text><text x="40" y="118" font-size="11">🦋</text>`;
+  if(pv.scan)o+=`<rect width="${W}" height="${H}" fill="url(#scan-${s.name})"/>`;
+  return o+'</svg>';
+}
+function applySkin(key,first){
+  if(!SKINS[key])return;skinKey=key;SKIN=SKINS[key];
+  const r=document.documentElement.style;Object.entries(SKIN.css).forEach(([k,v])=>r.setProperty('--'+k,v));if(!SKIN.css.font)r.removeProperty('--font');
+  document.body.dataset.skin=key;document.getElementById('brand-mark').textContent=SKIN.mark;document.getElementById('skin-name').textContent=SKIN.name;
+  document.querySelectorAll('.skin').forEach(el=>el.classList.toggle('on',el.dataset.skin===key));
+  try{localStorage.setItem('atlas.skin',key);}catch(e){}
+  if(!first&&V3)V3.reskin();
+  rain(key==='matrix');
+}
+// matrix rain: a 2D overlay behind the labels — the graph itself stays the same 3D universe
+let rainTimer=null;
+function rain(on){const c=document.getElementById('fx-canvas');if(rainTimer){cancelAnimationFrame(rainTimer);rainTimer=null;}if(!on){c.width=c.height=1;return;}
+  const x=c.getContext('2d');const glyphs='ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄ0123456789ABCDEF<>/{}=;';let cols=[],last=0;
+  const size=()=>{c.width=innerWidth;c.height=innerHeight;cols=Array.from({length:Math.ceil(c.width/16)},()=>Math.random()*c.height/16);};size();window.addEventListener('resize',size);
+  const tick=t=>{rainTimer=requestAnimationFrame(tick);if(t-last<70)return;last=t;x.fillStyle='rgba(0,0,0,.09)';x.fillRect(0,0,c.width,c.height);x.font='14px monospace';
+    cols.forEach((y,i)=>{x.fillStyle=Math.random()<0.08?'#c9ffd2':'rgba(60,255,106,.55)';x.fillText(glyphs[Math.floor(Math.random()*glyphs.length)],i*16,y*16);cols[i]=(y*16>c.height&&Math.random()>0.975)?0:y+1;});};
+  rainTimer=requestAnimationFrame(tick);}
+const skinsEl=document.getElementById('skins'),skinsGrid=document.getElementById('skins-grid');
+Object.entries(SKINS).forEach(([k,s])=>{const d=document.createElement('div');d.className='skin'+(k===skinKey?' on':'');d.dataset.skin=k;
+  d.innerHTML=`${previewSVG(s)}<div class="meta"><b>${s.mark} ${esc(s.name)}${k===DEFAULT_SKIN?'<em>default</em>':''}</b><p>${esc(s.tag)}</p><div class="chips">${s.features.map(f=>`<i>${esc(f)}</i>`).join('')}</div></div>`;
+  d.addEventListener('click',()=>{applySkin(k);closeSkins();});skinsGrid.appendChild(d);});
+function openSkins(){skinsEl.classList.add('on');}function closeSkins(){skinsEl.classList.remove('on');}
+document.getElementById('skin-btn').addEventListener('click',openSkins);document.getElementById('skin-btn-2').addEventListener('click',openSkins);
+document.getElementById('skins-x').addEventListener('click',closeSkins);skinsEl.addEventListener('click',ev=>{if(ev.target===skinsEl)closeSkins();});
+window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&skinsEl.classList.contains('on'))closeSkins();});
+applySkin(skinKey,true);
+window.__atlasSkin=applySkin;
 const panel=document.getElementById('settings'),minBtn=document.getElementById('min');
 minBtn.addEventListener('click',()=>{panel.classList.toggle('min');minBtn.textContent=panel.classList.contains('min')?'+':'–';if(V3)V3.fitView();});
 document.getElementById('home').addEventListener('click',()=>{if(view==='3d'&&V3)V3.flyHome();else if(network)network.fit({animation:{duration:500}});});
@@ -753,6 +924,9 @@ def _realms(G) -> tuple[str, str]:
     return json.dumps(realms), json.dumps(meta)
 
 
+SKIN_KEYS = ("monarch", "jarvis", "synthwave", "matrix", "paper")
+
+
 def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
                    legend_json: str, hyperedge_script: str, G=None) -> str:
     """Assemble the Monarch Atlas graph.html."""
@@ -760,6 +934,9 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
     import os
     realms_json, realm_meta_json = _realms(G)
     title = _h.escape(os.environ.get("GRAPHIFY_ATLAS_TITLE") or "") or title
+    default_skin = (os.environ.get("GRAPHIFY_ATLAS_SKIN") or "monarch").strip().lower()
+    if default_skin not in SKIN_KEYS:
+        default_skin = "monarch"
     if G is not None and G.graph.get("realms"):
         stats = f"{stats} · {len(G.graph['realms'])} galaxies"
     script = _script(nodes_json, edges_json, legend_json, _hyperedge_body(hyperedge_script),
@@ -774,19 +951,21 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
 {THREE_TAGS}
 {VIS_TAG}
 {STYLES}
+<script>window.__ATLAS_SKIN__="{default_skin}";</script>
 </head>
 <body data-view="3d">
 <div id="graph3d" role="application" aria-label="Knowledge graph, 3D"></div>
 <div id="graph" role="application" aria-label="Knowledge graph, 2D"></div>
+<div id="fx"><canvas id="fx-canvas"></canvas><i class="ck tl"></i><i class="ck tr"></i><i class="ck bl"></i><i class="ck br"></i></div>
 <div id="labels"></div>
 <div id="tip"></div>
-<div id="brand"><div class="mark">🦋</div><div class="name">Monarch Atlas<small>{title}</small></div></div>
+<div id="brand"><div class="mark" id="brand-mark">🦋</div><div class="name">Monarch Atlas<small>{title}</small></div></div>
 <div id="crumb"><i id="crumb-dot"></i><span id="crumb-name"></span><button id="crumb-back">‹ Back to galaxy</button></div>
 <div id="idle-hint">🦋 Riding along with a monarch — move the mouse to take over</div>
 <div id="ride-hint">🦋 <kbd>← →</kbd><kbd>A D</kbd> turn &nbsp; <kbd>↑ ↓</kbd><kbd>W S</kbd> climb / dive &nbsp; <kbd>Shift</kbd> boost &nbsp; <kbd>Space</kbd> hover &nbsp; <kbd>Q</kbd><kbd>E</kbd> barrel roll &nbsp; <kbd>F</kbd> loop &nbsp; <kbd>G</kbd> dive loop &nbsp; <kbd>X</kbd> spin<button id="ride-off">Esc · hop off</button></div>
 <div id="stats">{stats} · click a group to fly in · double-click a sun to dive · Esc to zoom out · drag to orbit · shift-drag or right-drag to move</div>
 <div id="settings">
-  <div class="bar"><b>Graph</b><span class="seg"><button data-v="3d" class="on">3D</button><button data-v="2d">2D</button></span><button id="home" title="Reset view">⌂</button><button id="min" title="Collapse">–</button></div>
+  <div class="bar"><b>Graph</b><span class="seg"><button data-v="3d" class="on">3D</button><button data-v="2d">2D</button></span><button id="skin-btn" title="Skins">🎨</button><button id="home" title="Reset view">⌂</button><button id="min" title="Collapse">–</button></div>
   <details open><summary>Filters</summary><div class="body">
     <input id="q" type="search" placeholder="Search nodes, files…" autocomplete="off" aria-label="Search">
     <ul id="hits"></ul>
@@ -798,15 +977,16 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
     <div id="groups"></div>
   </div></details>
   <details><summary>Display</summary><div class="body">
+    <div id="skin-row"><span>Skin: <b id="skin-name">Monarch</b></span><button id="skin-btn-2">Change…</button></div>
     <label class="row"><span>Labels<span class="sub only-3d">Names appear once you fly into a group</span></span><input class="tg" type="checkbox" id="labels" checked></label>
     <label class="row only-3d"><span>Monarchs<span class="sub">Butterflies drifting between the systems</span></span><input class="tg" type="checkbox" id="monarchs" checked></label>
-    <label class="row only-3d"><span>Kinesins<span class="sub">Tiny carriers walking data along some links — zoom in to watch them work</span></span><input class="tg" type="checkbox" id="walkers" checked></label>
+    <label class="row only-3d"><span>Kinesins<span class="sub">Tiny carriers walking data along some links — zoom in to watch them, click one to walk it</span></span><input class="tg" type="checkbox" id="walkers" checked></label>
     <div class="rng"><div class="top"><span>Node size</span><span id="nsize-v">1.0</span></div><input type="range" id="nsize" min="0.4" max="2.5" step="0.1" value="1"></div>
     <div class="rng"><div class="top"><span class="only-3d">Link brightness</span><span class="only-2d">Link thickness</span><span id="lw-v">1.0</span></div><input type="range" id="lw" min="0.2" max="2.5" step="0.1" value="1"></div>
   </div></details>
   <details class="only-3d"><summary>Motion</summary><div class="body">
     <label class="row"><span>Auto-rotate<span class="sub">Slow orbit around the galaxy</span></span><input class="tg" type="checkbox" id="rotate" checked></label>
-    <label class="row"><span>Idle tour<span class="sub">Left alone for 10 s, the camera rides along with a monarch</span></span><input class="tg" type="checkbox" id="idle" checked></label>
+    <label class="row"><span>Idle tour<span class="sub">Left alone for 10 s, the camera rides a monarch or watches a kinesin work</span></span><input class="tg" type="checkbox" id="idle" checked></label>
     <div class="rng"><div class="top"><span>Rotate speed</span><span id="speed-v">0.5</span></div><input type="range" id="speed" min="0" max="3" step="0.1" value="0.5"></div>
     <div class="rng"><div class="top"><span>System spacing</span><span id="spacing-v">1.00</span></div><input type="range" id="spacing" min="0.6" max="2" step="0.05" value="1"></div>
   </div></details>
@@ -818,6 +998,7 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
   </div></details>
 </div>
 <div id="card" hidden><button class="x" id="card-x" aria-label="Close">×</button><div id="card-body"></div></div>
+<div id="skins"><div class="box"><div class="hd"><b>🎨 Skins</b><span>Same 3D universe, a different look. Switch any time — it's remembered in this browser.</span><button id="skins-x" aria-label="Close">×</button></div><div class="grid" id="skins-grid"></div></div></div>
 {script}
 </body>
 </html>"""
