@@ -257,16 +257,16 @@ const V3=(()=>{
     // each realm is its own galaxy: systems spiral out from the realm's centre
     const byRealm={};systems.forEach(s=>{(byRealm[s.realm]=byRealm[s.realm]||[]).push(s);});
     realmList=Object.keys(byRealm).map(k=>({name:k,systems:byRealm[k],meta:REALMS.find(r=>r.name===k)||{}}));
-    realmList.forEach(R=>{placeBall(R.systems,14*sp,sp,0.55);let rad=0;R.systems.forEach(s=>rad=Math.max(rad,s.c.length()+s.r));R.r=rad+24*sp;R.systems.forEach((s,i)=>{sysRank[s.sun]=i;sunRealm[s.sun]=R;});});
+    realmList.forEach(R=>{placeBall(R.systems,20*sp,sp,0.85);let rad=0;R.systems.forEach(s=>rad=Math.max(rad,s.c.length()+s.r));R.r=rad+24*sp;R.systems.forEach((s,i)=>{sysRank[s.sun]=i;sunRealm[s.sun]=R;});});
     if(realmList.length===1){realmList[0].c=new THREE.Vector3();}
     else{
       const centre=realmList.filter(R=>R.meta.center),rest=realmList.filter(R=>!R.meta.center).sort((a,b)=>b.r-a.r);
       let cr=0;centre.forEach(R=>{R.c=new THREE.Vector3();cr=Math.max(cr,R.r);});
-      const n=rest.length,gap=90*sp;let ring=0;
+      const n=rest.length,gap=170*sp;let ring=0;
       rest.forEach(R=>ring=Math.max(ring,cr+R.r+gap));
       for(let i=0;i<n;i++){const a=rest[i],b=rest[(i+1)%n];if(n>1)ring=Math.max(ring,(a.r+b.r+gap)/(2*Math.sin(Math.PI/n)));}
       // spread the galaxies over a sphere, not a ring, so the universe has depth from every angle
-      rest.forEach((R,i)=>{const d=fibDir(i,n);d.z*=0.7;d.normalize();R.c=d.multiplyScalar(ring*0.92);});
+      rest.forEach((R,i)=>{const d=fibDir(i,n);d.z*=0.95;d.normalize();R.c=d.multiplyScalar(ring*1.3);});
     }
     realmList.forEach(R=>R.systems.forEach(s=>{s.c.add(R.c);s.ids.forEach(id=>{pos[id]=s.local[id].clone().applyEuler(s.tilt).add(s.c);});}));
     let R=0;realmList.forEach(r=>R=Math.max(R,r.c.length()+r.r));galaxyR=R;
