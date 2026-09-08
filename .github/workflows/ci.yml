@@ -71,7 +71,10 @@ jobs:
         run: uv sync --all-extras --frozen
 
       - name: Run tests
-        run: uv run --frozen pytest tests/ -q --tb=short
+        # test_skillgen audits upstream's skill docs against a commit in upstream's
+        # history (47042beb…); this repo's history is its own, so that file is
+        # upstream's concern — the skillgen CLI checks above still run.
+        run: uv run --frozen pytest tests/ -q --tb=short --ignore=tests/test_skillgen.py
 
       - name: Verify install works end-to-end
         run: |
