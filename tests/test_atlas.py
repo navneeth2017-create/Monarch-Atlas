@@ -72,3 +72,38 @@ def test_atlas_merge_namespaces_and_links(tmp_path):
     assert G.has_edge("A::server", "B::server") and G.has_edge("A::server", "Services::Stripe")
     assert labels[0] == "A core" and labels[1000] == "B core"
     assert [r["name"] for r in G.graph["realms"]] == ["A", "B", "Services"]
+
+
+def test_page_carries_data_and_a_live_viewer_with_fallback(tmp_path, monkeypatch):
+    monkeypatch.setenv("GRAPHIFY_THEME", "atlas")
+    monkeypatch.delenv("GRAPHIFY_ATLAS_LOCAL", raising=False)
+    out = tmp_path / "graph.html"
+    to_html(_graph(), {0: ["a", "b"]}, str(out), community_labels={0: "Test"})
+    html = out.read_text(encoding="utf-8")
+    assert "window.ATLAS={v:1," in html
+    assert "cdn.jsdelivr.net/gh/navneeth2017-create/Monarch-Atlas@main/graphify/exporters/atlas_viewer.js" in html
+    assert 'id="atlas-local"' in html and "window.__atlasReady=true" in html
+
+
+def test_local_build_never_reaches_out(tmp_path, monkeypatch):
+    monkeypatch.setenv("GRAPHIFY_THEME", "atlas")
+    monkeypatch.setenv("GRAPHIFY_ATLAS_LOCAL", "1")
+    out = tmp_path / "graph.html"
+    to_html(_graph(), {0: ["a", "b"]}, str(out), community_labels={0: "Test"})
+    html = out.read_text(encoding="utf-8")
+    assert "jsdelivr.net/gh/" not in html and 'id="atlas-local"' not in html
+    assert "window.__atlasReady=true" in html
+
+
+def test_self_update_is_quiet_when_not_a_git_install(monkeypatch, tmp_path):
+    from graphify import atlas_update
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    monkeypatch.setattr(atlas_update, "installed_commit", lambda: None)
+    assert atlas_update.maybe_self_update() is None
+    monkeypatch.setattr(atlas_update, "installed_commit", lambda: "abc")
+    monkeypatch.setattr(atlas_update, "latest_commit", lambda timeout=4.0: "abc")
+    assert atlas_update.maybe_self_update() is None            # up to date
+    monkeypatch.setattr(atlas_update, "latest_commit", lambda timeout=4.0: "def0123")
+    assert atlas_update.maybe_self_update() is None            # checked less than a day ago → no call

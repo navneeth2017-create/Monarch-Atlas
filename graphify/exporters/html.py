@@ -645,4 +645,10 @@ def to_html(
             legend_json=legend_json, hyperedge_script=_hyperedge_script(hyperedges_json), G=G)
 
     write_text_atomic(output_path, html)
+    if _theme != "classic":
+        try:
+            from graphify.atlas_update import maybe_self_update
+            maybe_self_update()
+        except Exception:
+            pass
     return True

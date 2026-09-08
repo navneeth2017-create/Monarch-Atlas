@@ -1,0 +1,18 @@
+name: Purge the viewer from the CDN
+
+# Every graph.html loads graphify/exporters/atlas_viewer.js live from this repo
+# through jsDelivr. jsDelivr caches branch files; purging on every change means
+# a push lands in everyone's open maps within minutes instead of hours.
+on:
+  push:
+    branches: [main]
+    paths: ["graphify/exporters/atlas_viewer.js"]
+  workflow_dispatch:
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Purge jsDelivr
+        run: |
+          curl -fsS "https://purge.jsdelivr.net/gh/${{ github.repository }}@main/graphify/exporters/atlas_viewer.js" && echo && echo purged

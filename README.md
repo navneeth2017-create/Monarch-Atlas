@@ -28,7 +28,7 @@ commit hook. What's different is the **`graph.html`** it writes:
 ## Install
 
 ```bash
-pip install git+https://github.com/navneeth2017-create/monarch-atlas.git
+pip install git+https://github.com/navneeth2017-create/Monarch-Atlas.git
 graphify install          # registers the /graphify skill (unchanged)
 graphify update .         # builds graphify-out/ with the Atlas viewer
 ```
@@ -47,6 +47,23 @@ Each repo becomes its own galaxy; `links.json` (optional) adds the integrations
 graphify can't see from inside one repo — API calls between repos, a shared
 database, outside services like Stripe — and a `Services` galaxy at the centre.
 See the docstring in `graphify/atlas_merge.py` for the file format.
+
+## It updates itself
+
+Two layers, so a push to `main` reaches everyone without anyone reinstalling:
+
+- **The viewer is live.** Every `graph.html` carries only its data; the viewer
+  (`graphify/exporters/atlas_viewer.js`) is fetched from this repo through
+  jsDelivr each time a map is opened, so new skins, creatures and controls show
+  up in maps that were built weeks ago. The page keeps its own copy as a
+  fallback for offline use, blocked networks, or a data format the live viewer
+  no longer reads. Set `GRAPHIFY_ATLAS_LOCAL=1` at build time to skip the
+  remote entirely (self-hosted, locked-down deployments).
+- **The package upgrades itself.** Once a day, when a graph is built, the
+  installed version is compared with the newest commit on `main`; if it's
+  behind, `pip` upgrades it in the background and prints one line. Turn that
+  off with `GRAPHIFY_NO_SELF_UPDATE=1`. Editable installs and CI are never
+  touched.
 
 ## How this fork stays current
 
