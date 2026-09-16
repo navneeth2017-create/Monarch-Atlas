@@ -106,7 +106,7 @@ const ATLAS_CSS=`
   .skin .meta{padding:10px 12px 12px} .skin .meta b{font-size:14px;display:flex;align-items:center;gap:8px} .skin .meta b em{font-style:normal;font-size:10.5px;color:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:0 7px;margin-left:auto}
   .skin .meta p{margin:3px 0 8px;color:var(--muted);font-size:12px} .skin .chips{display:flex;flex-wrap:wrap;gap:5px} .skin .chips i{font-style:normal;font-size:11px;color:var(--text);background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:2px 8px}
   #skin-row{display:flex;align-items:center;gap:8px;padding:6px 0} #skin-row b{font-weight:500} #skin-row button{margin-left:auto;background:var(--bg-3);border:1px solid var(--border-2);color:var(--text);border-radius:6px;padding:3px 10px;font:inherit;font-size:12px;cursor:pointer} #skin-row button:hover{border-color:var(--accent);color:var(--accent-2)}
-  @media (min-width:721px){#idle-hint,#ride-hint{left:calc((100vw - 314px)/2)}}
+  @media (min-width:721px){#idle-hint,#ride-hint{left:calc((100vw - 314px)/2);transition:left .5s cubic-bezier(.2,.7,.2,1)} body.panel-min #idle-hint,body.panel-min #ride-hint{left:50%}}
   @media (max-width:720px){#settings{width:min(300px,calc(100vw - 28px))} #card{width:calc(100vw - 28px)}}
 `;
 const ATLAS_MARKUP=`
@@ -229,10 +229,16 @@ const V3=(()=>{
   // pixels per world unit at distance 1 (screen-size gates for labels, monarchs, kinesins)
   const pxPer=()=>(window.innerHeight/2)/Math.tan(camera.fov*Math.PI/360);
   // the settings panel covers the right edge: shift the projection so the scene sits in the middle of what you can actually see
-  function fitView(){const W=window.innerWidth,H=window.innerHeight;let sb=0;const p=document.getElementById('settings');
-    if(p&&W>720&&getComputedStyle(p).display!=='none'){const r=p.getBoundingClientRect();if(r.width>0)sb=Math.max(0,W-r.left);}
-    camera.setViewOffset(W,H,sb/2,0,W,H);camera.updateProjectionMatrix();renderer.setSize(W,H);}
-  fitView();
+  // The offset eases to its target so opening or folding the panel slides the universe over instead of snapping it.
+  let viewOff=0,viewTarget=0,viewAnim=null;
+  function applyOff(){const W=window.innerWidth,H=window.innerHeight;camera.setViewOffset(W,H,viewOff,0,W,H);camera.updateProjectionMatrix();}
+  function fitView(animate){const W=window.innerWidth,H=window.innerHeight;let sb=0;const p=document.getElementById('settings');
+    if(p&&W>720&&getComputedStyle(p).display!=='none'&&!p.classList.contains('min')){const r=p.getBoundingClientRect();if(r.width>0)sb=Math.max(0,W-r.left);}
+    renderer.setSize(W,H);viewTarget=sb/2;
+    if(animate===false||Math.abs(viewTarget-viewOff)<1){viewOff=viewTarget;applyOff();return;}
+    if(viewAnim)cancelAnimationFrame(viewAnim);const from=viewOff,to=viewTarget,t0=performance.now(),ms=520;
+    (function step(){const k=Math.min(1,(performance.now()-t0)/ms),e=1-Math.pow(1-k,3);viewOff=from+(to-from)*e;applyOff();if(k<1)viewAnim=requestAnimationFrame(step);else viewAnim=null;})();}
+  fitView(false);
   controls.enableDamping=true;controls.dampingFactor=0.07;controls.rotateSpeed=0.6;controls.zoomSpeed=0.9;controls.autoRotate=state.rotate;controls.autoRotateSpeed=state.speed;controls.maxDistance=30000;
   const ambient=new THREE.AmbientLight(0xffffff,SKIN.ambient);scene.add(ambient);
   const key=new THREE.DirectionalLight(0xffffff,0.75);key.position.set(0.4,0.8,1);scene.add(key);
@@ -454,7 +460,7 @@ const V3=(()=>{
     if(focused==null&&focusedRealm!=null&&multi()){const R=realmList.find(r=>r.name===focusedRealm);if(R&&cam.distanceTo(R.c)>R.r*5){focusedRealm=null;updateCrumb();}}}
   function start(){if(running)return;running=true;frame();}
   function stop(){running=false;}
-  window.addEventListener('resize',fitView);
+  window.addEventListener('resize',()=>fitView(false));
   window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName)){if(document.getElementById('skins').classList.contains('on'))return;if(ride)endRide();else if(walk)endWalk();else flyHome();}});
 
   // ── monarchs: a few butterflies drifting through the galaxy ──
@@ -742,7 +748,7 @@ const V3=(()=>{
   const idleEl=document.getElementById('idle-hint');
   let idle=false,idleAfter=10000,lastInput=performance.now(),follow=null,followSince=0,followUntil=0;
   const _des=new THREE.Vector3(),_side=new THREE.Vector3(),_fwdN=new THREE.Vector3(),_upZ=new THREE.Vector3(0,0,1);
-  function touch(){lastInput=performance.now();if(idle)endIdle();}
+  function touch(){lastInput=performance.now();if(idle){const toured=!!follow;endIdle();if(toured&&!tw)flyHome();}}
   ['pointerdown','pointermove','wheel','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,touch,{passive:true}));
   function pickFollow(now){const ms=monarchGroup.visible?monarchs.filter(m=>m!==follow):[],ws=walkerGroup.visible?walkers.filter(w=>w!==follow):[];
     const useW=ws.length&&(!ms.length||seedRng()<0.5);const pool=useW?ws:ms;follow=pool.length?pool[Math.floor(seedRng()*pool.length)]:null;idleW=useW?follow:null;
@@ -903,7 +909,7 @@ window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&skinsEl.classList.c
 applySkin(skinKey,true);
 window.__atlasSkin=applySkin;
 const panel=document.getElementById('settings'),minBtn=document.getElementById('min');
-minBtn.addEventListener('click',()=>{panel.classList.toggle('min');minBtn.textContent=panel.classList.contains('min')?'+':'–';if(V3)V3.fitView();});
+minBtn.addEventListener('click',()=>{panel.classList.toggle('min');const m=panel.classList.contains('min');minBtn.textContent=m?'+':'–';document.body.classList.toggle('panel-min',m);if(V3)V3.fitView(true);if(view!=='3d'&&network)network.fit({animation:{duration:520,easingFunction:'easeInOutCubic'}});});
 document.getElementById('home').addEventListener('click',()=>{if(view==='3d'&&V3)V3.flyHome();else if(network)network.fit({animation:{duration:500}});});
 
 // ── preview card ──
