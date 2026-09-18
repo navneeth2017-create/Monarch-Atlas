@@ -39,7 +39,7 @@ _MAX_MANIFEST_BYTES = 2_000_000  # 2 MB cap — manifests are small; this reject
 _TOMLI_REQUIRED = (
     "Package-manifest ingestion on Python < 3.11 needs tomli. "
     "Install with: pip install 'tomli' "
-    "(or reinstall graphifyy, which declares tomli for python_version < '3.11')."
+    "(or reinstall monarch-atlas, which declares tomli for python_version < '3.11')."
 )
 
 

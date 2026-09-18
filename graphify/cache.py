@@ -30,7 +30,9 @@ from graphify.paths import GRAPHIFY_OUT as _GRAPHIFY_OUT
 try:
     from importlib.metadata import version as _pkg_version
 
-    _EXTRACTOR_VERSION = _pkg_version("graphifyy")
+    from graphify.dist import version as _dist_version
+
+    _EXTRACTOR_VERSION = _dist_version()
 except Exception:
     _EXTRACTOR_VERSION = "unknown"
 

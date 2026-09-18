@@ -25,7 +25,13 @@ from typing import NoReturn
 try:
     from importlib.metadata import version as _pkg_version
 
-    __version__ = _pkg_version("graphifyy")
+    # This fork ships as "monarch-atlas"; upstream ships as "graphifyy". Ask for
+    # ours first and fall back, so the same source works installed either way
+    # and a stray upstream install still reports a version instead of "unknown".
+    try:
+        __version__ = _pkg_version("monarch-atlas")
+    except Exception:
+        __version__ = _pkg_version("graphifyy")
 except Exception:
     __version__ = "unknown"
 
@@ -75,7 +81,7 @@ def _always_on(basename: str) -> str:
         # only by an install/integration path that actually needs this block.
         raise RuntimeError(
             f"graphify install is incomplete: missing always-on block '{basename}' "
-            f"at {path}. Reinstall graphifyy (e.g. `uv tool install --reinstall graphifyy`)."
+            f"at {path}. Reinstall monarch-atlas (e.g. `uv tool install --reinstall monarch-atlas`)."
         ) from exc
 def _platform_skill_destination(platform_name: str, *, project: bool = False, project_dir: Path | None = None) -> Path:
     """Return the skill destination for a platform and scope."""
@@ -1092,7 +1098,7 @@ def _antigravity_install(project_dir: Path) -> None:
     print('  "graphify": {')
     print('    "command": "uv",')
     print(
-        '    "args": ["run", "--with", "graphifyy", "--with", "mcp", "-m", "graphify.serve", "${workspace.path}/graphify-out/graph.json"]'
+        '    "args": ["run", "--with", "monarch-atlas", "--with", "mcp", "-m", "graphify.serve", "${workspace.path}/graphify-out/graph.json"]'
     )
     print("  }")
 def _antigravity_uninstall(project_dir: Path, *, project: bool = False) -> None:
@@ -1894,7 +1900,7 @@ def uninstall_all(project_dir: Path | None = None, purge: bool = False) -> None:
         else:
             print(f"\n  {_GRAPHIFY_OUT}/  ->  not found (nothing to purge)")
 
-    print("\nDone. Run 'pip uninstall graphifyy' to remove the package itself.")
+    print("\nDone. Run 'pip uninstall monarch-atlas' to remove the package itself.")
 def claude_uninstall(project_dir: Path | None = None, *, project: bool = False, remove_user_skill: bool | None = None) -> None:
     """Remove the graphify skill tree (SKILL.md + references/) and the graphify
     section from CLAUDE.md and its local-only variants, plus the PreToolUse hook.

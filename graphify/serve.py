@@ -1631,7 +1631,7 @@ def _build_server(graph_path: str):
         from mcp.server import Server
         from mcp import types
     except ImportError as e:
-        raise ImportError('mcp not installed. Run: pip install "graphifyy[mcp]"') from e
+        raise ImportError('mcp not installed. Run: pip install "monarch-atlas[mcp]"') from e
     try:
         from mcp.types import AnyUrl
     except ImportError:
@@ -2204,7 +2204,9 @@ def _build_server(graph_path: str):
 
         try:
             from importlib.metadata import version as _pkg_version
-            _version = _pkg_version("graphifyy")
+            from graphify.dist import version as _dist_version
+
+            _version = _dist_version()
         except Exception:
             _version = "0"
         server = Server(
@@ -2225,7 +2227,7 @@ def serve(graph_path: str | None = None) -> None:
     try:
         from mcp.server.stdio import stdio_server
     except ImportError as e:
-        raise ImportError('mcp not installed. Run: pip install "graphifyy[mcp]"') from e
+        raise ImportError('mcp not installed. Run: pip install "monarch-atlas[mcp]"') from e
     import asyncio
 
     server = _build_server(graph_path)
@@ -2328,7 +2330,7 @@ def _build_http_app(
     except ImportError as e:
         raise ImportError(
             'HTTP transport needs the mcp extra (mcp + starlette + uvicorn). '
-            'Run: pip install "graphifyy[mcp]"'
+            'Run: pip install "monarch-atlas[mcp]"'
         ) from e
 
     # A blank key (e.g. --api-key "" or an empty GRAPHIFY_API_KEY) must not be
@@ -2405,7 +2407,7 @@ def serve_http(
     except ImportError as e:
         raise ImportError(
             'HTTP transport needs the mcp extra (mcp + starlette + uvicorn). '
-            'Run: pip install "graphifyy[mcp]"'
+            'Run: pip install "monarch-atlas[mcp]"'
         ) from e
 
     api_key = (api_key or "").strip() or None

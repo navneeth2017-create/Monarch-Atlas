@@ -14,7 +14,9 @@ from pathlib import Path
 try:
     from importlib.metadata import version as _pkg_version
 
-    __version__ = _pkg_version("graphifyy")
+    from graphify.dist import version as _dist_version
+
+    __version__ = _dist_version()
 except Exception:
     __version__ = "unknown"
 
@@ -216,7 +218,7 @@ def _check_skill_version(skill_dst: Path, platform_names: "list[str] | None" = N
             print(
                 f"  warning: skill is from graphify {installed}, but the package is "
                 f"{__version__} (older). Upgrade the package "
-                f"(e.g. 'uv tool upgrade graphifyy' or 'pip install -U graphifyy'); "
+                f"(e.g. 'pip install -U monarch-atlas @ git+https://github.com/navneeth2017-create/monarch-atlas.git'); "
                 f"running 'graphify install' would downgrade the skill.",
                 file=sys.stderr,
             )

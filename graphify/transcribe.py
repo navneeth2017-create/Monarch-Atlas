@@ -27,7 +27,7 @@ def _get_whisper():
     except ImportError as exc:
         raise ImportError(
             "Video transcription requires faster-whisper. "
-            "Run: pip install 'graphifyy[video]'"
+            "Run: pip install 'monarch-atlas[video] @ git+https://github.com/navneeth2017-create/monarch-atlas.git'"
         ) from exc
 
 
@@ -38,7 +38,7 @@ def _get_yt_dlp():
     except ImportError as exc:
         raise ImportError(
             "YouTube/URL download requires yt-dlp. "
-            "Run: pip install 'graphifyy[video]'"
+            "Run: pip install 'monarch-atlas[video] @ git+https://github.com/navneeth2017-create/monarch-atlas.git'"
         ) from exc
 
 

@@ -30,7 +30,10 @@ def installed_commit() -> str | None:
     """The commit pip installed from, or None for an editable / non-git install."""
     try:
         from importlib import metadata
-        raw = metadata.distribution("graphifyy").read_text("direct_url.json")
+        from graphify.dist import dist as _dist
+
+        _d = _dist()
+        raw = _d.read_text("direct_url.json") if _d is not None else None
         if not raw:
             return None
         info = json.loads(raw)
