@@ -52,8 +52,15 @@ jobs:
             echo "merged=true" >> "$GITHUB_OUTPUT"
           else
             git diff --name-only --diff-filter=U > /tmp/conflicts.txt || true
-            git reset --hard -q
-            echo "merged=false" >> "$GITHUB_OUTPUT"
+            # The version line in pyproject.toml conflicts on every upstream release; settle it.
+            if [ "$(cat /tmp/conflicts.txt)" = "pyproject.toml" ] && python3 .github/scripts/resolve_version.py; then
+              git add pyproject.toml
+              echo "$NEW" > .upstream-sha && git add .upstream-sha
+              echo "merged=true" >> "$GITHUB_OUTPUT"
+            else
+              git reset --hard -q
+              echo "merged=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
       - name: Smoke test the Atlas viewer
         if: steps.merge.outputs.merged == 'true'
@@ -91,4 +98,5 @@ jobs:
           BODY="Applying Graphify-Labs/graphify v8 ($OLD → $NEW) did not go through."
           if [ -s /tmp/conflicts.txt ]; then BODY="$BODY\n\nConflicting files:\n\`\`\`\n$(cat /tmp/conflicts.txt)\n\`\`\`"; else BODY="$BODY\n\nThe patch applied but the Atlas viewer smoke test failed — see the workflow log."; fi
           BODY="$BODY\n\nTo resolve locally:\n\`\`\`\ngit remote add upstream https://github.com/Graphify-Labs/graphify.git && git fetch upstream v8\ngit diff --binary $OLD $NEW -- . ':(exclude)README.md' | git apply --3way\n# fix conflicts, then\necho $NEW > .upstream-sha && git commit -am 'Sync with upstream graphify' && git push origin main\n\`\`\`\nOur changes live in graphify/exporters/atlas_html.py, graphify/atlas_merge.py, a hook at the end of to_html in graphify/exporters/html.py, pyproject.toml (scripts) and README.md — see the merge map in README.md."
-          printf "%b" "$BODY" | gh issue create --title "$TITLE" --body-file -
+          # Issues can be switched off on the repo; then the red run and its summary are the heads-up.
+          printf "%b" "$BODY" | gh issue create --title "$TITLE" --body-file - || { printf "%b\n" "$BODY" >> "$GITHUB_STEP_SUMMARY"; exit 1; }

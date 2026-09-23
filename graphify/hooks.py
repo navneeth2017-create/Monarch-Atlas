@@ -188,7 +188,20 @@ try:
     if _saved.exists():
         _txt = _saved.read_text(encoding='utf-8-sig').strip()
         if _txt:
-            _root = Path(_txt)
+            _candidate = Path(_txt)
+            try:
+                _cwd = Path.cwd().resolve()
+                _resolved = _candidate.resolve()
+                # Python 3.13 no longer raises on a symlink loop (resolve returns
+                # the path unresolved), so require a real directory: a loop or a
+                # dangling target is not a dir and correctly falls back.
+                _in_repo = (_resolved == _cwd or _cwd in _resolved.parents) and _resolved.is_dir()
+            except (OSError, RuntimeError):
+                _in_repo = False
+            if _in_repo:
+                _root = _candidate
+            else:
+                print(f'[graphify hook] ignoring out-of-repo .graphify_root: {_txt}')
     _rebuild_code(_root, changed_paths=changed, force=_force)
     # Refresh the work-memory lessons doc when saved Q&A outcomes exist
     # (best-effort; never fails the hook).
@@ -250,7 +263,20 @@ try:
     if _saved.exists():
         _txt = _saved.read_text(encoding='utf-8-sig').strip()
         if _txt:
-            _root = Path(_txt)
+            _candidate = Path(_txt)
+            try:
+                _cwd = Path.cwd().resolve()
+                _resolved = _candidate.resolve()
+                # Python 3.13 no longer raises on a symlink loop (resolve returns
+                # the path unresolved), so require a real directory: a loop or a
+                # dangling target is not a dir and correctly falls back.
+                _in_repo = (_resolved == _cwd or _cwd in _resolved.parents) and _resolved.is_dir()
+            except (OSError, RuntimeError):
+                _in_repo = False
+            if _in_repo:
+                _root = _candidate
+            else:
+                print(f'[graphify] ignoring out-of-repo .graphify_root: {_txt}')
     _rebuild_code(_root, force=_force)
     # Refresh the work-memory lessons doc when saved Q&A outcomes exist
     # (best-effort; never fails the hook).
@@ -389,8 +415,20 @@ if [ -z "$CHANGED" ]; then
     exit 0
 fi
 
-# Skip when only graphify-out/ artifacts changed (avoids rebuild loop when graph outputs are tracked in git)
-_NON_GRAPH=$(echo "$CHANGED" | grep -v '^graphify-out/' || true)
+# Skip when only output-dir artifacts changed (avoids rebuild loop when graph
+# outputs are tracked in git). The dir is whatever GRAPHIFY_OUT names, the same
+# source the rebuild body reads (#1423): a literal graphify-out/ here let a
+# commit touching only a renamed output dir's graph.json trigger a full rebuild.
+_GFY_OUT="${GRAPHIFY_OUT:-graphify-out}"
+_GFY_OUT="${_GFY_OUT%/}"
+# The leading ( on each pattern is POSIX and keeps bash 3.2 (macOS /bin/sh)
+# from mis-parsing the pattern's ) as the end of the $(...) substitution.
+_NON_GRAPH=$(printf '%s\n' "$CHANGED" | while IFS= read -r _GFY_F; do
+    case "$_GFY_F" in
+        ("$_GFY_OUT"/*) ;;
+        (*) printf '%s\n' "$_GFY_F" ;;
+    esac
+done)
 if [ -z "$_NON_GRAPH" ]; then
     exit 0
 fi
@@ -442,8 +480,11 @@ fi
 # branch switch but leaves the tree unchanged ΓÇö nothing to rebuild (#2421).
 [ "$PREV_HEAD" = "$NEW_HEAD" ] && exit 0
 
-# Only run if graphify-out/ exists (graph has been built before)
-if [ ! -d "graphify-out" ]; then
+# Only run if the output dir exists (graph has been built before). Resolve it
+# from GRAPHIFY_OUT like the rebuild body does (#1423): a literal graphify-out/
+# here made the branch-switch rebuild a silent no-op for every renamed output dir.
+_GFY_OUT="${GRAPHIFY_OUT:-graphify-out}"
+if [ ! -d "${_GFY_OUT%/}" ]; then
     exit 0
 fi
 

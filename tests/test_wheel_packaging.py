@@ -64,7 +64,7 @@ def wheel_namelist(tmp_path_factory) -> set[str]:
     )
     if proc.returncode != 0:
         pytest.skip(f"wheel build failed in this env:\n{proc.stderr[-800:]}")
-    wheels = list(out.glob("graphifyy-*.whl"))
+    wheels = list(out.glob("monarch_atlas-*.whl"))
     assert wheels, "no wheel produced"
     with zipfile.ZipFile(max(wheels, key=lambda p: p.stat().st_mtime)) as z:
         return set(z.namelist())

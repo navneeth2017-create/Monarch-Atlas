@@ -2222,6 +2222,34 @@ def test_extract_parallel_returns_false_on_broken_pool(tmp_path, monkeypatch, ca
     assert "__main__" in out, "warning must hint at the Windows __main__ guard idiom"
 
 
+def test_extract_parallel_returns_false_when_pool_cannot_start(tmp_path, monkeypatch, capsys):
+    """_extract_parallel must fall back, not raise, when the pool cannot be created.
+
+    ProcessPoolExecutor allocates a POSIX named semaphore at construction. On
+    macOS, once leaked semaphores exhaust the system-wide table
+    (kern.posix.sem.max), sem_open fails with OSError(ENOSPC) — "No space left
+    on device" with the disk nowhere near full — and the whole extraction died
+    instead of running sequentially.
+    """
+    import concurrent.futures
+    # Loaded lazily on first ProcessPoolExecutor access; with that patched out,
+    # the BrokenProcessPool handler's attribute lookup would itself raise.
+    import concurrent.futures.process  # noqa: F401
+    import errno
+    from graphify import extract as extract_mod
+
+    def no_semaphores(*a, **kw):
+        raise OSError(errno.ENOSPC, "No space left on device")
+
+    monkeypatch.setattr(concurrent.futures, "ProcessPoolExecutor", no_semaphores)
+
+    uncached = [(0, FIXTURES / "sample.py")]
+    per_file: list = [None]
+    ok = extract_mod._extract_parallel(uncached, per_file, tmp_path, 2, 1)
+    assert ok is False, "a pool that cannot start must hand back to sequential, not raise"
+    assert "No space left on device" in capsys.readouterr().out, "warning must name the OS error"
+
+
 def test_extract_parallel_skips_pool_when_max_workers_is_one(tmp_path, monkeypatch):
     """#2173: a resolved worker count of 1 must not spawn a ProcessPoolExecutor.
 
@@ -3987,18 +4015,18 @@ def test_case_insensitive_suffix_filtering(tmp_path):
 
 
 def test_extract_warns_on_code_files_with_no_ast_extractor(tmp_path, capsys):
-    # #1689: .r/.R is in CODE_EXTENSIONS (counted as code) but has no AST extractor,
-    # so R files silently contribute nothing. extract() must surface that instead of
+    # #1689: .ets is in CODE_EXTENSIONS (counted as code) but has no AST extractor,
+    # so ArkTS files silently contribute nothing. extract() must surface that instead of
     # reporting success as if the language were mapped.
-    r1 = tmp_path / "analysis.R"; r1.write_text("f <- function(x) x + 1\n")
-    r2 = tmp_path / "helper.r"; r2.write_text("g <- function(y) y * 2\n")
+    r1 = tmp_path / "analysis.ets"; r1.write_text("@Component struct Analysis {}\n")
+    r2 = tmp_path / "helper.ets"; r2.write_text("@Component struct Helper {}\n")
     py = tmp_path / "main.py"; py.write_text("def main():\n    return 1\n")
 
     result = extract([r1, r2, py], cache_root=tmp_path)
     err = capsys.readouterr().err
 
     assert "no AST extractor" in err
-    assert ".r (2)" in err            # both R files grouped under the lowercased ext
+    assert ".ets (2)" in err
     assert "#1689" in err
     # the Python file still extracts normally
     labels = [n.get("label") for n in result["nodes"]]
@@ -4027,7 +4055,7 @@ def test_extract_warns_when_sql_extra_missing(tmp_path, capsys, monkeypatch):
 
     assert "2 .sql file(s)" in err
     assert "tree_sitter_sql not installed" in err
-    assert 'graphifyy[sql]' in err
+    assert 'monarch-atlas[sql]' in err
     assert "#1745" in err
     # the Python file still extracts normally
     labels = [n.get("label") for n in result["nodes"]]
@@ -4104,7 +4132,7 @@ def test_extract_warns_sql_grammar_failed_to_load(tmp_path, capsys, monkeypatch)
     assert "failed to load" in err
     assert "#1745" in err
     # the no-op fix must NOT be suggested for a present-but-broken grammar
-    assert "graphifyy[sql]" not in err
+    assert "monarch-atlas[sql]" not in err
     assert "pip install" not in err
     # #2543: still surfaced as failed so the incremental manifest retries them
     failed = {Path(p).name for p in result.get("failed_sources", [])}
@@ -4118,8 +4146,8 @@ def test_extract_progress_final_line_uses_consistent_denominator(tmp_path, capsy
     for i in range(100):
         (tmp_path / f"m{i}.py").write_text(f"def f{i}():\n    return {i}\n")
     for i in range(5):
-        (tmp_path / f"s{i}.r").write_text(f"g{i} <- function(x) x\n")  # no extractor
-    paths = sorted(tmp_path.glob("*.py")) + sorted(tmp_path.glob("*.r"))  # total 105
+        (tmp_path / f"s{i}.ets").write_text(f"function g{i}(x) {{ return x; }}\n")  # no extractor
+    paths = sorted(tmp_path.glob("*.py")) + sorted(tmp_path.glob("*.ets"))  # total 105
 
     extract(paths, cache_root=tmp_path, parallel=False)
     out = capsys.readouterr().out
@@ -4148,6 +4176,17 @@ def test_get_extractor_routes_matlab_m_away_from_objc(tmp_path):
     assert _get_extractor(matlab_fn) is None               # MATLAB function -> no garbage
     assert _get_extractor(matlab_cls) is None              # MATLAB classdef -> no garbage
     assert _get_extractor(mm) is extract_objc              # .mm is unambiguously ObjC++
+
+
+def test_markdown_dispatch_matches_resolution_suffixes():
+    from graphify.extract import _DISPATCH, extract_markdown
+    from graphify.markdown_resolution import MARKDOWN_MENTION_SUFFIXES
+
+    dispatched = {
+        suffix for suffix, extractor in _DISPATCH.items()
+        if extractor is extract_markdown
+    }
+    assert dispatched == MARKDOWN_MENTION_SUFFIXES
 
 
 def test_matlab_m_not_extracted_as_garbage(tmp_path, capsys):
