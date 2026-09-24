@@ -164,10 +164,13 @@ const HAS_REALMS = REALMS.length > 0;
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 const FONT='"Inter",-apple-system,"Segoe UI",sans-serif';
 const maxDeg=Math.max(1,...RAW_NODES.map(n=>n.degree||1));
+// Optional per node: weight (how big it draws; defaults to degree) and hub (this node is its group's sun).
+const wOf=n=>(typeof n.weight==='number'&&n.weight>0)?n.weight:(n.degree||1);
+const maxW=Math.max(1,...RAW_NODES.filter(n=>!n.hub).map(wOf));
 // ── shared indexes ──
 const base={},outAdj={},inAdj={},nbrs={};
 const realmOfCid={};
-RAW_NODES.forEach(n=>{base[n.id]={color:(n.color&&n.color.background)||'#9e9e9e',community:n.community,degree:n.degree||1,label:n.label,file:n.source_file,cname:n.community_name,realm:REALM[n.id]||null};if(REALM[n.id]!=null&&realmOfCid[n.community]==null)realmOfCid[n.community]=REALM[n.id];outAdj[n.id]=[];inAdj[n.id]=[];nbrs[n.id]=new Set();});
+RAW_NODES.forEach(n=>{base[n.id]={color:(n.color&&n.color.background)||'#9e9e9e',community:n.community,degree:n.degree||1,w:wOf(n),hub:!!n.hub,label:n.label,file:n.source_file,cname:n.community_name,realm:REALM[n.id]||null};if(REALM[n.id]!=null&&realmOfCid[n.community]==null)realmOfCid[n.community]=REALM[n.id];outAdj[n.id]=[];inAdj[n.id]=[];nbrs[n.id]=new Set();});
 RAW_EDGES.forEach((e,i)=>{e._i=i;if(outAdj[e.from])outAdj[e.from].push(e);if(inAdj[e.to])inAdj[e.to].push(e);if(nbrs[e.from])nbrs[e.from].add(e.to);if(nbrs[e.to])nbrs[e.to].add(e.from);});
 const LEG={};LEGEND.forEach(g=>LEG[g.cid]=g);
 let view='3d';try{view=localStorage.getItem('atlas.view')||'3d';}catch(e){}
@@ -261,7 +264,7 @@ const V3=(()=>{
   // ── layout: solar systems on a galaxy ──
   const systems=[],sysOf={},sysN={},sysRank={},sunRealm={},pos={},sunOf={},radiusOf={},sysBySun={};
   const groupsOf={};RAW_NODES.forEach(n=>{const c=n.community==null?-1:n.community;(groupsOf[c]=groupsOf[c]||[]).push(n.id);});
-  Object.keys(groupsOf).forEach(k=>{const cid=+k,ids=groupsOf[k].slice().sort((a,b)=>base[b].degree-base[a].degree||String(a).localeCompare(String(b)));
+  Object.keys(groupsOf).forEach(k=>{const cid=+k,ids=groupsOf[k].slice().sort((a,b)=>(base[b].hub-base[a].hub)||base[b].w-base[a].w||String(a).localeCompare(String(b)));
     const g=LEG[cid]||{color:'#9e9e9e',label:cid===-1?'Unclustered':'Community '+cid};systems.push({cid,color:g.color,label:g.label,ids,n:ids.length,realm:base[ids[0]].realm||''});ids.forEach(id=>{sysOf[id]=cid;sysN[id]=ids.length;});});
   systems.sort((a,b)=>b.n-a.n);
   let realmList=[];
@@ -307,7 +310,7 @@ const V3=(()=>{
   const _m=new THREE.Matrix4(),_c=new THREE.Color(),_s=new THREE.Vector3(),_fade=new THREE.Color(SKIN.fade),_tc=new THREE.Color();
   // every colour in the scene passes through here, so a skin can pull the whole palette toward its own hue
   const skinCol=(c,hex)=>{c.set(hex);if(SKIN.tint)c.lerp(_tc.set(SKIN.tint.color),SKIN.tint.k);return c;};
-  const rPlanet=id=>(1.1+2.4*Math.sqrt(base[id].degree/maxDeg))*state.nsize;
+  const rPlanet=id=>(1.1+2.4*Math.sqrt(Math.min(1,base[id].w/maxW)))*state.nsize;
   const rSun=s=>(3.6+3.2*Math.sqrt(s.n/maxN))*state.nsize;
   function clearMeshes(){[planets,suns,lines].forEach(o=>{if(o){scene.remove(o);if(o.geometry&&o!==planets&&o!==suns)o.geometry.dispose();o.material.dispose();}});glows.forEach(g=>{scene.remove(g);g.material.dispose();});glows=[];lblLayer.innerHTML='';sunLbl={};planetLbl={};realmLbl=[];}
   let sunLbl={},planetLbl={},realmLbl=[];
@@ -839,7 +842,7 @@ function renderGroups(){groups.innerHTML='';let lastRealm=null;LEGEND.forEach(g=
   const l=document.createElement('div');l.className='grp';
   l.innerHTML=`<span class="n" title="Fly to ${esc(g.label)}"><i class="sw" style="background:${g.color}"></i><span class="t">${esc(g.label)}</span><span class="c">${g.count}</span><span class="fly only-3d">fly ›</span></span><input class="tg" type="checkbox" ${state.hidden.has(g.cid)?'':'checked'}>`;
   l.querySelector('input').addEventListener('change',ev=>{ev.target.checked?state.hidden.delete(g.cid):state.hidden.add(g.cid);applyVisibility();});
-  l.querySelector('.n').addEventListener('click',()=>{if(view==='3d'&&V3)V3.flyToSystem(g.cid);else if(network){const hub=RAW_NODES.filter(n=>n.community===g.cid).sort((a,b)=>b.degree-a.degree)[0];if(hub)focusNode(hub.id);}});
+  l.querySelector('.n').addEventListener('click',()=>{if(view==='3d'&&V3)V3.flyToSystem(g.cid);else if(network){const hub=RAW_NODES.filter(n=>n.community===g.cid).sort((a,b)=>((b.hub?1:0)-(a.hub?1:0))||wOf(b)-wOf(a))[0];if(hub)focusNode(hub.id);}});
   groups.appendChild(l);});}
 renderGroups();
 (()=>{const wrap=document.getElementById('realms-wrap'),el=document.getElementById('realms');if(!HAS_REALMS||REALMS.length<2){wrap.remove();return;}
