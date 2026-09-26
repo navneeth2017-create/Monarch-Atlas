@@ -24,6 +24,8 @@ const ATLAS_CSS=`
   .realm-row{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer} .realm-row:hover{color:#fff} .realm-row .c{color:var(--faint);font-size:11px;margin-left:auto}
   #tip{position:absolute;pointer-events:none;background:rgba(36,36,40,.94);border:1px solid var(--border-2);border-radius:6px;padding:6px 9px;font-size:12px;max-width:320px;transform:translate(12px,12px);display:none;z-index:5}
   #tip b{display:block;font-weight:600;color:#fff} #tip span{color:var(--muted)}
+  .ico{display:inline-block;width:1.2em;height:1.2em;vertical-align:-.26em;margin-right:.35em;color:var(--accent);fill:currentColor;filter:drop-shadow(0 0 3px rgba(0,0,0,.6));flex:none}
+  #ride-hint .ico,#idle-hint .ico{margin-right:.5em}
   #brand{position:absolute;left:14px;top:12px;display:flex;align-items:center;gap:9px;pointer-events:none;z-index:3}
   #brand .mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--accent),#c96a22);display:grid;place-items:center;font-size:15px;box-shadow:0 2px 10px rgba(232,135,59,.35)}
   #brand .name{font-weight:700;font-size:14px;letter-spacing:.01em;text-shadow:0 1px 4px #000}
@@ -82,9 +84,9 @@ const ATLAS_CSS=`
   #card .act button:hover{border-color:var(--accent);color:var(--accent-2)}
   ::-webkit-scrollbar{width:8px} ::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:4px}
   /* ── skins: everything visual hangs off the CSS variables above plus body[data-skin] ── */
-  #fx{position:absolute;inset:0;pointer-events:none;z-index:1;display:none} #fx canvas{display:block;width:100%;height:100%}
+  #fx{position:absolute;inset:0;pointer-events:none;z-index:1;display:none}
   #fx .ck{position:absolute;width:26px;height:26px;border:2px solid var(--accent);opacity:.55} #fx .tl{left:14px;top:14px;border-right:0;border-bottom:0} #fx .tr{right:14px;top:14px;border-left:0;border-bottom:0} #fx .bl{left:14px;bottom:14px;border-right:0;border-top:0} #fx .br{right:14px;bottom:14px;border-left:0;border-top:0}
-  body[data-skin="jarvis"] #fx,body[data-skin="matrix"] #fx{display:block}
+  body[data-skin="jarvis"] #fx{display:block}
   body[data-skin="jarvis"] #fx::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,10,14,.16) 0 1px,transparent 1px 3px)}
   body[data-skin="jarvis"] #fx::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 115% 100% at 50% 46%,transparent 54%,rgba(0,20,28,.62) 100%)}
   body[data-skin="jarvis"] #fx .ck{width:34px;height:34px;border:1.5px solid var(--accent);opacity:.8;filter:drop-shadow(0 0 4px rgba(25,211,224,.75))}
@@ -111,18 +113,25 @@ const ATLAS_CSS=`
   body[data-skin="jarvis"] #crumb button{border-radius:2px}
   #jv-hud{display:none;position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;font:10.5px/1.55 var(--mono);color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
   body[data-skin="jarvis"][data-view="3d"] #jv-hud{display:block}
-  #jv-ro{position:absolute;left:14px;top:64px;width:214px;padding:9px 12px 9px;border:1px solid rgba(25,211,224,.28);background:linear-gradient(180deg,rgba(4,26,34,.97),rgba(2,12,17,.96));clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))}
-  #jv-ro::before,#jv-ro::after{content:"";position:absolute;width:17px;height:1px;background:rgba(25,211,224,.55);transform:rotate(45deg)} #jv-ro::before{right:-2.5px;top:5.5px} #jv-ro::after{left:-2.5px;bottom:5.5px}
-  #jv-ro .h{display:flex;justify-content:space-between;color:var(--accent);font-weight:700;letter-spacing:.14em;padding-bottom:5px;margin-bottom:4px;border-bottom:1px solid rgba(25,211,224,.2)} #jv-ro .h i{font-style:normal;font-weight:400;color:#f2b85a;animation:jv-blink 1.8s steps(2) infinite}
-  #jv-ro .r{display:flex;justify-content:space-between;gap:12px} #jv-ro .r b{color:#dffcff;font-weight:500;max-width:136px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #jv-ro .bars{display:flex;align-items:flex-end;gap:2px;height:24px;margin-top:8px;border-bottom:1px solid rgba(25,211,224,.3)} #jv-ro .bars i{flex:1;max-width:10px;background:linear-gradient(0deg,rgba(25,211,224,.25),rgba(25,211,224,.85))} #jv-ro .bars i.on{background:#dffcff;box-shadow:0 0 6px var(--accent)}
-  #jv-ro .cap{display:flex;justify-content:space-between;font-size:8.5px;color:var(--faint);margin-top:3px;letter-spacing:.14em}
-  #jv-tape{position:absolute;left:50%;top:12px;width:380px;height:44px;transform:translateX(-50%);overflow:hidden;background:linear-gradient(180deg,rgba(1,10,14,.94),rgba(1,10,14,.88));-webkit-mask:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);mask:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);transition:top .3s}
+  /* the readout: four rows and a thin bar strip, sized to the viewer (the ResizeObserver in jvHudDom sets data-fit and --jv-k
+     on #jv-hud); in a short or narrow viewer it folds to a one-line pill that opens on click */
+  #jv-ro{position:absolute;left:14px;top:62px;width:172px;box-sizing:border-box;padding:6px 10px 7px;font-size:11px;line-height:1.38;letter-spacing:.08em;border:1px solid rgba(25,211,224,.28);background:linear-gradient(180deg,rgba(4,26,34,.97),rgba(2,12,17,.96));clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,9px 100%,0 calc(100% - 9px));transform-origin:0 0;transform:scale(var(--jv-k,1))}
+  #jv-ro::before,#jv-ro::after{content:"";position:absolute;width:13px;height:1px;background:rgba(25,211,224,.55);transform:rotate(45deg)} #jv-ro::before{right:-2px;top:4px} #jv-ro::after{left:-2px;bottom:4px}
+  #jv-ro .h{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--accent);font-weight:700;letter-spacing:.12em;padding-bottom:3px;margin-bottom:2px;border-bottom:1px solid rgba(25,211,224,.2);white-space:nowrap} #jv-ro .h i{font-style:normal;font-weight:400;color:#f2b85a;animation:jv-blink 1.8s steps(2) infinite}
+  #jv-ro .h em{display:none;font-style:normal;font-weight:500;color:#dffcff;overflow:hidden;text-overflow:ellipsis;max-width:190px}
+  #jv-ro .r{display:flex;justify-content:space-between;gap:10px} #jv-ro .r b{color:#dffcff;font-weight:500;max-width:104px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #jv-ro .bars{display:flex;align-items:flex-end;gap:1.5px;height:11px;margin-top:5px;border-bottom:1px solid rgba(25,211,224,.3)} #jv-ro .bars i{flex:1;max-width:8px;background:linear-gradient(0deg,rgba(25,211,224,.25),rgba(25,211,224,.85))} #jv-ro .bars i.on{background:#dffcff;box-shadow:0 0 6px var(--accent)}
+  #jv-ro.pill{width:auto;max-width:260px;padding:4px 10px;pointer-events:auto;cursor:pointer;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,7px 100%,0 calc(100% - 7px))}
+  #jv-ro.pill::before{top:2.5px;width:10px} #jv-ro.pill::after{bottom:2.5px;width:10px}
+  #jv-ro.pill .h{border:0;padding:0;margin:0;justify-content:flex-start} #jv-ro.pill .h span{display:none} #jv-ro.pill .h em{display:block} #jv-ro.pill .h i{order:-1}
+  #jv-ro.pill .h::after{content:"▾";color:var(--accent-2);font-weight:400} #jv-ro.pill.open .h::after{content:"▴"}
+  #jv-ro.pill:not(.open) .r,#jv-ro.pill:not(.open) .bars{display:none} #jv-ro.pill.open{width:172px} #jv-ro.pill.open .h{margin-bottom:3px;padding-bottom:3px;border-bottom:1px solid rgba(25,211,224,.2)} #jv-ro.pill.open .h em{display:none} #jv-ro.pill.open .h span{display:inline}
+  #jv-tape{position:absolute;left:50%;top:12px;width:380px;height:44px;transform:translateX(-50%) scale(var(--jv-k,1));transform-origin:50% 0;overflow:hidden;background:linear-gradient(180deg,rgba(1,10,14,.94),rgba(1,10,14,.88));-webkit-mask:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);mask:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);transition:top .3s}
   #jv-tape svg{position:absolute;left:0;top:0;will-change:transform} #jv-tape line{stroke:var(--accent);stroke-opacity:.9} #jv-tape line.mn{stroke-opacity:.4} #jv-tape text{fill:var(--accent-2);font:9px var(--mono);text-anchor:middle;letter-spacing:.05em}
   #jv-tape::before{content:"";position:absolute;left:50%;top:10px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid #dffcff;transform:translateX(-50%);filter:drop-shadow(0 0 3px var(--accent))}
   #jv-tape b{position:absolute;left:50%;top:28px;transform:translateX(-50%);font-weight:500;font-size:10px;color:#dffcff;padding:0 6px;border:1px solid rgba(25,211,224,.4);background:rgba(2,16,22,.97);white-space:nowrap}
   #crumb.on~#jv-hud #jv-tape{top:56px}
-  #jv-map{position:absolute;right:340px;bottom:58px;width:120px;height:120px;transition:right .5s cubic-bezier(.2,.7,.2,1)}
+  #jv-map{position:absolute;right:340px;bottom:58px;width:120px;height:120px;transform:scale(var(--jv-k,1));transform-origin:100% 100%;transition:right .5s cubic-bezier(.2,.7,.2,1)}
   #jv-map svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible} #jv-map circle{fill:none;stroke:rgba(25,211,224,.28)} #jv-map circle.o{stroke:rgba(25,211,224,.6);fill:rgba(1,12,17,.94)} #jv-map path.x{stroke:rgba(25,211,224,.18)}
   #jv-map #jv-blips circle{fill:rgba(123,233,241,.55);stroke:none} #jv-map #jv-blips circle.on{fill:#fff;filter:drop-shadow(0 0 3px var(--accent))} #jv-fov path{fill:rgba(123,233,241,.12);stroke:rgba(123,233,241,.5);stroke-width:.6}
   #jv-map .sweep{position:absolute;inset:4px;border-radius:50%;background:conic-gradient(from 0deg,transparent 0deg,transparent 290deg,rgba(25,211,224,.32) 360deg);animation:jv-spin 9s linear infinite}
@@ -136,43 +145,13 @@ const ATLAS_CSS=`
   #jv-lock span{position:absolute;left:calc(100% + 6px);bottom:calc(100% + 2px);white-space:nowrap;padding:3px 9px 3px 8px;background:rgba(2,18,24,.94);border:1px solid rgba(25,211,224,.45);border-left:2px solid var(--accent);color:#effeff;font-size:10.5px;font-weight:600;box-shadow:0 0 12px rgba(25,211,224,.25)} #jv-lock span small{display:block;color:var(--accent-2);font-size:9px;font-weight:400;letter-spacing:.08em}
   @keyframes jv-spin{to{transform:rotate(360deg)}} @keyframes jv-blink{50%{opacity:.55}} @keyframes jv-lockin{from{transform:scale(2.4);opacity:0}}
   @media (min-width:721px){#jv-tape{left:calc((100vw - 314px)/2);transition:left .5s cubic-bezier(.2,.7,.2,1),top .3s} body.panel-min #jv-tape{left:50%} body.panel-min #jv-map{right:26px} body.panel-min .jv-arc.r{right:6px}}
-  @media (max-width:720px){#jv-ro{left:10px;top:auto;bottom:58px;width:164px;padding:6px 9px;font-size:9.5px;line-height:1.45} #jv-ro .h{letter-spacing:.08em;gap:8px} #jv-ro .r.x,#jv-ro .bars,#jv-ro .cap{display:none} #jv-tape,#jv-map,.jv-arc{display:none} body[data-skin="jarvis"] #fx .ck{width:22px;height:22px} body[data-skin="jarvis"] #brand{left:16px;top:14px}}
-  @media (max-height:640px){.jv-arc,#jv-map{display:none}}
+  #jv-hud[data-fit="md"] .jv-arc{display:none}
+  #jv-hud[data-fit="sm"] #jv-ro{left:10px;top:auto;bottom:58px;font-size:10px} #jv-hud[data-fit="sm"] #jv-tape,#jv-hud[data-fit="sm"] #jv-map,#jv-hud[data-fit="sm"] .jv-arc{display:none}
+  @media (max-width:720px){body[data-skin="jarvis"] #fx .ck{width:22px;height:22px} body[data-skin="jarvis"] #brand{left:16px;top:14px}}
   @media (prefers-reduced-motion:reduce){#jv-map .sweep,#jv-ro .h i,#jv-lock i{animation:none}}
-  body[data-skin="matrix"] #fx .ck{display:none} body[data-skin="matrix"] #fx canvas{opacity:.55}
-  body[data-skin="jarvis"] .lbl,body[data-skin="matrix"] .lbl{font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em}
-  body[data-skin="jarvis"] .lbl.realm,body[data-skin="matrix"] .lbl.realm{border-color:var(--accent);background:rgba(0,0,0,.55);border-radius:3px}
-  body[data-skin="jarvis"] #brand .name,body[data-skin="matrix"] #brand .name{font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase}
-  /* blueprint: drafting paper (20px minor / 100px major grid), a sheet frame with zone ticks, a title block, square ink UI */
-  body[data-skin="blueprint"] #fx{display:block;background:repeating-linear-gradient(0deg,rgba(255,255,255,.07) 0 1px,transparent 1px 100px),repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,transparent 1px 100px),repeating-linear-gradient(0deg,rgba(255,255,255,.028) 0 1px,transparent 1px 20px),repeating-linear-gradient(90deg,rgba(255,255,255,.028) 0 1px,transparent 1px 20px),radial-gradient(ellipse at 45% 42%,transparent 50%,rgba(5,20,56,.42) 100%)}
-  body[data-skin="blueprint"] #fx .ck{display:none} #bp-sheet{display:none} body[data-skin="blueprint"] #bp-sheet{display:block;position:absolute;inset:0}
-  #bp-sheet .bp-fr{position:absolute;inset:6px;border:1px solid rgba(255,255,255,.55);background:linear-gradient(90deg,rgba(255,255,255,.55) 1px,transparent 1px) 0 0/12.5% 7px repeat-x,linear-gradient(90deg,rgba(255,255,255,.55) 1px,transparent 1px) 0 100%/12.5% 7px repeat-x,linear-gradient(rgba(255,255,255,.55) 1px,transparent 1px) 0 0/7px 25% repeat-y,linear-gradient(rgba(255,255,255,.55) 1px,transparent 1px) 100% 0/7px 25% repeat-y}
-  #bp-tb{position:absolute;left:14px;bottom:34px;width:264px;font:600 10px/1.25 var(--mono);color:#f4f8ff;border:1.5px solid rgba(255,255,255,.85);background:rgba(15,53,115,.96);text-transform:uppercase;letter-spacing:.05em} #bp-dwg{text-transform:none}
-  #bp-tb span{display:block;font-size:7.5px;font-weight:400;color:#a9c3ee;letter-spacing:.14em;margin-bottom:1px} #bp-tb b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #bp-tb .bp-r{display:flex;align-items:center;gap:6px;padding:4px 7px;border-bottom:1px solid rgba(255,255,255,.38)} #bp-tb .bp-r span{width:50px;flex:none;margin:0} #bp-tb .bp-r b{flex:1;min-width:0}
-  #bp-tb .bp-g{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid rgba(255,255,255,.38)} #bp-tb .bp-g>div{padding:4px 7px;border-left:1px solid rgba(255,255,255,.38);min-width:0} #bp-tb .bp-g>div:first-child{border-left:0}
-  #bp-tb .bp-sc{border-bottom:0} #bp-bar{max-width:180px;padding-top:1px} #bp-bar i{display:block;height:3px;border:1px solid #fff;background:repeating-linear-gradient(90deg,#fff 0 25%,transparent 0 50%)} #bp-bar em{display:flex;justify-content:space-between;font-style:normal;font-weight:400;font-size:8.5px;margin-top:2px;white-space:nowrap} #bp-bar em small{font-size:inherit}
-  .bp-dim{position:absolute;left:0;top:0;font:600 10px/1 var(--mono);letter-spacing:.08em;color:#fff;padding:3px 7px;background:var(--sky);white-space:nowrap;opacity:0;transition:opacity .25s;pointer-events:none;text-transform:uppercase}
-  .bp-dim.on{opacity:1} body:not([data-skin="blueprint"]) .bp-dim{display:none}
-  body[data-skin="blueprint"] .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;text-shadow:0 0 2px var(--halo),0 0 3px var(--halo),0 0 6px var(--halo)}
-  body[data-skin="blueprint"] .lbl.sun{font-size:10.5px;font-weight:600;text-transform:none;letter-spacing:.03em;padding:2px 6px;background:rgba(15,53,115,.88);border:1px solid rgba(255,255,255,.85);text-shadow:none}
-  body[data-skin="blueprint"] .lbl.sun::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:5px;background:rgba(255,255,255,.85)}
-  body[data-skin="blueprint"] .lbl.realm{text-transform:none;letter-spacing:.06em;background:rgba(15,53,115,.88);border:1px solid rgba(255,255,255,.7);border-radius:0;text-shadow:none}
-  body[data-skin="blueprint"] #settings,body[data-skin="blueprint"] #card,body[data-skin="blueprint"] #skins .box{border-radius:2px;border-color:rgba(255,255,255,.6);box-shadow:0 0 0 4px rgba(15,53,115,.55),0 12px 32px rgba(3,14,40,.45)}
-  body[data-skin="blueprint"] .bar b,body[data-skin="blueprint"] summary,body[data-skin="blueprint"] #card .h,body[data-skin="blueprint"] #skins .hd b{font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;font-size:11px}
-  body[data-skin="blueprint"] .bar,body[data-skin="blueprint"] details,body[data-skin="blueprint"] #skins .hd{border-color:rgba(255,255,255,.28)}
-  body[data-skin="blueprint"] .tg{border-radius:2px;background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.65)} body[data-skin="blueprint"] .tg::after{border-radius:1px;background:rgba(255,255,255,.75)}
-  body[data-skin="blueprint"] .tg:checked{background:#fff} body[data-skin="blueprint"] .tg:checked::after{background:var(--bg)}
-  body[data-skin="blueprint"] .sw{box-shadow:0 0 0 1px rgba(255,255,255,.7)} body[data-skin="blueprint"] input[type=search]{background:rgba(6,28,72,.45);border-radius:2px}
-  body[data-skin="blueprint"] .seg,body[data-skin="blueprint"] #crumb button,body[data-skin="blueprint"] #card .act button,body[data-skin="blueprint"] #skin-row button,body[data-skin="blueprint"] .skin,body[data-skin="blueprint"] .skin .chips i{border-radius:2px}
-  body[data-skin="blueprint"] .seg button.on{color:var(--bg)}
-  body[data-skin="blueprint"] #tip,body[data-skin="blueprint"] #crumb,body[data-skin="blueprint"] #idle-hint,body[data-skin="blueprint"] #ride-hint{background:rgba(15,53,115,.95);border-color:rgba(255,255,255,.65);border-radius:2px;box-shadow:none}
-  body[data-skin="blueprint"] #crumb{font-family:var(--mono);font-size:11.5px;letter-spacing:.03em} body[data-skin="blueprint"] #crumb i{box-shadow:0 0 0 1px #fff}
-  body[data-skin="blueprint"] #brand .mark{border-radius:2px;background:rgba(15,53,115,.9);border:1.5px solid #fff;box-shadow:none;font-size:14px;box-sizing:border-box}
-  body[data-skin="blueprint"] #brand .name{font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;font-size:12.5px;text-shadow:0 0 4px var(--halo)} body[data-skin="blueprint"] #brand .name small{text-transform:none;letter-spacing:.02em}
-  body[data-skin="blueprint"] #stats{text-shadow:0 0 3px var(--halo);color:var(--muted)}
-  @media (max-width:720px){#bp-tb{display:none} #bp-sheet .bp-fr{inset:4px} body[data-skin="blueprint"] #brand .name{letter-spacing:.04em;font-size:12px}}
-  @media print{body[data-skin="blueprint"] #settings,body[data-skin="blueprint"] #skins,body[data-skin="blueprint"] #tip,body[data-skin="blueprint"] #crumb,body[data-skin="blueprint"] #idle-hint{display:none}}
+  body[data-skin="jarvis"] .lbl{font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em}
+  body[data-skin="jarvis"] .lbl.realm{border-color:var(--accent);background:rgba(0,0,0,.55);border-radius:3px}
+  body[data-skin="jarvis"] #brand .name{font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase}
   body[data-skin="monarch"] #graph3d::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 120% 100% at 50% 45%,transparent 55%,rgba(3,3,6,.55) 100%)}
   body[data-skin="monarch"] .lbl{letter-spacing:.01em;text-shadow:0 0 2px rgba(7,7,12,.95),0 1px 3px rgba(7,7,12,.9),0 0 10px rgba(7,7,12,.65)}
   body[data-skin="monarch"] .lbl:not(.sun):not(.realm){padding:0 5px;border-radius:5px;background:rgba(12,11,16,.42)}
@@ -192,24 +171,45 @@ const ATLAS_CSS=`
   body[data-skin="synthwave"] .seg button.on{background:linear-gradient(180deg,#ff6fdc,#c42fb0);color:#fff}
   body[data-skin="synthwave"] #tip,body[data-skin="synthwave"] #crumb,body[data-skin="synthwave"] #idle-hint,body[data-skin="synthwave"] #ride-hint{background:rgba(31,14,66,.92)}
   body[data-skin="synthwave"] #fx{display:block} body[data-skin="synthwave"] #fx .ck{display:none}
-  body[data-skin="synthwave"] #fx::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(12,0,30,.07) 0 1px,transparent 1px 4px),radial-gradient(ellipse at 50% 45%,transparent 58%,rgba(24,0,48,.5) 100%)}
-  /* matrix: CRT phosphor. Rain + scanlines sit under the labels (z 0), so names stay crisp over the glow */
-  body[data-skin="matrix"] #fx{z-index:0}
-  body[data-skin="matrix"] #fx::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px)}
-  body[data-skin="matrix"] #fx::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,rgba(40,255,100,.035) 0,transparent 58%,rgba(0,0,0,.72) 100%)}
-  body[data-skin="matrix"] .lbl{text-transform:none;letter-spacing:.01em;color:var(--lbl);text-shadow:0 0 2px #000,0 0 4px #000,0 0 9px rgba(60,255,106,.55)}
-  body[data-skin="matrix"] .lbl.sun{text-transform:uppercase;letter-spacing:.08em;font-weight:600;font-size:11px;padding:1px 5px 1px 4px;border-left:2px solid var(--accent);background:rgba(0,14,5,.74);color:var(--lbl-sun);text-shadow:0 0 6px rgba(60,255,106,.7)}
-  body[data-skin="matrix"] .lbl.on:hover{color:#fff;text-shadow:0 0 4px #000,0 0 12px rgba(60,255,106,.95)}
-  body[data-skin="matrix"] .lbl.sun.on:hover::after{content:"_";animation:mtx-blink 1s steps(1) infinite}
-  body[data-skin="matrix"] .lbl.realm{text-transform:uppercase;letter-spacing:.14em;border-radius:2px}
-  @keyframes mtx-blink{50%{opacity:0}}
-  body[data-skin="matrix"] #brand .mark{background:#000;border:1px solid var(--accent);color:var(--accent);box-shadow:0 0 12px rgba(60,255,106,.4),inset 0 0 8px rgba(60,255,106,.3);border-radius:4px}
-  body[data-skin="matrix"] #brand .name{color:var(--accent-2);text-shadow:0 0 8px rgba(60,255,106,.55),0 1px 3px #000}
-  body[data-skin="matrix"] #tip,body[data-skin="matrix"] #crumb,body[data-skin="matrix"] #idle-hint,body[data-skin="matrix"] #ride-hint{background:rgba(0,12,4,.93);border-color:var(--border-2);box-shadow:0 0 18px rgba(60,255,106,.12),0 6px 20px rgba(0,0,0,.6)}
-  body[data-skin="matrix"] #tip b{color:var(--accent-2)} body[data-skin="matrix"] #crumb,body[data-skin="matrix"] #tip{border-radius:3px}
-  body[data-skin="matrix"] #settings,body[data-skin="matrix"] #card{box-shadow:0 0 0 1px rgba(60,255,106,.06),0 0 24px rgba(60,255,106,.07),0 8px 28px rgba(0,0,0,.6)}
-  body[data-skin="matrix"] .seg button.on{color:#021006}
-  @media (prefers-reduced-motion:reduce){body[data-skin="matrix"] .lbl.sun.on:hover::after{animation:none}}
+  body[data-skin="synthwave"] #fx::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 58%,rgba(24,0,48,.5) 100%)}   /* no scanline overlay: it read as low resolution */
+  /* hover cards and hints wear the skin too: its type, colours, backplate and border */
+  body[data-skin="monarch"] #tip b{color:#fff4e6;letter-spacing:.01em} body[data-skin="monarch"] #tip span{color:#b9b3ad}
+  body[data-skin="monarch"] #idle-hint,body[data-skin="monarch"] #ride-hint{background:rgba(24,23,29,.9);border-color:rgba(255,196,138,.34);color:#ece6df;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  body[data-skin="monarch"] #ride-hint kbd{border-color:rgba(255,196,138,.3);background:rgba(255,196,138,.07)}
+  body[data-skin="jarvis"] #tip{font-size:11px;letter-spacing:.06em;text-transform:uppercase;border-left:2px solid var(--accent);padding:5px 10px 6px 9px}
+  body[data-skin="jarvis"] #tip b{color:#effeff;font-weight:700;letter-spacing:.12em;text-shadow:0 0 8px rgba(25,211,224,.55)} body[data-skin="jarvis"] #tip span{color:var(--accent-2);font-size:10px}
+  body[data-skin="jarvis"] #idle-hint,body[data-skin="jarvis"] #ride-hint{font-size:11px;text-transform:uppercase;color:#c8f4f8} body[data-skin="jarvis"] #ride-hint kbd{border-radius:1px;border-color:rgba(25,211,224,.45);color:#effeff}
+  body[data-skin="synthwave"] #tip,body[data-skin="synthwave"] #idle-hint,body[data-skin="synthwave"] #ride-hint,body[data-skin="synthwave"] #crumb{border:1px solid rgba(255,63,208,.55);box-shadow:0 0 16px rgba(255,63,208,.28),0 8px 24px rgba(20,0,40,.6)}
+  body[data-skin="synthwave"] #tip{background:linear-gradient(180deg,rgba(44,14,84,.95),rgba(26,8,56,.95));border-radius:4px}
+  body[data-skin="synthwave"] #tip b{font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#fff;text-shadow:0 0 8px rgba(255,63,208,.8),0 2px 0 #3a0b52} body[data-skin="synthwave"] #tip span{color:#e2c4ff}
+  body[data-skin="synthwave"] #idle-hint,body[data-skin="synthwave"] #ride-hint{color:#f6ecff;font-style:italic} body[data-skin="synthwave"] #ride-hint kbd{font-style:normal;border-color:rgba(255,63,208,.5);background:rgba(255,63,208,.12)}
+  /* TRON: the Grid. Black glass, thin glowing cyan edges, cut corners, tracked-out geometric caps */
+  body[data-skin="tron"]{--tron-edge:rgba(0,229,255,.55);--tron-glow:rgba(0,229,255,.28)}
+  body[data-skin="tron"] #fx{display:block} body[data-skin="tron"] #fx .ck{display:none}
+  body[data-skin="tron"] #fx::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 125% 105% at 50% 48%,transparent 58%,rgba(0,0,0,.6) 100%)}
+  body[data-skin="tron"] .lbl{letter-spacing:.05em;color:var(--lbl);text-shadow:0 0 2px #000,0 0 3px #000,0 0 10px rgba(0,229,255,.35)}
+  body[data-skin="tron"] .lbl:not(.sun):not(.realm){padding:0 5px;background:rgba(0,4,6,.7);box-shadow:inset 1px 0 0 var(--tron-edge)}
+  body[data-skin="tron"] .lbl.sun{font-size:10.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#fff;padding:2px 9px 2px 10px;background:rgba(0,6,9,.86);border:1px solid var(--sys,var(--accent));box-shadow:0 0 10px var(--tron-glow),inset 0 0 6px rgba(0,229,255,.12);text-shadow:0 0 6px rgba(0,229,255,.6);clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px))}
+  body[data-skin="tron"] .lbl.sun.on:hover{background:rgba(0,30,38,.92)}
+  body[data-skin="tron"] .lbl.realm{border-radius:0;background:rgba(0,6,9,.8);border-color:var(--tron-edge);letter-spacing:.24em}
+  body[data-skin="tron"] #brand .mark{background:#000;border:1.5px solid var(--accent);border-radius:50%;box-shadow:0 0 10px rgba(0,229,255,.6),inset 0 0 8px rgba(0,229,255,.35);color:var(--accent)}
+  body[data-skin="tron"] #brand .mark .ico{margin:0;width:18px;height:18px}
+  body[data-skin="tron"] #brand .name{font-weight:600;font-size:13px;letter-spacing:.26em;text-transform:uppercase;color:#effeff;text-shadow:0 0 10px rgba(0,229,255,.7)} body[data-skin="tron"] #brand .name small{letter-spacing:.16em;font-size:10px;text-shadow:0 1px 3px #000}
+  body[data-skin="tron"] #stats{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-shadow:0 0 2px #000,0 0 4px #000}
+  body[data-skin="tron"] #settings,body[data-skin="tron"] #card,body[data-skin="tron"] #skins .box{background:linear-gradient(180deg,rgba(0,12,16,.95),rgba(0,4,6,.95));border:1px solid var(--tron-edge);border-radius:0;box-shadow:0 0 18px var(--tron-glow),inset 0 0 22px rgba(0,229,255,.06),0 12px 34px rgba(0,0,0,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  body[data-skin="tron"] .bar b,body[data-skin="tron"] summary{font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--accent-2)}
+  body[data-skin="tron"] details,body[data-skin="tron"] .bar{border-color:rgba(0,229,255,.18)} body[data-skin="tron"] summary::before{border-left-color:var(--accent)}
+  body[data-skin="tron"] .seg,body[data-skin="tron"] .seg button,body[data-skin="tron"] input[type=search],body[data-skin="tron"] #skin-row button,body[data-skin="tron"] #card .act button,body[data-skin="tron"] #crumb button,body[data-skin="tron"] .skin,body[data-skin="tron"] .skin .chips i{border-radius:0}
+  body[data-skin="tron"] .seg{border-color:var(--tron-edge)} body[data-skin="tron"] .seg button.on{background:var(--accent);color:#001014;box-shadow:0 0 10px rgba(0,229,255,.6)}
+  body[data-skin="tron"] input[type=search]{background:rgba(0,0,0,.8);border-color:rgba(0,229,255,.35)} body[data-skin="tron"] input[type=search]:focus{box-shadow:0 0 8px var(--tron-glow)}
+  body[data-skin="tron"] .tg{border-radius:1px;background:#031c22;box-shadow:inset 0 0 0 1px rgba(0,229,255,.3)} body[data-skin="tron"] .tg::after{border-radius:0;background:#6fbfcb}
+  body[data-skin="tron"] .tg:checked{background:rgba(0,229,255,.28);box-shadow:inset 0 0 0 1px var(--accent),0 0 8px rgba(0,229,255,.5)} body[data-skin="tron"] .tg:checked::after{background:#eaffff;box-shadow:0 0 6px var(--accent)}
+  body[data-skin="tron"] #tip,body[data-skin="tron"] #crumb,body[data-skin="tron"] #idle-hint,body[data-skin="tron"] #ride-hint{background:rgba(0,5,8,.94);border:1px solid var(--tron-edge);border-radius:0;box-shadow:0 0 14px var(--tron-glow),inset 0 0 10px rgba(0,229,255,.08);letter-spacing:.05em}
+  body[data-skin="tron"] #tip{clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,7px 100%,0 calc(100% - 7px));padding:6px 11px}
+  body[data-skin="tron"] #tip b{font-weight:600;font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:#effeff;text-shadow:0 0 8px rgba(0,229,255,.7)} body[data-skin="tron"] #tip span{color:var(--accent-2);font-size:11px}
+  body[data-skin="tron"] #idle-hint,body[data-skin="tron"] #ride-hint{color:#dcfbff;text-transform:uppercase;font-size:11.5px;letter-spacing:.1em} body[data-skin="tron"] #ride-hint kbd{border-radius:0;border-color:var(--tron-edge);color:#effeff;box-shadow:0 0 6px rgba(0,229,255,.25)}
+  body[data-skin="tron"] #ride-hint button{border-radius:0;border-color:var(--tron-edge)}
+  body[data-skin="tron"] .skin.on{box-shadow:0 0 0 1px var(--accent),0 0 16px var(--tron-glow)}
   #skins{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   #skins.on{display:flex}
   #skins .box{width:min(1040px,calc(100vw - 40px));max-height:calc(100vh - 40px);overflow:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -222,18 +222,18 @@ const ATLAS_CSS=`
   .skin .meta p{margin:3px 0 8px;color:var(--muted);font-size:12px} .skin .chips{display:flex;flex-wrap:wrap;gap:5px} .skin .chips i{font-style:normal;font-size:11px;color:var(--text);background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:2px 8px}
   #skin-row{display:flex;align-items:center;gap:8px;padding:6px 0} #skin-row b{font-weight:500} #skin-row button{margin-left:auto;background:var(--bg-3);border:1px solid var(--border-2);color:var(--text);border-radius:6px;padding:3px 10px;font:inherit;font-size:12px;cursor:pointer} #skin-row button:hover{border-color:var(--accent);color:var(--accent-2)}
   @media (min-width:721px){#idle-hint,#ride-hint{left:calc((100vw - 314px)/2);transition:left .5s cubic-bezier(.2,.7,.2,1)} body.panel-min #idle-hint,body.panel-min #ride-hint{left:50%}}
-  @media (max-width:720px){#settings{width:min(300px,calc(100vw - 28px))} #card{width:calc(100vw - 28px)}}
+  @media (max-width:720px){#settings{width:min(300px,calc(100vw - 28px))} #card{width:calc(100vw - 28px)} #ride-hint{left:14px;right:14px;transform:none;max-width:none;bottom:58px}}
 `;
 const ATLAS_MARKUP=`
 <div id="graph3d" role="application" aria-label="Knowledge graph, 3D"></div>
 <div id="graph" role="application" aria-label="Knowledge graph, 2D"></div>
-<div id="fx"><canvas id="fx-canvas"></canvas><i class="ck tl"></i><i class="ck tr"></i><i class="ck bl"></i><i class="ck br"></i></div>
+<div id="fx"><i class="ck tl"></i><i class="ck tr"></i><i class="ck bl"></i><i class="ck br"></i></div>
 <div id="labels"></div>
 <div id="tip"></div>
 <div id="brand"><div class="mark" id="brand-mark">🦋</div><div class="name">Monarch Atlas<small>${_e(ATLAS.title)}</small></div></div>
 <div id="crumb"><i id="crumb-dot"></i><span id="crumb-name"></span><button id="crumb-back">‹ Back to galaxy</button></div>
-<div id="idle-hint">🦋 Riding along with a monarch — move the mouse to take over</div>
-<div id="ride-hint">🦋 <kbd>← →</kbd><kbd>A D</kbd> turn &nbsp; <kbd>↑ ↓</kbd><kbd>W S</kbd> climb / dive &nbsp; <kbd>Shift</kbd> boost &nbsp; <kbd>Space</kbd> hover &nbsp; <kbd>Q</kbd><kbd>E</kbd> barrel roll &nbsp; <kbd>F</kbd> loop &nbsp; <kbd>G</kbd> dive loop &nbsp; <kbd>X</kbd> spin<button id="ride-off">Esc · hop off</button></div>
+<div id="idle-hint"></div>
+<div id="ride-hint"><!--ico--><kbd>← →</kbd><kbd>A D</kbd> turn &nbsp; <kbd>↑ ↓</kbd><kbd>W S</kbd> climb / dive &nbsp; <kbd>Shift</kbd> boost &nbsp; <kbd>Space</kbd> hover &nbsp; <kbd>Q</kbd><kbd>E</kbd> barrel roll &nbsp; <kbd>F</kbd> loop &nbsp; <kbd>G</kbd> dive loop &nbsp; <kbd>X</kbd> spin<button id="ride-off">Esc · hop off</button></div>
 <div id="stats">${_e(String(ATLAS.stats||'').replace(/&middot;/g,'·').replace(/&amp;/g,'&'))} · click a group to fly in · double-click a sun to dive · Esc to zoom out · drag to orbit · shift-drag or right-drag to move</div>
 <div id="settings">
   <div class="bar"><b>Graph</b><span class="seg"><button data-v="3d" class="on">3D</button><button data-v="2d">2D</button></span><button id="skin-btn" title="Skins">🎨</button><button id="home" title="Reset view">⌂</button><button id="min" title="Collapse">–</button></div>
@@ -251,13 +251,13 @@ const ATLAS_MARKUP=`
     <div id="skin-row"><span>Skin: <b id="skin-name">Monarch</b></span><button id="skin-btn-2">Change…</button></div>
     <label class="row"><span>Labels<span class="sub only-3d">Names appear once you fly into a group</span></span><input class="tg" type="checkbox" id="labels" checked></label>
     <label class="row only-3d"><span>Monarchs<span class="sub">Butterflies drifting between the systems</span></span><input class="tg" type="checkbox" id="monarchs" checked></label>
-    <label class="row only-3d"><span>Kinesins<span class="sub">Tiny carriers walking data along some links — zoom in to watch them, click one to walk it</span></span><input class="tg" type="checkbox" id="walkers" checked></label>
+    <label class="row only-3d"><span><span id="walkers-t">Kinesins</span><span class="sub" id="walkers-s">Tiny carriers walking data along some links — zoom in to watch them, click one to walk it</span></span><input class="tg" type="checkbox" id="walkers" checked></label>
     <div class="rng"><div class="top"><span>Node size</span><span id="nsize-v">1.0</span></div><input type="range" id="nsize" min="0.4" max="2.5" step="0.1" value="1"></div>
     <div class="rng"><div class="top"><span class="only-3d">Link brightness</span><span class="only-2d">Link thickness</span><span id="lw-v">1.0</span></div><input type="range" id="lw" min="0.2" max="2.5" step="0.1" value="1"></div>
   </div></details>
   <details class="only-3d"><summary>Motion</summary><div class="body">
     <label class="row"><span>Auto-rotate<span class="sub">Slow orbit around the galaxy</span></span><input class="tg" type="checkbox" id="rotate" checked></label>
-    <label class="row"><span>Idle tour<span class="sub">Left alone for 10 s, the camera rides a monarch or watches a kinesin work</span></span><input class="tg" type="checkbox" id="idle" checked></label>
+    <label class="row"><span>Idle tour<span class="sub" id="idle-s">Left alone for 10 s, the camera rides a monarch or watches a kinesin work</span></span><input class="tg" type="checkbox" id="idle" checked></label>
     <div class="rng"><div class="top"><span>Rotate speed</span><span id="speed-v">0.5</span></div><input type="range" id="speed" min="0" max="3" step="0.1" value="0.5"></div>
     <div class="rng"><div class="top"><span>System spacing</span><span id="spacing-v">1.00</span></div><input type="range" id="spacing" min="0.6" max="2" step="0.05" value="1"></div>
   </div></details>
@@ -291,8 +291,46 @@ const LEG={};LEGEND.forEach(g=>LEG[g.cid]=g);
 let view='3d';try{view=localStorage.getItem('atlas.view')||'3d';}catch(e){}
 if(!window.THREE)view='2d';
 // ══════════════════════════════════════════ skins ══
+// inline icons (never emoji): they take the skin's accent through currentColor
+const ico=inner=>`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${inner}</svg>`;
+const ICO={
+  butterfly:ico('<path d="M11.3 10.6C9.6 6.4 5.6 3.2 2.9 3.9C1.1 4.4 1.3 7.2 2.6 9.1C3.9 11 7.3 12 11.3 11.6ZM12.7 10.6C14.4 6.4 18.4 3.2 21.1 3.9C22.9 4.4 22.7 7.2 21.4 9.1C20.1 11 16.7 12 12.7 11.6Z"/>'
+    +'<path opacity=".82" d="M11.3 12.6C8.4 12.7 5.2 13.8 4.6 16.4C4.1 18.7 6.2 20.3 8.2 19.1C9.9 18.1 11 15.2 11.3 12.6ZM12.7 12.6C15.6 12.7 18.8 13.8 19.4 16.4C19.9 18.7 17.8 20.3 15.8 19.1C14.1 18.1 13 15.2 12.7 12.6Z"/>'
+    +'<path d="M10.9 11C8.2 9.1 5.4 6.6 3.6 5.2M10.9 12.9C8.6 14.2 6.8 16.1 6.2 18.2M13.1 11C15.8 9.1 18.6 6.6 20.4 5.2M13.1 12.9C15.4 14.2 17.2 16.1 17.8 18.2" fill="none" stroke="rgba(0,0,0,.42)" stroke-width=".7"/>'
+    +'<rect x="11.35" y="8.3" width="1.3" height="10" rx=".65"/><path d="M11.7 8.5C11.2 6.6 10.2 5.4 9.1 4.9M12.3 8.5C12.8 6.6 13.8 5.4 14.9 4.9" fill="none" stroke="currentColor" stroke-width=".8" stroke-linecap="round"/>'),
+  kinesin:ico('<circle cx="8" cy="19" r="2.6"/><circle cx="16" cy="19" r="2.6"/><path d="M8 17L12 12L16 17M12 12V8.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 2.4L15.6 6L12 9.6L8.4 6Z"/>'),
+  cycle:ico('<circle cx="6" cy="15.6" r="3.9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18.4" cy="15.6" r="3.9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M1.4 13.4C2 10.6 4.2 9.1 7.2 9.3L10.9 11L14.3 8.9C17.6 8.4 21.4 9.4 22.9 12.9H20.6C18.8 11.4 15.8 11.5 13.9 12.8L9.7 13.8L4.8 11.7C3.5 11.9 2.4 12.5 1.4 13.4Z"/>'),
+  disc:ico('<circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="5.7" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4.3 1.6"/><circle cx="12" cy="12" r="2.3"/>'),
+};
+// TRON node bodies: identity discs. A sphere is shaded by its screen-space radius (r = √(1 − (n·v)²)), so from any angle
+// it reads as a disc: dark tinted glass, a white-hot rim, a thin inner ring and a glowing core in the group's neon colour.
+// Suns get a bigger white core and a segmented outer ring that turns (uT, advanced by the tron extras).
+function tronBodyMat(emis){
+  return new THREE.ShaderMaterial({uniforms:{uSun:{value:emis?1:0},uT:{value:0},uFog:{value:0.00022}},extensions:{derivatives:true},
+    vertexShader:`varying vec3 vN,vV,vC;varying float vD;
+void main(){vec4 p=vec4(position,1.0);vec3 n=normal;
+#ifdef USE_INSTANCING
+p=instanceMatrix*p;n=mat3(instanceMatrix)*n;
+#endif
+vC=vec3(1.0);
+#ifdef USE_INSTANCING_COLOR
+vC=instanceColor;
+#endif
+vec4 mv=modelViewMatrix*p;vN=normalize(normalMatrix*n);vV=normalize(-mv.xyz);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`uniform float uSun,uT,uFog;varying vec3 vN,vV,vC;varying float vD;
+float ring(float r,float c,float w,float aa){return 1.0-smoothstep(w,w+aa,abs(r-c));}
+void main(){vec3 n=normalize(vN);float ndv=clamp(dot(n,normalize(vV)),0.0,1.0),r=sqrt(max(0.0,1.0-ndv*ndv));float aa=max(fwidth(r)*1.2,0.02);
+  vec3 hot=mix(vC,vec3(1.0),0.55);
+  vec3 c=vC*0.13+vC*smoothstep(0.45,0.95,r)*0.28;
+  c+=vC*ring(r,0.64,0.028,aa)*0.95;
+  if(uSun>0.5){float a=atan(n.y,n.x)/6.2831853;float seg=step(0.28,fract(a*6.0+uT*0.08));
+    c+=hot*ring(r,0.8,0.035,aa)*seg*1.1;c=mix(c,vec3(1.0,0.99,0.96),1.0-smoothstep(0.26,0.36+aa,r));c=mix(c,hot,(1.0-smoothstep(0.36,0.46+aa,r))*step(0.26,r)*0.8);}
+  else c=mix(c,hot,(1.0-smoothstep(0.2,0.29+aa,r))*0.9);
+  c=mix(c,hot*1.15,smoothstep(0.86-aa,0.88+aa,r));
+  gl_FragColor=vec4(c*exp(-uFog*uFog*vD*vD),1.0);}`});
+}
 // Every skin is the same 3D universe — solar systems in galaxies — dressed differently:
-// colours, sky, node style, link glow, and a few props of its own (HUD rings, a neon grid, rain).
+// colours, sky, node style, link glow, and a few props of its own (HUD rings, a neon grid, light cycles).
 const SKINS={
   monarch:{name:'Monarch',mark:'🦋',tag:'Deep night sky, warm suns, soft nebulae, butterflies on the wing.',
     css:{bg:'#16161b','bg-2':'#1d1d23','bg-3':'#28282f',border:'#33333b','border-2':'#46464f',text:'#ececf1',muted:'#a0a0ab',faint:'#6d6d78',accent:'#F0923F','accent-2':'#FFC48A',sky:'#08080d',lbl:'#d9d9e0','lbl-sun':'#fff4e6',halo:'#07070c'},
@@ -336,36 +374,34 @@ void main(){vec3 n=normalize(vN);float ndv=clamp(dot(n,normalize(vV)),0.0,1.0),f
     wings:{base:'#7a1fa0',mid:'#d63cc8',tip:'#ff8de6',vein:'rgba(20,4,40,.95)',margin:'#1a0630',spot:'rgba(255,240,255,.95)',glow:'rgba(255,200,120,.9)',shade:'rgba(30,0,50,.55)',body:0x1a0630},kin:{head:0xffd6f7,headEm:0x7a1fa0,stalk:0xd18cff},
     pv:{stars:'#e0c3ff',cols:['#ff3fd0','#a05cff','#3df2ff','#ff9be9','#8b5cf6'],grid:true,sun:true,butterfly:true},
     features:['Striped horizon sun','Scrolling neon grid','Wireframe mountains','Chrome nodes','Chromatic links']},
-  matrix:{name:'Matrix',mark:'▚',tag:'Green phosphor on black. Glyph rain falls in 3D all around the graph.',
-    css:{bg:'#030805','bg-2':'#07120a','bg-3':'#0c1d10',border:'#153a1c','border-2':'#1f5228',text:'#c9ffd2',muted:'#6fcf84',faint:'#3f8a4f',accent:'#3cff6a','accent-2':'#9dffb4',sky:'#000000',lbl:'#a8ffbc','lbl-sun':'#e0ffe6',halo:'#000a02',font:'var(--mono)'},
-    sky:0x000000,fog:0.00042,rim:0x3cff6a,ambient:0.95,stars:[[520,1.3,0x3cff6a,0.22],[60,2.2,0xb8ffc8,0.4]],nebula:0.04,fade:0x04140a,line:0.36,sunEmissive:0x35d45f,wire:false,monarchs:true,extras:'rain',tint:{color:0x3cff6a,k:0.58},
-    // phosphor: every node is a CRT dot, a dim core with a hot fresnel rim, its own scanlines and a scan band sweeping up the world
-    phosphor:{rim:0xd6ffde,pow:1.8,core:0.2,sunCore:0.42,sunHot:0.66,mix:0.55,scan:0.45,lines:0.42,glow:0.36},
-    wings:{base:'#0f6b2a',mid:'#26b34b',tip:'#8fff9f',vein:'rgba(0,20,5,.95)',margin:'#03150a',spot:'rgba(220,255,225,.95)',glow:'rgba(200,255,200,.9)',shade:'rgba(0,25,5,.55)',body:0x03150a},kin:{head:0xc9ffd2,headEm:0x0f6b2a,stalk:0x6fdf84},
-    pv:{stars:'#3cff6a',cols:['#3cff6a','#9dffb4','#1fa84a','#c9ffd2','#2fd35e'],rain:true,wire:true,scan:true},
-    features:['3D glyph rain','Phosphor scanline nodes','Glowing links','Terminal readouts','Green butterflies & carriers']},
-  blueprint:{name:'Blueprint',mark:'✎',tag:'An engineering drawing: white ink on cyanotype blue, drafted circles, dimension callouts and a title block.',
-    css:{bg:'#0f3371','bg-2':'#123b7f','bg-3':'#18478f',border:'#4a72b4','border-2':'#6f92c9',text:'#f4f8ff',muted:'#b6cbee',faint:'#8aa7d8',accent:'#ffffff','accent-2':'#dbe8ff',sky:'#0f3573',lbl:'#e4eeff','lbl-sun':'#ffffff',halo:'#0f3573'},
-    sky:0x0f3573,fog:0.00024,rim:0xffffff,ambient:0.85,stars:[],nebula:0,fade:0x0f3573,line:0.46,sunEmissive:0xbfd2f5,wire:false,monarchs:true,extras:'grid',tint:{color:0xf2f6ff,k:0.42},
-    // ink: node fill toward the community colour, outline weight in px; orbit construction circles; datum floor
-    ink:{fill:0.10,sunFill:0.20,w:1.25,sunW:1.9,hatch:0.12,orbit:0.30,floor:[0.045,0.11,0.26]},
-    wings:{base:'#9fbcf0',mid:'#d0e0ff',tip:'#ffffff',vein:'rgba(15,45,110,.9)',margin:'#163e8f',spot:'rgba(30,70,150,.9)',glow:'rgba(255,255,255,.9)',shade:'rgba(20,50,120,.5)',body:0x163e8f},kin:{head:0xffffff,headEm:0x3d6fc4,stalk:0xdbe8ff},
-    pv:{cols:['#a9c8ff','#ffc2a6','#bfeaa6','#ffe3a0','#dcc0ff'],blueprint:true},
-    features:['Drafted ink circles','Dashed construction orbits','Centre marks on every sun','Dimension callouts','Drafting grid & title block','Print-friendly']},
+  tron:{name:'TRON',mark:'◎',icon:ICO.disc,tag:'The Grid. A black void over a glowing light-grid floor, identity-disc nodes, light-trail links, and light cycles racing their light walls.',
+    css:{bg:'#010507','bg-2':'#020b0f','bg-3':'#061a22',border:'#0b3a47','border-2':'#0f5566',text:'#dcfbff',muted:'#7fcfdc',faint:'#468f9b',accent:'#00e5ff','accent-2':'#8ff4ff',sky:'#000000',lbl:'#c8f7ff','lbl-sun':'#ffffff',halo:'#000000',
+      font:'"Avenir Next","Futura","Century Gothic","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif'},
+    // neon: every group colour is pushed to full saturation (it keeps its hue, so the legend still matches)
+    sky:0x000000,fog:0.00022,rim:0x00e5ff,ambient:0.8,stars:[],nebula:0.035,fade:0x010507,line:0.62,sunEmissive:0x00e5ff,wire:false,monarchs:true,extras:'tron',neon:true,cycles:true,
+    body:emis=>tronBodyMat(emis),
+    wings:{base:'#00596a',mid:'#00a9c2',tip:'#48ecff',vein:'rgba(0,16,22,.85)',margin:'#063a44',spot:'rgba(225,255,255,.98)',glow:'rgba(200,255,255,.95)',shade:'rgba(0,10,14,.5)',body:0x00202a},kin:{head:0x9ff5fb,headEm:0x0a6b75,stalk:0x5fd6e2},
+    pv:{tron:true},
+    features:['Light-grid floor','Light cycles & light walls','Identity-disc nodes','Light-trail links','Ride a light cycle']},
 };
-const DEFAULT_SKIN=(window.__ATLAS_SKIN__&&SKINS[window.__ATLAS_SKIN__])?window.__ATLAS_SKIN__:'monarch';
-let skinKey=DEFAULT_SKIN;try{const u=new URLSearchParams(location.search).get('skin');skinKey=(u&&SKINS[u])?u:(SKINS[localStorage.getItem('atlas.skin')]?localStorage.getItem('atlas.skin'):DEFAULT_SKIN);}catch(e){}
+// retired skins: a saved or linked "matrix" becomes Tron, its successor; any other unknown name (e.g. the old "blueprint") is the default
+const SKIN_ALIAS={matrix:'tron'};
+const skinOf=k=>{k=String(k==null?'':k).trim().toLowerCase();k=SKIN_ALIAS[k]||k;return Object.prototype.hasOwnProperty.call(SKINS,k)?k:null;};
+const DEFAULT_SKIN=skinOf(window.__ATLAS_SKIN__)||'monarch';
+let skinKey=DEFAULT_SKIN;try{skinKey=skinOf(new URLSearchParams(location.search).get('skin'))||skinOf(localStorage.getItem('atlas.skin'))||DEFAULT_SKIN;}catch(e){}
 let SKIN=SKINS[skinKey];
 const state={labels:true,monarchs:true,walkers:true,idle:true,nsize:1,lw:1,inferred:true,hidden:new Set(),rotate:true,speed:0.5,spacing:1,live:false,repel:2600,center:0.35,dist:80};
 const edgeVisible=e=>state.inferred||e.confidence==='EXTRACTED';
 const nodeVisible=id=>!state.hidden.has(base[id].community);
 
 // ══════════════════════════════════════════ 3D — galaxy of solar systems ══
-// LITE: the cheap path for phones and weak devices. Skins with heavy extras (monarch, synthwave, matrix, blueprint)
+// LITE: the cheap path for phones and weak devices. Skins with heavy extras (monarch, synthwave, tron)
 // draw fewer stars / rain columns, bake smaller textures and skip their biggest overdraw layers. The graph itself is
 // identical. ?lite=1 or ?lite=0 forces it either way.
 const LITE=(()=>{try{const q=new URLSearchParams(location.search).get('lite');if(q==='1')return true;if(q==='0')return false;}catch(e){}
-  const small=Math.min(window.innerWidth||1e4,window.innerHeight||1e4)<=600,weak=(navigator.deviceMemory||8)<=2||(navigator.hardwareConcurrency||8)<=2;
+  // judged by the device's screen, not the window: an Atlas embedded in a short iframe on a desktop is not a phone
+  const scr=Math.min((window.screen&&screen.width)||1e4,(window.screen&&screen.height)||1e4);
+  const small=scr<560,weak=(navigator.deviceMemory||8)<=2||(navigator.hardwareConcurrency||8)<=2;
   return small||weak;})();
 const V3=(()=>{
   if(!window.THREE)return null;
@@ -458,7 +494,10 @@ const V3=(()=>{
   let planets=null,suns=null,lines=null,glows=[],planetIds=[],sunIds=[],slotOf={},edgeSlots={},edgeGeom=null,edgeColor=null,edgeList=[];
   const _m=new THREE.Matrix4(),_c=new THREE.Color(),_s=new THREE.Vector3(),_fade=new THREE.Color(SKIN.fade),_tc=new THREE.Color();
   // every colour in the scene passes through here, so a skin can pull the whole palette toward its own hue
-  const skinCol=(c,hex)=>{c.set(hex);if(SKIN.tint)c.lerp(_tc.set(SKIN.tint.color),SKIN.tint.k);return c;};
+  const _nh={h:0,s:0,l:0};
+  const skinCol=(c,hex)=>{c.set(hex);if(SKIN.tint)c.lerp(_tc.set(SKIN.tint.color),SKIN.tint.k);
+    if(SKIN.neon){c.getHSL(_nh);if(_nh.s<0.12)c.setHSL(0.52,0.35,0.74);else c.setHSL(_nh.h,Math.min(1,0.78+_nh.s*0.3),Math.min(0.62,Math.max(0.5,_nh.l)));}   // neon: same hue, full saturation
+    return c;};
   const rPlanet=id=>(1.1+2.4*Math.sqrt(Math.min(1,base[id].w/maxW)))*state.nsize;
   const rSun=s=>(3.6+3.2*Math.sqrt(s.n/maxN))*state.nsize;
   function clearMeshes(){[planets,suns,lines].forEach(o=>{if(o){scene.remove(o);if(o.geometry&&o!==planets&&o!==suns)o.geometry.dispose();o.material.dispose();}});glows.forEach(g=>{scene.remove(g);g.material.dispose();});glows=[];lblLayer.innerHTML='';sunLbl={};planetLbl={};realmLbl=[];}
@@ -517,11 +556,11 @@ const V3=(()=>{
   function pick(){pendingPick=false;ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects([planets,suns].filter(Boolean));
     // a monarch under the pointer wins over whatever is behind it (never the one you're riding — it's right in front of the camera)
     let mh=null;if(monarchGroup.visible){const h=ray.intersectObject(monarchGroup,true)[0];if(h&&(!hits[0]||h.distance<hits[0].distance)){let o=h.object;while(o&&o.parent!==monarchGroup)o=o.parent;mh=monarchs.find(m=>m.g===o)||null;if(mh===ride)mh=null;}}
-    if(mh!==hoverM){hoverM=mh;if(hoverM){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML='<b>🦋 Monarch</b><span>click to ride it · steer with the arrow keys or WASD</span>';tip.style.display='block';}else{tip.style.display='none';renderer.domElement.style.cursor='';}}
+    if(mh!==hoverM){hoverM=mh;if(hoverM){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML=`<b>${ICO.butterfly}Monarch</b><span>click to ride it · steer with the arrow keys or WASD</span>`;tip.style.display='block';}else{tip.style.display='none';renderer.domElement.style.cursor='';}}
     if(hoverM)return;
     // a kinesin under the pointer (only the visible, zoomed-in ones can be hit)
     let wh=null;if(walkerGroup.visible&&!mh){const h=ray.intersectObject(walkerGroup,true)[0];if(h&&(!hits[0]||h.distance<hits[0].distance)){let o=h.object;while(o&&o.parent!==walkerGroup)o=o.parent;wh=walkers.find(w=>w.g===o)||null;if(wh===walk)wh=null;}}
-    if(wh!==hoverW){hoverW=wh;if(hoverW){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML='<b>🧬 Kinesin</b><span>click to take it for a walk · arrows or WASD steer</span>';tip.style.display='block';}else if(!hoverM){tip.style.display='none';renderer.domElement.style.cursor='';}}
+    if(wh!==hoverW){hoverW=wh;if(hoverW){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML=SKIN.cycles?`<b>${ICO.cycle}Light cycle</b><span>click to ride it · arrows or WASD pick the turns</span>`:`<b>${ICO.kinesin}Kinesin</b><span>click to take it for a walk · arrows or WASD steer</span>`;tip.style.display='block';}else if(!hoverM){tip.style.display='none';renderer.domElement.style.cursor='';}}
     if(hoverW)return;
     const id=idAt(hits[0]);if(id!==hover){setHover(id);}}
   function scaleSlot(id,k){const sl=slotOf[id];if(!sl)return;const mesh=sl.mesh==='p'?planets:suns;const r=(sl.mesh==='p'?rPlanet(id):rSun(systems.find(x=>x.sun===id)))*k;_m.makeScale(r,r,r).setPosition(pos[id]);mesh.setMatrixAt(sl.i,_m);mesh.instanceMatrix.needsUpdate=true;}
@@ -572,7 +611,7 @@ const V3=(()=>{
   // ── labels projection ──
   const _v=new THREE.Vector3();
   function projectLabels(){
-    const W=window.innerWidth,H=window.innerHeight,cam=camera.position,taken=[],ppu=pxPer();
+    const W=window.innerWidth,H=window.innerHeight,cam=camera.position,taken=JV&&jvDom?jvDom.box.slice():[],ppu=pxPer();
     const fits=(x,y,w,h)=>{for(const r of taken){if(x<r.x+r.w&&x+w>r.x&&y<r.y+r.h&&y+h>r.y)return false;}taken.push({x,y,w,h});return true;};
     const off=d=>d.classList.remove('on');
     const put=(d,x,y,w,h)=>{if(x<-w||x>W+w||y<-h||y>H+h||!fits(x-w/2,y-h/2,w,h)){off(d);return;}d.style.transform=`translate(-50%,-50%) translate(${x|0}px,${y|0}px)`;d.classList.add('on');};
@@ -731,6 +770,69 @@ const V3=(()=>{
       if(m.vel.lengthSq()>1e-6){_look.copy(m.g.position).add(m.vel);m.g.lookAt(_look);m.g.rotateZ(m.bank);}
     }
   }
+  // ── light cycles (TRON): a bike and its light wall, shared by the riders on the floor grid and the ones on the links ──
+  // A bike is two meshes on shared geometry, unit length along +x, wheels on z=0, up +z: a dark glass shell (the extruded
+  // Tron: Legacy side profile, the rider tucked into it, dark wheel discs) and one glow mesh in the bike's colour (two big
+  // wheel rings, a light line down each flank, nose and tail lights), plus a soft glow sprite so a far-off bike still reads.
+  let CYC=null;
+  function mergeGeo(list){let n=0;const parts=list.map(g=>{const q=g.index?g.toNonIndexed():g;n+=q.attributes.position.count;return q;});
+    const P=new Float32Array(n*3);let o=0;parts.forEach(q=>{P.set(q.attributes.position.array,o);o+=q.attributes.position.array.length;});
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));return g;}
+  function cycleGeo(){
+    if(CYC)return CYC;
+    const sh=new THREE.Shape();sh.moveTo(-0.47,0.1);sh.lineTo(-0.53,0.2);sh.quadraticCurveTo(-0.46,0.35,-0.25,0.345);sh.lineTo(-0.09,0.265);
+    sh.quadraticCurveTo(0.06,0.24,0.2,0.305);sh.quadraticCurveTo(0.43,0.345,0.53,0.17);sh.lineTo(0.47,0.1);sh.lineTo(-0.47,0.1);
+    const shell=new THREE.ExtrudeGeometry(sh,{depth:0.09,bevelEnabled:false,curveSegments:5});shell.translate(0,0,-0.045);shell.rotateX(Math.PI/2);
+    const torso=new THREE.BoxGeometry(0.2,0.07,0.055);torso.rotateY(0.32);torso.translate(-0.05,0,0.3);
+    const helmet=new THREE.SphereGeometry(0.045,8,6);helmet.scale(1.3,1,0.9);helmet.translate(0.075,0,0.325);
+    const disc=x=>{const d=new THREE.CircleGeometry(0.15,18);d.rotateX(Math.PI/2);d.translate(x,0,0.175);return d;};
+    const ring=x=>{const t=new THREE.TorusGeometry(0.158,0.019,5,26);t.rotateX(Math.PI/2);t.translate(x,0,0.175);return t;};
+    // the silhouette in light: a thin band traced round the side profile, on each flank
+    const outl=sh.getPoints(5),strip=y=>{const P=[],t=0.0095;for(let i=0;i<outl.length;i++){const a=outl[i],b=outl[(i+1)%outl.length],dx=b.x-a.x,dz=b.y-a.y,l=Math.hypot(dx,dz);if(l<1e-5)continue;
+        const nx=-dz/l*t,nz=dx/l*t,q=[[a.x-nx,a.y-nz],[a.x+nx,a.y+nz],[b.x+nx,b.y+nz],[b.x-nx,b.y-nz]];[0,1,2,0,2,3].forEach(k=>P.push(q[k][0],y,q[k][1]));}
+      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));return g;};
+    const nose=new THREE.BoxGeometry(0.05,0.1,0.02);nose.translate(0.49,0,0.15);const tail=new THREE.BoxGeometry(0.03,0.08,0.025);tail.translate(-0.515,0,0.21);
+    const hub=x=>{const t=new THREE.TorusGeometry(0.055,0.01,4,14);t.rotateX(Math.PI/2);t.translate(x,0,0.175);return t;};
+    return CYC={shell:mergeGeo([shell,torso,helmet,disc(-0.3),disc(0.3)]),glow:mergeGeo([ring(-0.3),ring(0.3),strip(0.047),strip(-0.047),nose,tail,hub(-0.3),hub(0.3)])};
+  }
+  const CYC_SHELL=new THREE.MeshBasicMaterial({color:0x03090c,transparent:true,opacity:0.88,depthWrite:false});
+  function makeCycle(col){
+    const G=cycleGeo(),g=new THREE.Group(),hot=new THREE.Color(col).lerp(new THREE.Color(0xffffff),0.3);
+    const shell=new THREE.Mesh(G.shell,CYC_SHELL);const gm=new THREE.MeshBasicMaterial({color:hot,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+    const glow=new THREE.Mesh(G.glow,gm);glow.renderOrder=2;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:new THREE.Color(col),transparent:true,opacity:0.55,depthWrite:false,blending:THREE.AdditiveBlending}));sp.scale.set(1.5,1.5,1);sp.position.z=0.18;
+    g.add(shell,glow,sp);
+    return {g,gm,sp,setColor(c){gm.color.copy(c).lerp(_cw,0.3);sp.material.color.copy(c);},dispose(){gm.dispose();sp.material.dispose();}};
+  }
+  const _cw=new THREE.Color(0xffffff),_rbv=new THREE.Vector3(),_UPZ=new THREE.Vector3(0,0,1);
+  // the light wall: a tall thin ribbon along the path, additive, brightest along its top edge, fading out toward the tail.
+  // Capped buffer: the head is the bike, then the corners it turned at (newest first); corners past the tail are dropped.
+  const RIB_VS=`attribute float aD;attribute float aH;uniform float uL,uFog;varying float vD,vH,vF;
+void main(){vD=aD;vH=aH;vec4 mv=modelViewMatrix*vec4(position,1.0);vF=exp(-uFog*uFog*mv.z*mv.z);gl_Position=projectionMatrix*mv;}`;
+  const RIB_FS=`uniform vec3 uC;uniform float uL,uGap,uOp;varying float vD,vH,vF;
+void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(3.0-2.0*t)*smoothstep(uGap,uGap*1.6,vD);
+ float top=smoothstep(0.8,1.0,vH),bot=1.0-smoothstep(0.0,0.14,vH);
+ vec3 c=uC*(0.2+0.24*vH+top*1.4+bot*0.55)+vec3(1.0)*smoothstep(0.93,1.0,vH)*0.55;
+ gl_FragColor=vec4(c,fade*uOp*vF);}`;
+  function makeRibbon(cap,col,h,L,gap){
+    const P=new Float32Array(cap*6),D=new Float32Array(cap*2),H=new Float32Array(cap*2);for(let i=0;i<cap;i++)H[i*2+1]=1;
+    const idx=[];for(let i=0;i<cap-1;i++){const a=i*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}
+    const g=new THREE.BufferGeometry();g.setIndex(idx);const pa=new THREE.BufferAttribute(P,3),da=new THREE.BufferAttribute(D,1);pa.setUsage(THREE.DynamicDrawUsage);da.setUsage(THREE.DynamicDrawUsage);
+    g.setAttribute('position',pa);g.setAttribute('aD',da);g.setAttribute('aH',new THREE.BufferAttribute(H,1));g.setDrawRange(0,0);
+    const m=new THREE.Mesh(g,new THREE.ShaderMaterial({vertexShader:RIB_VS,fragmentShader:RIB_FS,uniforms:{uC:{value:new THREE.Color(col)},uL:{value:L},uGap:{value:gap},uOp:{value:1},uFog:{value:SKIN.fog}},
+      transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide}));
+    m.frustumCulled=false;m.renderOrder=1;
+    return {m,pa,da,P,D,cap,h,L,pts:[]};}
+  function ribbonWrite(rb,p,n){
+    let k=0,acc=0,i=0;const P=rb.P,D=rb.D,h=rb.h;
+    const put=(q,u,d)=>{const o=k*6;P[o]=q.x;P[o+1]=q.y;P[o+2]=q.z;P[o+3]=q.x+u.x*h;P[o+4]=q.y+u.y*h;P[o+5]=q.z+u.z*h;D[k*2]=D[k*2+1]=d;k++;};
+    put(p,n,0);let prev=p;
+    for(;i<rb.pts.length&&k<rb.cap;i++){const c=rb.pts[i],d=prev.distanceTo(c.p);
+      if(acc+d>=rb.L){_rbv.copy(c.p).sub(prev).multiplyScalar((rb.L-acc)/Math.max(d,1e-6)).add(prev);put(_rbv,c.n,rb.L);i++;break;}
+      acc+=d;put(c.p,c.n,acc);prev=c.p;}
+    if(i<rb.pts.length)rb.pts.length=i;
+    rb.pa.needsUpdate=true;rb.da.needsUpdate=true;rb.m.geometry.setDrawRange(0,Math.max(0,k-1)*6);}
+  function disposeRibbon(rb){if(rb.m.parent)rb.m.parent.remove(rb.m);rb.m.geometry.dispose();rb.m.material.dispose();}
   // ── kinesins: like the motor protein, a two-footed carrier walks hand-over-hand along a connection with a
   // packet of data on its back. Only some links get one, and they only show once you're close enough to see them.
   const walkerGroup=new THREE.Group();scene.add(walkerGroup);const walkers=[];
@@ -743,14 +845,21 @@ const V3=(()=>{
     w.dir=pos[w.b].clone().sub(pos[w.a]);w.len=w.dir.length();w.dir.normalize();
     const t=new THREE.Vector3().crossVectors(w.dir,new THREE.Vector3(0,0,1));if(t.lengthSq()<1e-6)t.set(1,0,0);t.normalize();
     w.n=new THREE.Vector3().crossVectors(t,w.dir).normalize();w.s=w.u*1.2;w.p=0;
-    skinCol(w.cargo.material.color,base[w.a].color);w.cargo.material.emissive.copy(w.cargo.material.color);}
+    if(w.bike){skinCol(_c,base[w.a].color);w.bike.setColor(_c);w.rb.m.material.uniforms.uC.value.copy(_c);}
+    else{skinCol(w.cargo.material.color,base[w.a].color);w.cargo.material.emissive.copy(w.cargo.material.color);}}
   function buildWalkers(){
-    if(walk)endWalk();idleW=null;walkers.forEach(w=>walkerGroup.remove(w.g));walkers.length=0;skinKinesins();
+    if(walk)endWalk();idleW=null;walkers.forEach(w=>{walkerGroup.remove(w.g);if(w.bike){w.bike.dispose();disposeRibbon(w.rb);}});walkers.length=0;skinKinesins();
     const ok=[];for(let i=0;i<edgeList.length;i++)if(walkerEdgeOK(i))ok.push(i);
     const count=Math.min(150,Math.max(0,Math.round(edgeList.length/25)),ok.length);
     for(let k=0;k<count;k++){
       const i=ok.splice(Math.floor(wRng()*ok.length),1)[0];const e=edgeList[i];
       const u=1.5*state.nsize,g=new THREE.Group();
+      if(SKIN.cycles){   // TRON: a light cycle rides the links node to node, laying its light wall behind it
+        const col=skinCol(new THREE.Color(),base[e.from].color),bike=makeCycle(col);bike.g.scale.setScalar(u*2.7);g.add(bike.g);
+        const rb=makeRibbon(LITE?14:24,col,u*1.25,u*(LITE?16:28),u*1.45);walkerGroup.add(rb.m);
+        const w={g,bike,rb,u,cargo:g,L:0,period:1,lead:0,i:-1,spd:6+wRng()*3};walkerSetEdge(w,i,wRng()<0.5?e.from:e.to);w.s=wRng()*w.len;
+        rb.pts.push({p:pos[w.a].clone(),n:w.n.clone()});   // the wall starts where the ride did
+        walkerGroup.add(g);walkers.push(w);continue;}
       const heads=[0,1].map(()=>{const h=new THREE.Mesh(HEAD_GEO,HEAD_MAT);h.scale.setScalar(0.2*u);g.add(h);return h;});
       const legs=[0,1].map(()=>{const l=new THREE.Mesh(STALK_GEO,STALK_MAT);g.add(l);return l;});
       const stalk=new THREE.Mesh(STALK_GEO,STALK_MAT);g.add(stalk);
@@ -763,6 +872,7 @@ const V3=(()=>{
     for(const w of walkers){
       const ctl=w===walk;
       const mult=ctl?(held(' ')?0:held('Shift')?2.6:(held('ArrowUp','w')?1.7:0.7)):1;
+      if(w.bike){cycleStep(w,dt*(ctl?(held(' ')?0.05:held('Shift')?1.9:held('ArrowUp','w')?1.4:1):1),ctl,ppu,cam);continue;}
       w.p+=dt/w.period*mult;
       while(w.p>=1){w.p-=1;w.s+=w.L;w.lead=1-w.lead;}
       if(w.s+w.L>w.len-w.u*0.8){   // reached the far node: carry on down another of its links, or turn back
@@ -788,6 +898,23 @@ const V3=(()=>{
       w.cargo.material.opacity=0.6+0.28*Math.min(1,(px-5)/10);
     }
   }
+  // a light cycle on the links: rides straight through each node onto another of its links (a crisp turn, the wall keeps both
+  // legs), turns back at a dead end; the one you ride takes ←/→ at the next node
+  const _wn=new THREE.Vector3(),_wm=new THREE.Matrix4(),_wy=new THREE.Vector3();
+  function cycleNext(w,ctl){
+    const opts=(edgeSlots[w.b]||[]).filter(j=>j!==w.i&&walkerEdgeOK(j));let next=opts.length?opts[Math.floor(wRng()*opts.length)]:null;
+    if(ctl&&opts.length){const bias=(held('ArrowRight','d')?1:0)-(held('ArrowLeft','a')?1:0);
+      if(bias){_wr.set(bias,0,0).applyQuaternion(camera.quaternion);let best=-2;for(const j of opts){const e=edgeList[j];const other=e.from===w.b?e.to:e.from;_wb2.copy(pos[other]).sub(pos[w.b]).normalize();const d=_wb2.dot(_wr);if(d>best){best=d;next=j;}}}}
+    return next;}
+  function cycleCorner(w,p,oldN){w.rb.pts.unshift({p:p.clone(),n:w.n.clone()},{p:p.clone(),n:oldN.clone()});if(w.rb.pts.length>w.rb.cap*2)w.rb.pts.length=w.rb.cap*2;}
+  function cycleStep(w,dt,ctl,ppu,cam){
+    w.s+=w.u*w.spd*dt;
+    for(let guard=0;w.s>=w.len&&guard<4;guard++){const over=w.s-w.len,node=pos[w.b],next=cycleNext(w,ctl);_wn.copy(w.n);
+      walkerSetEdge(w,next!=null?next:w.i,w.b);w.s=Math.min(over,w.len*0.5);cycleCorner(w,node,_wn);}
+    _wa.copy(pos[w.a]).addScaledVector(w.dir,w.s);
+    const dist=cam.distanceTo(_wa),px=w.u*2.2*ppu/dist;w.g.visible=px>5||ctl||w===idleW;w.rb.m.visible=w.g.visible;if(!w.g.visible)return;
+    w.g.position.copy(_wa);_wy.crossVectors(w.n,w.dir);_wm.makeBasis(w.dir,_wy,w.n);w.g.quaternion.setFromRotationMatrix(_wm);
+    ribbonWrite(w.rb,_wa,w.n);}
   // ── ride a monarch: click one and you're flying it — arrows / WASD steer, Shift boosts, Space hovers, Esc hops off ──
   const rideEl=document.getElementById('ride-hint');
   let ride=null,rideHeading=0,ridePitch=0,trick=null;const keys=new Set();
@@ -839,21 +966,29 @@ const V3=(()=>{
   }
   // ── walk a kinesin: click one and you're it. ↑/W hurry, ↓/S turn around, ←/→ pick the link at the next node, Shift sprint, Space rest, J jump to another galaxy ──
   let walk=null,idleW=null;const _wc=new THREE.Vector3(),_ws=new THREE.Vector3(),_wt=new THREE.Vector3();
-  const RIDE_HTML=document.getElementById('ride-hint').innerHTML;
-  const WALK_HTML='🧬 <kbd>↑</kbd><kbd>W</kbd> hurry &nbsp; <kbd>↓</kbd><kbd>S</kbd> turn around &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next link &nbsp; <kbd>Shift</kbd> sprint &nbsp; <kbd>Space</kbd> rest &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · let go</button>';
+  const RIDE_HTML=document.getElementById('ride-hint').innerHTML.replace('<!--ico-->',ICO.butterfly);setHint(RIDE_HTML);
+  const WALK_HTML=()=>SKIN.cycles?ICO.cycle+'<kbd>↑</kbd><kbd>W</kbd> throttle &nbsp; <kbd>↓</kbd><kbd>S</kbd> U-turn &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next turn &nbsp; <kbd>Shift</kbd> boost &nbsp; <kbd>Space</kbd> brake &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · get off</button>'
+    :ICO.kinesin+'<kbd>↑</kbd><kbd>W</kbd> hurry &nbsp; <kbd>↓</kbd><kbd>S</kbd> turn around &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next link &nbsp; <kbd>Shift</kbd> sprint &nbsp; <kbd>Space</kbd> rest &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · let go</button>';
   function setHint(html){const el=document.getElementById('ride-hint');el.innerHTML=html;el.querySelector('#ride-off').addEventListener('click',()=>{if(ride)endRide();if(walk)endWalk();});}
   function beginWalk(w){if(!w)return;if(idle)endIdle();if(ride)endRide();walk=w;tw=null;controls.autoRotate=false;controls.enabled=false;keys.clear();
-    hoverW=null;setHover(null);tip.style.display='none';renderer.domElement.style.cursor='';setHint(WALK_HTML);rideEl.classList.add('on');walkCam(w,1);}
+    hoverW=null;setHover(null);tip.style.display='none';renderer.domElement.style.cursor='';setHint(WALK_HTML());rideEl.classList.add('on');walkCam(w,1);}
   function endWalk(){const w=walk;if(!w)return;walk=null;keys.clear();controls.enabled=true;controls.autoRotate=false;controls.target.copy(w.cargo.position);controls.update();lastInput=performance.now();rideEl.classList.remove('on');setHint(RIDE_HTML);}
-  function walkTurn(w){walkerSetEdge(w,w.i,w.b);w.s=Math.max(w.u,w.len-w.s);}
+  function walkTurn(w){
+    if(w.bike){_wc.copy(pos[w.a]).addScaledVector(w.dir,w.s);_wn.copy(w.n);const s=w.s;walkerSetEdge(w,w.i,w.b);w.s=Math.max(0,w.len-s);cycleCorner(w,_wc,_wn);return;}
+    walkerSetEdge(w,w.i,w.b);w.s=Math.max(w.u,w.len-w.s);}
   function walkJump(w){   // hop to a random link in a different galaxy (or anywhere else in a single map)
     const here=w.a&&base[w.a].realm;const ok=[];for(let i=0;i<edgeList.length;i++){if(!walkerEdgeOK(i))continue;if(multi()&&base[edgeList[i].from].realm===here)continue;ok.push(i);}
-    if(!ok.length)return;const i=ok[Math.floor(wRng()*ok.length)],e=edgeList[i];walkerSetEdge(w,i,wRng()<0.5?e.from:e.to);w.s=w.u*1.2;
+    if(!ok.length)return;const i=ok[Math.floor(wRng()*ok.length)],e=edgeList[i];walkerSetEdge(w,i,wRng()<0.5?e.from:e.to);w.s=w.u*1.2;if(w.rb){w.rb.pts.length=0;w.rb.pts.push({p:pos[w.a].clone(),n:w.n.clone()});}
     const sys=systems.find(x=>x.cid===sysOf[w.a]);if(sys){setFocused(sys.cid);}walkCam(w,1);}
   window.addEventListener('keydown',ev=>{if(!walk||ev.repeat||/INPUT|TEXTAREA/.test(ev.target.tagName))return;const k=keyName(ev);if(k==='ArrowDown'||k==='s')walkTurn(walk);if(k==='j')walkJump(walk);});
   function walkCam(w,k){
     _ws.crossVectors(w.dir,w.n).normalize();
     _wc.copy(pos[w.a]).addScaledVector(w.dir,w.s);const u=w.u;
+    if(w.bike){   // chase cam: steeply above and behind the bike, off to one side: its light wall shows (not edge-on) and the node it just left stays under the line of sight it's riding
+      const nar=Math.min(1,camera.aspect*1.2);_wt.copy(_wc).addScaledVector(w.dir,u*3*nar);_wc.addScaledVector(w.n,u*7.5).addScaledVector(w.dir,-u*6).addScaledVector(_ws,u*3.6*nar);
+      for(const id of [w.a,w.b]){const sl=slotOf[id];if(!sl)continue;const r=(sl.mesh==='s'?rSun(sysBySun[id]):rPlanet(id))*1.7;_wr.copy(_wc).sub(pos[id]);const d=_wr.length();   // never inside the node it left or is heading for
+        if(d<r){_wc.copy(pos[id]).addScaledVector(d>1e-4?_wr.multiplyScalar(1/d):w.n,r);}}
+      camera.position.lerp(_wc,k);controls.target.lerp(_wt,Math.min(1,k*1.5));return;}
     _wt.copy(_wc).addScaledVector(w.n,u*1.85);   // where the cargo sits — computed, since a far-off kinesin's mesh hasn't been placed yet
     _wc.addScaledVector(w.n,u*2.6).addScaledVector(w.dir,-u*5).addScaledVector(_ws,u*3.2);
     camera.position.lerp(_wc,k);controls.target.lerp(_wt,Math.min(1,k*1.5));}
@@ -980,17 +1115,25 @@ gl_FragColor=vec4(uColor*(0.8+v*0.6),al);}`;
       return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${s}<text class="tt" x="${tx}" y="${ty}">${title}</text><g class="pt"><path d="M${e-2*side} ${cy}l${-8*side} -4v8z"/><text x="${e-13*side}" y="${cy+3}" text-anchor="${side<0?'start':'end'}"></text></g></svg>`;};
     const h=document.createElement('div');h.id='jv-hud';h.setAttribute('aria-hidden','true');
     h.innerHTML=`<div id="jv-tape"><svg width="2400" height="28" viewBox="0 0 2400 28">${tape}</svg><b id="jv-hdg">HDG 000</b></div>
-<div id="jv-ro"><div class="h"><span>ATLAS // TACTICAL</span><i>● LIVE</i></div>
-<div class="r"><span>TARGET</span><b id="jv-sys">GALAXY</b></div><div class="r"><span id="jv-nk">NODES</span><b id="jv-n">0</b></div><div class="r"><span>LINKS</span><b id="jv-l">0</b></div>
-<div class="r x"><span>GROUPS</span><b id="jv-g">0</b></div><div class="r x"><span>VERIFIED</span><b id="jv-v">0%</b></div><div class="r x"><span>RANGE</span><b id="jv-d">0</b></div>
-<div class="bars" id="jv-bars"></div><div class="cap"><span id="jv-cap">GROUP SIZE</span><span id="jv-cap2"></span></div></div>
+<div id="jv-ro"><div class="h"><span>TACTICAL</span><em id="jv-sum">GALAXY</em><i>● LIVE</i></div>
+<div class="r"><span>TARGET</span><b id="jv-sys">GALAXY</b></div><div class="r"><span id="jv-nk">NODES</span><b id="jv-n">0</b></div><div class="r"><span>LINKS</span><b id="jv-l">0</b></div><div class="r"><span>GROUPS</span><b id="jv-g">0</b></div>
+<div class="bars" id="jv-bars"></div></div>
 <div id="jv-map"><svg viewBox="-64 -64 128 128"><circle r="60" class="o"/><circle r="40"/><circle r="20"/><path d="M-60 0H60M0 -60V60" class="x"/><g id="jv-blips"></g><g id="jv-fov"><path d="M0 0L-15 -44A46 46 0 0 1 15 -44Z"/></g></svg><div class="sweep"></div><div class="cap">SECTOR MAP</div></div>
 <div class="jv-arc l">${arc(-1,'ELV')}</div><div class="jv-arc r">${arc(1,'RNG')}</div>
 <div id="jv-lock"><i></i><i></i><i></i><i></i><span id="jv-lock-t"></span></div>`;
     document.body.appendChild(h);
     const q=s=>h.querySelector(s);
-    jvDom={h,tape:q('#jv-tape svg'),hdg:$e('jv-hdg'),sys:$e('jv-sys'),nk:$e('jv-nk'),n:$e('jv-n'),stats:$e('stats'),ro:$e('jv-ro'),roB:-1,l:$e('jv-l'),g:$e('jv-g'),v:$e('jv-v'),d:$e('jv-d'),bars:$e('jv-bars'),cap:$e('jv-cap'),cap2:$e('jv-cap2'),
-      blips:$e('jv-blips'),fov:$e('jv-fov'),lock:$e('jv-lock'),lockT:$e('jv-lock-t'),elv:q('.jv-arc.l .pt'),elvT:q('.jv-arc.l .pt text'),rng:q('.jv-arc.r .pt'),rngT:q('.jv-arc.r .pt text'),txt:{}};
+    jvDom={h,tape:q('#jv-tape svg'),hdg:$e('jv-hdg'),sys:$e('jv-sys'),nk:$e('jv-nk'),n:$e('jv-n'),stats:$e('stats'),ro:$e('jv-ro'),roB:-1,l:$e('jv-l'),g:$e('jv-g'),sum:$e('jv-sum'),bars:$e('jv-bars'),
+      blips:$e('jv-blips'),fov:$e('jv-fov'),lock:$e('jv-lock'),lockT:$e('jv-lock-t'),elv:q('.jv-arc.l .pt'),elvT:q('.jv-arc.l .pt text'),rng:q('.jv-arc.r .pt'),rngT:q('.jv-arc.r .pt text'),txt:{},fit:'lg',brand:$e('brand'),box:[]};
+    // The HUD is sized to the viewer's own box, not the window (an Atlas can sit in a 580px iframe on a big screen):
+    // lg — the full readout; md (under 700 tall or 900 wide) — the readout folds to a pill, the tape and sector map shrink;
+    // sm (phone width) — pill above the stats line, no tape / map / arcs.
+    const D=jvDom,fit=()=>{const r=el.getBoundingClientRect(),W=r.width||window.innerWidth,H=r.height||window.innerHeight;
+      const f=W<=720?'sm':(W<900||H<700)?'md':'lg',k=Math.max(0.74,Math.min(1,Math.min(W/1440,H/900)*1.08));
+      if(f!==D.fit){D.fit=f;D.ro.classList.toggle('pill',f!=='lg');D.ro.classList.remove('open');D.roB=-1;D.ro.style.bottom='';}
+      h.dataset.fit=f;h.style.setProperty('--jv-k',f==='lg'?Math.max(0.86,k).toFixed(3):k.toFixed(3));D.boxT=0;};
+    fit();if(window.ResizeObserver)new ResizeObserver(fit).observe(el);else window.addEventListener('resize',fit);
+    D.ro.addEventListener('click',()=>{if(D.ro.classList.contains('pill')){D.ro.classList.toggle('open');D.boxT=0;}});
     return jvDom;
   }
   function jvBuild(){
@@ -1072,7 +1215,7 @@ gl_FragColor=vec4(uColor*(0.8+v*0.6),al);}`;
     if(s){J.sysLinks=0;for(const e of edgeList)if(sysOf[e.from]===s.cid||sysOf[e.to]===s.cid)J.sysLinks++;}
     let vals,cap;if(s){vals=s.ids.slice(0,24).map(id=>base[id].degree);cap='LINK DEGREE';}else{vals=systems.slice(0,24).map(x=>J.cnt(x));cap='GROUP SIZE';}
     const mx=Math.max(1,...vals);D.bars.innerHTML=vals.map((v,i)=>`<i style="height:${(8+92*v/mx).toFixed(0)}%"${s&&i===0?' class="on"':''}></i>`).join('');
-    D.cap.textContent=cap;D.cap2.textContent='MAX '+mx;
+    D.bars.title=cap.toLowerCase()+' · max '+mx;
     D.blips.querySelectorAll('circle').forEach(c=>c.classList.toggle('on',s!=null&&+c.dataset.cid===s.cid));}
   function jvText(D,k,v){if(D.txt[k]!==v){D.txt[k]=v;D[k].textContent=v;}}
   function jvStep(dt,now){
@@ -1113,18 +1256,18 @@ gl_FragColor=vec4(uColor*(0.8+v*0.6),al);}`;
     // readouts at 4 Hz
     if(now-J.hudT<250)return;J.hudT=now;
     // phones: the readout sits just above the stats line, however many lines that wraps to
-    if(window.innerWidth<=720){const st=D.stats,top=st&&st.offsetParent?st.getBoundingClientRect().top:window.innerHeight-10,b=Math.max(14,Math.round(window.innerHeight-top+8));
+    if(D.fit==='sm'){const st=D.stats,top=st&&st.offsetParent?st.getBoundingClientRect().top:window.innerHeight-10,b=Math.max(14,Math.round(window.innerHeight-top+8));
       if(b!==D.roB){D.roB=b;D.ro.style.bottom=b+'px';}}else if(D.roB!==-1){D.roB=-1;D.ro.style.bottom='';}
     let name='GALAXY',nn=J.nAll,ng=sunIds.length;
     if(s){name=s.label;nn=J.cnt(s);}else if(focusedRealm!=null&&multi()){const R=realmList.find(x=>x.name===focusedRealm);if(R){name=R.name;nn=0;for(let i=0;i<R.systems.length;i++)nn+=J.cnt(R.systems[i]);ng=R.systems.length;}}
     jvText(D,'sys',String(name).toUpperCase());jvText(D,'n',String(nn));jvText(D,'l',String(s?J.sysLinks:edgeList.length));
-    jvText(D,'g',String(ng));jvText(D,'v',J.verified);jvText(D,'d',dist<1000?Math.round(dist)+' U':(dist/1000).toFixed(2)+'K U');
+    jvText(D,'g',String(ng));jvText(D,'sum',String(name).toUpperCase()+' · '+nn+' '+J.unit);
+    // labels keep clear of the readout and the brand block: their boxes go in first when labels are laid out (re-measured at 1 Hz)
+    if(now-(D.boxT||0)>1000){D.boxT=now;D.box.length=0;for(const e of [D.ro,D.brand]){if(!e||!e.offsetParent)continue;const r=e.getBoundingClientRect();if(r.width)D.box.push({x:r.left-6,y:r.top-6,w:r.width+12,h:r.height+12});}}
   }
   function buildExtras(){
     while(extras.children.length){const o=extras.children.pop();if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}}
     JV=SKIN.extras==='hud'?jvBuild():null;
-    if(SKIN.extras==='rain')buildMatrix();else mtx=null;
-    bpS=null;if(SKIN.extras==='grid')bpBuild();
     if(SKIN.extras==='synth'){
       if(extras.userData.step)extras.userData.step(0,0);   // a previous synth build: its hook sees its objects gone and frees them
       // Outrun: a sky dome at infinity (gradient, striped sun, wireframe mountains, grid floor melting into the horizon haze).
@@ -1189,15 +1332,11 @@ void main(){vec3 d=normalize(vDir);float e=dot(d,uUp);
   }
   gl_FragColor=vec4(c,1.0);}`}));
       dome.renderOrder=-10;dome.frustumCulled=false;
-      // LITE: the sky pass is the expensive one, so it renders at half resolution into a texture that one cheap
-      // full-screen blit stretches under the scene
-      let lo=null;
-      if(LITE){const rt=new THREE.WebGLRenderTarget(1,1,{depthBuffer:false,stencilBuffer:false}),dsc=new THREE.Scene();dsc.add(dome);
-        const blit=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({uniforms:{uT:{value:rt.texture}},depthTest:false,depthWrite:false,
-          vertexShader:`varying vec2 vU;void main(){vU=uv;gl_Position=vec4(position.xy,0.0,1.0);}`,fragmentShader:`uniform sampler2D uT;varying vec2 vU;void main(){gl_FragColor=texture2D(uT,vU);}`}));
-        blit.renderOrder=-10;blit.frustumCulled=false;extras.add(blit);lo={rt,dsc,blit};}
-      else extras.add(dome);
-      const own=lo?lo.blit:dome;
+      // The sky pass always renders at the canvas's full resolution: every edge in it (sun, bands, ridge line, grid) is
+      // anti-aliased per pixel with fwidth, which a half-size target stretched over the screen smears. LITE keeps it
+      // affordable with a lighter shader (major grid lines only, solid mountains), never with fewer pixels.
+      extras.add(dome);
+      const own=dome;
       // the floor itself is depth only: it hides the stars and the far side of the sky below the horizon
       const floor=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({colorWrite:false}));
       floor.position.z=z0;floor.renderOrder=-9;floor.frustumCulled=false;extras.add(floor);
@@ -1216,7 +1355,7 @@ void main(){vec3 d=normalize(vDir);float e=dot(d,uUp);
 void main(){float l=dot(vC,vec3(0.3,0.5,0.2));vec3 c=mix(vC,mix(uA,uB,vT)*l*1.7,0.62);c=mix(c,vec3(1.0,0.93,1.0),uLift)*(1.0+uLift);gl_FragColor=vec4(c,min(1.0,uOp*exp(-uFog*uFog*vD*vD)));}`}));
         chroma.frustumCulled=false;extras.add(chroma);lines.visible=false;};
       extras.userData.step=(dt)=>{
-        if(!own.parent){extras.userData.step=null;if(lo){lo.rt.dispose();dome.geometry.dispose();dome.material.dispose();}return;}   // the skin changed and buildExtras cleared us
+        if(!own.parent){extras.userData.step=null;return;}   // the skin changed and buildExtras cleared us (and disposed the dome)
         if(lines!==chromaOf)attach();
         if(chroma&&lines)CU.uOp.value=lines.material.opacity*(few?1.1:0.55);
         if(!rm)U.uTime.value+=dt;
@@ -1227,10 +1366,10 @@ void main(){float l=dot(vC,vec3(0.3,0.5,0.2));vec3 c=mix(vC,mix(uA,uB,vT)*l*1.7,
           if(az==null)az=t;else{let df=t-az;df-=Math.round(df/(Math.PI*2))*Math.PI*2;az+=df*(1-Math.exp(-dt*2.5));}}
         const a=az==null?Math.PI/2:az,ca=Math.cos(a),sa=Math.sin(a);U.uUp.value.set(sT*ca,sT*sa,cT);
         U.uSunD.value.set((cS*cT+sS*sT)*ca,(cS*cT+sS*sT)*sa,sS*cT-cS*sT);
-        if(lo){const cv=renderer.domElement,w=Math.max(1,cv.width>>1),h=Math.max(1,cv.height>>1);if(lo.rt.width!==w||lo.rt.height!==h)lo.rt.setSize(w,h);
-          const prev=renderer.getRenderTarget();renderer.setRenderTarget(lo.rt);renderer.render(lo.dsc,camera);renderer.setRenderTarget(prev);}};
+      };
     }
     if(SKIN.extras==='monarch')deepSky();
+    if(SKIN.extras==='tron')tronBuild();
   }
   // ── monarch: the deep-space sky ──
   // A sky dome with a milky band, colour-temperature stars that twinkle, soft dust nebulae around the systems,
@@ -1405,210 +1544,108 @@ void main(){float r=length(vQ)*2.0;if(r>1.0||vC.a<0.002)discard;
       neb.push({p:(R.c||new THREE.Vector3()).clone().add(_o),size:rr*sz,c:(R.meta&&R.meta.color?col(R.meta.color):PAL[(k+j)%PAL.length].clone()).lerp(PAL[pi],0.5),op:D.dust*0.5,rot:nr()*6.28});});});
     deepQuads(neb,T.dust,{NEB:1},0,1);
   }
-  // ── blueprint: the map as an engineering drawing ──
-  // Nodes are drafted circles: an ink outline of constant pixel weight over a light fill, drawn from the sphere's
-  // own view-space normal (no extra geometry). Suns get a hatched section and a centre mark. Every orbit is a
-  // dashed construction circle (one draw call), a datum grid lies under the galaxy, and a dimension callout
-  // measures whatever you are looking at. A sheet frame and title block sit on the #fx overlay.
-  const BP_VS=`uniform float uFogD;varying vec3 vP;varying vec3 vC;varying float vR;varying vec3 vCol;varying float vFog;
-void main(){mat4 im=mat4(1.0);
-#ifdef USE_INSTANCING
-im=instanceMatrix;
+  // ── TRON: the Grid ──
+  // A black void, a cyan light-grid floor under the galaxy that melts into the dark at the horizon (world-space lines on a plane that
+  // follows the camera, anti-aliased per pixel, cells under a few pixels fade out so there's no moiré), a faint horizon glow,
+  // light-trail links (an additive copy of the link geometry with a light racing along each), a neon ring round every sun, a soft
+  // glow behind every node, and light cycles racing the floor grid on crisp 90° turns, each laying a light wall.
+  // Per frame the CPU moves a handful of bikes and rewrites their few trail vertices; everything else is one time uniform.
+  const TRON_COLS=[0x00e5ff,0xff8a1f,0xff2bd6,0xffe23a,0x39ff9f];
+  let tronBikes=[],tronCell=1,tronZ0=0;
+  function tronBuild(){
+    const RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const R=Math.max(60,galaxyR),z0=-R*1.02,cell=R*0.095,T={t:0};tronCell=cell;tronZ0=z0;
+    const add=o=>{o.frustumCulled=false;extras.add(o);return o;};
+    // horizon: a dome at infinity, black with a thin cyan haze where the floor meets the sky
+    const dome=add(new THREE.Mesh(new THREE.SphereGeometry(100,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,depthTest:false,
+      vertexShader:`varying vec3 vDir;void main(){vDir=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+      fragmentShader:`varying vec3 vDir;void main(){float e=normalize(vDir).z;vec3 c=vec3(0.0,0.62,0.78)*exp(-abs(e+0.02)*36.0)*0.15+vec3(0.0,0.18,0.26)*exp(-abs(e)*7.0)*0.06;
+ gl_FragColor=vec4(c*(e<-0.02?0.5:1.0),1.0);}`})));dome.renderOrder=-10;
+    const U={uCell:{value:cell},uR:{value:R}};
+    const floor=add(new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({uniforms:U,defines:LITE?{LITE:1}:{},extensions:{derivatives:true},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+      vertexShader:`varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.0);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
+      fragmentShader:`uniform float uCell,uR;varying vec3 vW;
+float gline(vec2 g,vec2 fw,float w,out float glow){vec2 l=abs(fract(g+0.5)-0.5)/max(fw,1e-4);float px=min(l.x,l.y);float fade=1.0-smoothstep(0.16,0.45,max(fw.x,fw.y));
+  glow=exp(-px*0.32)*fade;return (1.0-smoothstep(w,w+1.0,px))*fade;}
+void main(){vec2 P=vW.xy/uCell,fw=fwidth(P);float g1,g2;
+  float mi=gline(P,fw,0.2,g1),mj=gline(P*0.25,fw*0.25,0.55,g2);
+  float d=length(vW.xy-cameraPosition.xy)/uR;
+  vec3 cy=vec3(0.0,0.86,1.0);
+  vec3 c=cy*(mi*0.16+mj*0.44+g2*0.12);
+#ifndef LITE
+  c+=cy*g1*0.05;
+  c+=vec3(0.0,0.3,0.4)*exp(-dot(vW.xy,vW.xy)/(uR*uR*1.8))*0.07;   // a faint pool of light under the galaxy
 #endif
-mat4 m=modelViewMatrix*im;vec4 c=m*vec4(0.0,0.0,0.0,1.0);vec4 mv=m*vec4(position*1.08,1.0);   // inflated so the coarse mesh covers the true disc
-vC=c.xyz;vR=length((m*vec4(1.0,0.0,0.0,0.0)).xyz);vP=mv.xyz;vCol=vec3(1.0);
-#ifdef USE_INSTANCING_COLOR
-vCol=instanceColor;
-#endif
-vFog=1.0-exp(-uFogD*uFogD*c.z*c.z);gl_Position=projectionMatrix*mv;}`;
-  // rho = distance from the pixel's view ray to the sphere centre, in radii: an exact circle at any tessellation
-  const BP_FS=`uniform vec3 uPaper,uInk;uniform float uW,uFill,uSun,uHatch,uPx,uInkK;
-varying vec3 vP;varying vec3 vC;varying float vR;varying vec3 vCol;varying float vFog;
-void main(){vec3 dir=normalize(vP);vec3 o=dir*dot(vC,dir)-vC;float rho=length(o)/vR;float aa=max(fwidth(rho),1e-4);
-  if(rho>1.0+2.5*aa)discard;                                                  // beyond: a thin paper gap, lines behind break at the circle
-  float inside=1.0-smoothstep(1.0,1.0+aa,rho);
-  float ink=smoothstep(1.0-(uW+1.0)*aa,1.0-uW*aa,rho)*inside;                // outline, uW device px at any size
-  vec3 inkC=mix(vCol,uInk,uInkK),fill=mix(uPaper,vCol,uFill);
-  if(uHatch>0.0){float P=7.0*uPx;float dd=abs(fract((gl_FragCoord.x+gl_FragCoord.y)/P)-0.5)*P*0.7071;
-    fill=mix(fill,vCol,(1.0-smoothstep(0.45*uPx,1.1*uPx,dd))*uHatch);}          // 45° section hatch
-  if(uSun>0.5){vec2 p=o.xy/vR;float r=length(p);vec2 fw=max(fwidth(p),vec2(1e-4));
-    float l=max(1.0-smoothstep(0.55,1.35,abs(p.x)/fw.x),1.0-smoothstep(0.55,1.35,abs(p.y)/fw.y));
-    float seg=max(step(r,0.13),step(0.25,r)*step(r,0.86));                   // centre mark: short dash, gap, long dash
-    ink=max(ink,l*seg*step(aa*6.0,1.0));}
-  fill=mix(uPaper,fill,inside);
-  gl_FragColor=vec4(mix(mix(fill,inkC,ink),uPaper,vFog),1.0);}`;
-  const BP_FLOOR_VS=`varying vec2 vW;varying float vD;void main(){vec4 w=modelMatrix*vec4(position,1.0);vW=w.xy;vec4 mv=viewMatrix*w;vD=-mv.z;gl_Position=projectionMatrix*mv;}`;
-  const BP_FLOOR_FS=`uniform float uCell,uFogD,uR;uniform vec3 uCol,uA;varying vec2 vW;varying float vD;
-float gridL(vec2 g){vec2 fw=max(fwidth(g),vec2(1e-5));vec2 l=abs(fract(g-0.5)-0.5)/fw;
-  return (1.0-min(min(l.x,l.y),1.0))*(1.0-smoothstep(0.22,0.5,max(fw.x,fw.y)));}   // fades cells under ~3px instead of moiré
-void main(){vec2 g=vW/uCell;
-#ifdef LITE
-  float a=gridL(g/5.0)*uA.y;
-#else
-  float a=max(gridL(g)*uA.x,gridL(g/5.0)*uA.y);
-#endif
-  vec2 fw=max(fwidth(vW),vec2(1e-5));vec2 ax=abs(vW)/fw;
-  vec2 t=fract(vW.yx/(uCell*2.0));vec2 cl=max(step(t,vec2(0.6)),step(vec2(0.72),t)*step(t,vec2(0.8)));   // dash-dot centre lines
-  a=max(a,max((1.0-min(ax.x/1.2,1.0))*cl.x,(1.0-min(ax.y/1.2,1.0))*cl.y)*uA.z);
-  a*=(1.0-smoothstep(0.45,1.0,length(vW)/uR))*exp(-uFogD*uFogD*vD*vD);
-  if(a<0.003)discard;gl_FragColor=vec4(uCol,a);}`;
-  let bpS=null;const _bpv=new THREE.Vector3(),_bpq=new THREE.Quaternion(),_bpO=new THREE.Vector3();
-  const bpNice=x=>{const p=Math.pow(10,Math.floor(Math.log10(Math.max(x,1e-6)))),m=x/p;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*p;};
-  const bpFmt=x=>x>=100?String(Math.round(x)):x.toFixed(1);
-  function bpSheet(){let el=document.getElementById('bp-sheet');if(el)return el;
-    el=document.createElement('div');el.id='bp-sheet';
-    el.innerHTML=`<i class="bp-fr"></i><div id="bp-tb"><div class="bp-r"><span>Project</span><b>${_e(ATLAS.title||'Monarch Atlas')}</b></div><div class="bp-r"><span>Drawing</span><b id="bp-dwg"></b></div>`+
-      `<div class="bp-g"><div><span>Nodes</span><b id="bp-n"></b></div><div><span>Links</span><b id="bp-e"></b></div><div><span>Groups</span><b id="bp-s"></b></div><div><span>Grid</span><b id="bp-grid"></b></div></div>`+
-      `<div class="bp-r bp-sc"><span>Scale</span><div id="bp-bar"><i></i><em><small>0</small><small id="bp-len"></small></em></div></div></div>`;
-    document.getElementById('fx').appendChild(el);return el;}
-  function bpBuild(){
-    const I=SKIN.ink||{},px=renderer.getPixelRatio(),R=Math.max(400,galaxyR);
-    // nodes → drafted circles (the meshes, their picking and hover scaling stay the engine's)
-    const inkMat=sun=>new THREE.ShaderMaterial({vertexShader:BP_VS,fragmentShader:BP_FS,extensions:{derivatives:true},
-      uniforms:{uPaper:{value:new THREE.Color(SKIN.sky)},uInk:{value:new THREE.Color(0xffffff)},uInkK:{value:sun?1:0},uFogD:{value:SKIN.fog},uW:{value:(sun?I.sunW||1.9:I.w||1.25)*px},
-        uFill:{value:sun?I.sunFill||0.2:I.fill||0.15},uSun:{value:sun?1:0},uHatch:{value:sun?I.hatch||0:0},uPx:{value:px}}});
-    if(planets){planets.material.dispose();planets.material=inkMat(false);}
-    if(suns){suns.material.dispose();suns.material=inkMat(true);}
-    glows.forEach(g=>{if(g.isSprite)g.visible=false;});   // ink doesn't glow
-    // construction circles: every orbit of every visible system in one dashed LineSegments
-    const rings=[];let nv=0;const sp=state.spacing;
-    systems.forEach(s=>{if(!nodeVisible(s.sun)||s.n<2)return;let i=1,k=0;while(i<s.n){k++;const cap=Math.round(6+5.5*k),r=(9+6.5*k)*sp;i+=Math.min(cap,s.n-i);const seg=Math.max(48,Math.min(128,Math.round(r*1.6)));rings.push([s,r,seg]);nv+=seg*2;}});
-    if(nv){const P=new Float32Array(nv*3),C=new Float32Array(nv*3);let o=0,last=null;
-      for(const [s,r,seg] of rings){if(s!==last){last=s;_bpq.setFromEuler(s.tilt);skinCol(_c,s.color).lerp(_tc.set(0xffffff),0.35);}
-        for(let j=0;j<seg;j++)for(let e=0;e<2;e++){const a=(j+e)/seg*Math.PI*2;_bpv.set(r*Math.cos(a),r*Math.sin(a),0).applyQuaternion(_bpq).add(s.c);
-          P[o]=_bpv.x;P[o+1]=_bpv.y;P[o+2]=_bpv.z;C[o]=_c.r;C[o+1]=_c.g;C[o+2]=_c.b;o+=3;}}
-      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('color',new THREE.BufferAttribute(C,3));
-      const l=new THREE.LineSegments(g,new THREE.LineDashedMaterial({vertexColors:true,dashSize:1.7*sp,gapSize:1.3*sp,transparent:true,opacity:I.orbit||0.3,depthWrite:false}));l.computeLineDistances();extras.add(l);}
-    // datum grid under the galaxy: minor cells, a major line every 5, dash-dot centre lines through the origin
-    const cell=bpNice(galaxyR/8),F=I.floor||[0.05,0.13,0.3];
-    const floor=new THREE.Mesh(new THREE.CircleGeometry(galaxyR*2.6,72),new THREE.ShaderMaterial({vertexShader:BP_FLOOR_VS,fragmentShader:BP_FLOOR_FS,defines:LITE?{LITE:1}:{},extensions:{derivatives:true},transparent:true,depthWrite:false,
-      uniforms:{uCell:{value:cell},uFogD:{value:SKIN.fog},uR:{value:galaxyR*2.6},uCol:{value:new THREE.Color(0xffffff)},uA:{value:new THREE.Vector3(F[0],F[1],F[2])}}}));
-    floor.position.z=-galaxyR*0.7;floor.renderOrder=-1;extras.add(floor);
-    // dimension callout: a phantom envelope circle and a diameter dimension with outside arrows and a leader to the note
-    // (unit size, billboarded, scaled to what it measures)
-    const D=Math.SQRT1_2,ah=0.045,aw=0.014,t1=1+ah+0.16,env=[],lin=[],tri=[];
-    for(let j=0;j<96;j++){const a0=j/96*Math.PI*2,a1=(j+1)/96*Math.PI*2;env.push(Math.cos(a0),Math.sin(a0),0,Math.cos(a1),Math.sin(a1),0);}
-    lin.push(-D*(1+ah),D*(1+ah),0,-D*t1,D*t1,0, -D*t1,D*t1,0,-D*t1-0.2,D*t1,0, D*(1+ah),-D*(1+ah),0,D*(1+ah+0.24),-D*(1+ah+0.24),0);
-    [[-1,1],[1,-1]].forEach(([sx,sy])=>{const tx=sx*D,ty=sy*D,bx=tx*(1+ah),by=ty*(1+ah),px=-ty*aw,py=tx*aw;tri.push(tx,ty,0,bx+px,by+py,0,bx-px,by-py,0);});
-    const dm={color:0xffffff,transparent:true,opacity:0.9,depthTest:false,depthWrite:false,fog:false};
-    const g0=new THREE.BufferGeometry();g0.setAttribute('position',new THREE.Float32BufferAttribute(env,3));
-    const g1=new THREE.BufferGeometry();g1.setAttribute('position',new THREE.Float32BufferAttribute(lin,3));
-    const g2=new THREE.BufferGeometry();g2.setAttribute('position',new THREE.Float32BufferAttribute(tri,3));
-    const envL=new THREE.LineSegments(g0,new THREE.LineDashedMaterial({color:0xffffff,dashSize:0.075,gapSize:0.035,transparent:true,opacity:0.4,depthTest:false,depthWrite:false,fog:false}));envL.computeLineDistances();
-    const dim=[envL,new THREE.LineSegments(g1,new THREE.LineBasicMaterial(dm)),new THREE.Mesh(g2,new THREE.MeshBasicMaterial(Object.assign({side:THREE.DoubleSide},dm)))];
-    dim.forEach(o=>{o.renderOrder=5;o.visible=false;o.frustumCulled=false;o.scale.setScalar(galaxyR);extras.add(o);});
-    const lbl=document.createElement('div');lbl.className='bp-dim';lblLayer.appendChild(lbl);
-    bpSheet();const $=id=>document.getElementById(id);
-    $('bp-n').textContent=planetIds.length+sunIds.length;$('bp-e').textContent=edgeList.length;$('bp-s').textContent=sunIds.length;$('bp-grid').textContent=bpFmt(cell)+' u';
-    bpS={dim,lbl,key:null,c:new THREE.Vector3(),r:galaxyR,t:0,lx:-1,ly:-1,on:false,bar:$('bp-bar'),len:$('bp-len'),dwg:$('bp-dwg'),barW:-1};
-  }
-  function bpStep(dt,now){const S=bpS;
-    // what the callout measures: the focused system, else the focused galaxy, else the whole map
-    const key=focused!=null?'s'+focused:(focusedRealm!=null&&multi()?'r'+focusedRealm:'g');
-    if(key!==S.key){S.key=key;let c=_bpO.set(0,0,0),r=0,name='General arrangement',note=sunIds.length+' groups';
-      systems.forEach(s=>{if(nodeVisible(s.sun))r=Math.max(r,s.c.length()+s.r);});r=r||galaxyR;
-      if(focused!=null){const s=systems.find(x=>x.cid===focused);if(s){c=s.c;r=s.r;name='Detail · '+s.label;note='N = '+s.n;}}
-      else if(key[0]==='r'){const R=realmList.find(x=>x.name===focusedRealm);if(R){c=R.c;r=R.r;name='Galaxy · '+R.name;note=R.systems.length+' groups';}}
-      S.c.copy(c);S.r=r;S.lbl.textContent='Ø '+bpFmt(2*r)+'  ·  '+note;S.dwg.textContent=name;}
-    const k=1-Math.exp(-dt*6),d=S.dim[0];d.position.lerp(S.c,k);const sc=d.scale.x+(S.r-d.scale.x)*k;d.scale.setScalar(sc);d.quaternion.copy(camera.quaternion);
-    for(let i=1;i<S.dim.length;i++){const a=S.dim[i];a.position.copy(d.position);a.scale.copy(d.scale);a.quaternion.copy(d.quaternion);}
-    const W=window.innerWidth,H=window.innerHeight,ppu=pxPer(),rpx=sc*ppu/Math.max(1,camera.position.distanceTo(d.position));
-    let on=rpx>70&&rpx<H*0.62;
-    if(on){const t=(1+0.045+0.16)*Math.SQRT1_2;_bpv.set(-t-0.2,t,0).applyQuaternion(camera.quaternion).multiplyScalar(sc).add(d.position).project(camera);
-      const x=Math.round((_bpv.x+1)/2*W)-6,y=Math.round((1-_bpv.y)/2*H);on=_bpv.z<1&&y>64&&y<H-40&&x>150&&x<W;
-      if(on&&(x!==S.lx||y!==S.ly)){S.lx=x;S.ly=y;S.lbl.style.transform='translate(-100%,-50%) translate('+x+'px,'+y+'px)';}}
-    if(on!==S.on){S.on=on;for(const o of S.dim)o.visible=on;S.lbl.classList.toggle('on',on);}
-    // sun tags sit just above their circle, however big it is on screen
-    for(const id in sunLbl){const el=sunLbl[id];if(!el.classList.contains('on'))continue;const s=sysBySun[id];if(!s)continue;
-      const lift=Math.min(400,Math.round(rSun(s)*ppu/Math.max(1,camera.position.distanceTo(pos[id]))));if(lift!==el._bpL){el._bpL=lift;el.style.translate='0 '+(-lift)+'px';}}
-    // graphic scale in the title block, a few times a second: a round length at the target's depth, ~90px long
-    if(now-S.t>250){S.t=now;const u=ppu/Math.max(1,camera.position.distanceTo(controls.target)),L=bpNice(90/u),w=Math.round(L*u);
-      if(w!==S.barW){S.barW=w;S.bar.style.width=w+'px';S.len.textContent=bpFmt(L)+' u';}}
+  c*=mix(0.5,1.0,smoothstep(0.45,1.25,length(vW.xy)/uR));   // dimmer under the galaxy, so the links read over it
+  gl_FragColor=vec4(c*exp(-d*d*0.04),1.0);}`})));floor.position.z=z0;floor.renderOrder=-9;
+    // light-trail links: same position + colour buffers as the real links (hover highlights and focus dimming land), additive,
+    // neon, with a light racing from each link's source to its target
+    let neon=null,neonOf=null,few=false;
+    const LU={uOp:{value:0.6},uT:{value:0},uFog:{value:SKIN.fog}};
+    const attach=()=>{
+      if(neon){extras.remove(neon);neon.geometry.dispose();neon.material.dispose();neon=null;}
+      neonOf=lines;if(!lines||!edgeGeom)return;
+      const n=edgeGeom.attributes.position.count;few=n<800;const A=new Float32Array(n),S=new Float32Array(n);for(let i=0;i<n;i+=2){A[i+1]=1;S[i]=S[i+1]=((i>>1)*0.6180339)%1;}
+      const g=new THREE.BufferGeometry();g.setAttribute('position',edgeGeom.attributes.position);g.setAttribute('color',edgeColor);g.setAttribute('aT',new THREE.BufferAttribute(A,1));g.setAttribute('aS',new THREE.BufferAttribute(S,1));
+      neon=add(new THREE.LineSegments(g,new THREE.ShaderMaterial({uniforms:LU,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+        vertexShader:`attribute float aT,aS;varying vec3 vC;varying float vT,vS,vD;void main(){vC=color;vT=aT;vS=aS;vec4 mv=modelViewMatrix*vec4(position,1.0);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
+        fragmentShader:`uniform float uOp,uT,uFog;varying vec3 vC;varying float vT,vS,vD;
+void main(){float x=fract(vS+uT*(0.16+vS*0.12));float d=fract(x-vT);float p=exp(-d*7.0)*step(0.0,x-vT+1.0);
+ vec3 c=vC*(1.9+2.2*p)+vec3(1.0)*p*p*0.45;gl_FragColor=vec4(c,min(1.0,uOp*(0.62+0.9*p)*exp(-uFog*uFog*vD*vD)));}`})));
+      lines.visible=false;};
+    // a neon ring round every sun, in its group colour
+    const vis=sunIds.filter(id=>sysBySun[id]);
+    if(vis.length){const rg=new THREE.RingGeometry(0.9,1,72);const im=new THREE.InstancedMesh(rg,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.8,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}),vis.length);
+      const q=new THREE.Quaternion(),sc=new THREE.Vector3();
+      vis.forEach((id,i)=>{const s=sysBySun[id],r=rSun(s)*1.8;_m.compose(pos[id],q.setFromEuler(s.tilt),sc.set(r,r,r));im.setMatrixAt(i,_m);im.setColorAt(i,skinCol(_c,s.color));});
+      im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;add(im);
+      for(const id of vis)if(sunLbl[id])sunLbl[id].style.setProperty('--sys','#'+skinCol(_c,sysBySun[id].color).getHexString());}
+    glows.forEach(g=>{if(g.isSprite&&g.material.opacity>0.5)g.material.opacity=0.42;});
+    // soft glow behind every node (one draw)
+    let halo=null;const ids=planetIds.concat(sunIds);
+    if(!LITE&&ids.length){const P=new Float32Array(ids.length*3),C=new Float32Array(ids.length*3),S=new Float32Array(ids.length);
+      ids.forEach((id,i)=>{const p=pos[id],sun=i>=planetIds.length;P[i*3]=p.x;P[i*3+1]=p.y;P[i*3+2]=p.z;skinCol(_c,base[id].color);C[i*3]=_c.r;C[i*3+1]=_c.g;C[i*3+2]=_c.b;S[i]=sun?rSun(sysBySun[id])*4.4:rPlanet(id)*4;});
+      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('aColor',new THREE.BufferAttribute(C,3));g.setAttribute('aSize',new THREE.BufferAttribute(S,1));
+      const m=new THREE.ShaderMaterial({vertexShader:JV_HALO_VS,fragmentShader:JV_HALO_FS,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:jvU({uScale:1,uI:0.28,uFog:SKIN.fog,uFade:420,uBoost:1.2})});
+      add(new THREE.Points(g,m));halo=m.uniforms;}
+    // light cycles on the floor grid: they ride grid lines inside an arena under the galaxy (sized to what the home view shows),
+    // go straight or turn a crisp 90° at an intersection, and always turn back in at the arena's edge
+    tronBikes.forEach(b=>{b.bike.dispose();});tronBikes=[];
+    const rng=seeded(2001),nB=LITE?2:4,Lb=cell*1.1,AX=Math.round(R*Math.min(1.4,Math.max(0.5,1.05*camera.aspect))/cell),Y0=Math.round(-R*0.6/cell),Y1=Math.round(R*0.45/cell);
+    const DIR=[[1,0],[0,1],[-1,0],[0,-1]],inside=(x,y)=>x>=-AX&&x<=AX&&y>=Y0&&y<=Y1;
+    for(let i=0;i<nB;i++){const col=new THREE.Color(TRON_COLS[i%TRON_COLS.length]),bike=makeCycle(col);bike.g.scale.setScalar(Lb);add(bike.g);
+      const rb=makeRibbon(LITE?16:32,col,Lb*0.5,cell*(RM?2.6:LITE?7:14),Lb*0.5);add(rb.m);
+      const gx=Math.round((rng()*2-1)*AX*0.8),gy=Math.round(Y0+(Y1-Y0)*(0.15+rng()*0.7)),d=Math.floor(rng()*4);
+      const b={bike,rb,gx,gy,d,u:0,spd:(2.2+rng()*0.9),yaw:Math.atan2(DIR[d][1],DIR[d][0]),p:new THREE.Vector3()};
+      const back=RM?2.4:1;rb.pts.push({p:new THREE.Vector3((gx-DIR[d][0]*back)*cell,(gy-DIR[d][1]*back)*cell,z0),n:_UPZ});   // where the wall starts (parked under reduced motion: a short one)
+      tronBikes.push(b);}
+    const bikeStep=dt=>{
+      for(const b of tronBikes){
+        if(!RM){b.u+=b.spd*dt;
+          while(b.u>=1){b.u-=1;b.gx+=DIR[b.d][0];b.gy+=DIR[b.d][1];   // at an intersection
+            const nx=b.gx+DIR[b.d][0],ny=b.gy+DIR[b.d][1];
+            if(!inside(nx,ny)||rng()<0.16){const L=(b.d+1)%4,Rt=(b.d+3)%4,opts=[L,Rt].filter(k=>inside(b.gx+DIR[k][0],b.gy+DIR[k][1]));
+              const nd=opts.length?opts[Math.floor(rng()*opts.length)]:(b.d+2)%4;if(nd!==b.d){b.d=nd;b.rb.pts.unshift({p:new THREE.Vector3(b.gx*cell,b.gy*cell,z0),n:_UPZ});if(b.rb.pts.length>b.rb.cap)b.rb.pts.length=b.rb.cap;}}}}
+        const dx=DIR[b.d][0],dy=DIR[b.d][1];b.p.set((b.gx+dx*b.u)*cell,(b.gy+dy*b.u)*cell,z0);
+        let dy2=Math.atan2(dy,dx)-b.yaw;dy2-=Math.round(dy2/(Math.PI*2))*Math.PI*2;b.yaw+=dy2*Math.min(1,dt*28);   // a crisp turn, not a snap
+        // from far off a bike (and its wall) grows up to 2.2× so it stays a readable ~26 px; up close it's true to the grid
+        const k=Math.min(2.2,Math.max(1,(26*camera.position.distanceTo(b.p)/pxPer())/Lb));b.rb.h=Lb*0.5*k;b.rb.m.material.uniforms.uGap.value=Lb*0.5*k;
+        b.bike.g.position.copy(b.p);b.bike.g.rotation.set(0,0,b.yaw);b.bike.g.scale.setScalar(Lb*k);ribbonWrite(b.rb,b.p,_UPZ);}};
+    bikeStep(0);
+    const own=dome,sc=()=>(renderer.domElement.height/2)/Math.tan(camera.fov*Math.PI/360);
+    extras.userData.step=(dt)=>{
+      if(!own.parent){extras.userData.step=null;tronBikes.forEach(b=>b.bike.dispose());tronBikes=[];return;}   // the skin changed and buildExtras cleared us
+      if(lines!==neonOf)attach();
+      if(neon&&lines)LU.uOp.value=lines.material.opacity*(few?1.25:0.7);
+      if(!RM){T.t+=dt;LU.uT.value=T.t;}
+      if(suns&&suns.material.uniforms&&suns.material.uniforms.uT)suns.material.uniforms.uT.value=T.t;
+      if(halo)halo.uScale.value=sc();
+      const cp=camera.position;dome.position.copy(cp);const h=Math.max(1,cp.z-z0),fs=Math.max(h*80,R*40);floor.position.set(cp.x,cp.y,z0);floor.scale.set(fs,fs,1);
+      bikeStep(dt);};
   }
   function extrasStep(dt,now){
     if(extras.userData.step)extras.userData.step(dt,now);
-    if(mtx)matrixStep(dt);
-    if(bpS)bpStep(dt,now);
     if(JV)jvStep(dt,now);
-  }
-  // ── matrix: phosphor nodes + 3D glyph rain. Everything here is matrix-only; mtx stays null for every other skin ──
-  let mtx=null,mtxGlyphs=null,mtxSunGeo=null;
-  const MTX_RM=(()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}})();
-  // one instanced sphere shader for planets and suns: dim core, hot fresnel rim, scanlines on the dot itself,
-  // and a scan band that sweeps up through the whole world at once. Additive, so it does its own depth fade to black.
-  const MTX_NODE_VS=`varying vec3 vN;varying vec3 vV;varying vec3 vCol;varying float vDepth;varying float vWz;
-void main(){mat4 im=mat4(1.0);
-#ifdef USE_INSTANCING
-  im=instanceMatrix;
-#endif
-  vec4 wp=modelMatrix*im*vec4(position,1.0);vec4 mv=viewMatrix*wp;
-  vN=normalize(normalMatrix*mat3(im)*normal);vV=normalize(-mv.xyz);vCol=vec3(1.0);
-#ifdef USE_INSTANCING_COLOR
-  vCol=instanceColor;
-#endif
-  vDepth=-mv.z;vWz=wp.z;gl_Position=projectionMatrix*mv;}`;
-  const MTX_NODE_FS=`uniform vec3 uRim;uniform float uPow,uCore,uMix,uTime,uScan,uLines,uFog,uBandK,uHot;
-varying vec3 vN;varying vec3 vV;varying vec3 vCol;varying float vDepth;varying float vWz;
-void main(){float f=pow(1.0-clamp(abs(dot(normalize(vN),normalize(vV))),0.0,1.0),uPow);
-  vec3 col=mix(vCol,uRim,uMix*f);col=mix(col,vec3(0.86,1.0,0.9),uHot*(1.0-f)*(1.0-f));
-  float bs=(fract(vWz*uBandK-uTime*0.1)-0.5)/0.075;float band=uScan*exp(-bs*bs);   // soft on both edges: no hard cut in a still frame
-  float a=uCore+uHot*0.35*(1.0-f)+f+band*0.8;
-  a*=1.0-uLines*step(1.5,mod(gl_FragCoord.y,3.0));
-  a*=exp(-uFog*uFog*vDepth*vDepth);
-  gl_FragColor=vec4(col*(0.6+f*1.3+band*1.4),a);}`;
-  // glyph rain: columns of points on a loose cylinder round the galaxy. Fall, trail, head highlight, glyph flicker
-  // and depth fade all happen in the vertex shader; the CPU only moves two uniforms per frame.
-  const MTX_RAIN_VS=`attribute float aK;attribute float aSeed;uniform float uTime,uLen,uScale,uCell,uFog,uMaxPx;
-varying float vB;varying float vHead;varying float vG;varying float vF;
-void main(){float spd=0.6+fract(aSeed*7.13)*0.9;
-  float head=fract(uTime*spd*0.07+aSeed)*(uLen+20.0)-6.0;float behind=head-aK;
-  vHead=step(0.0,behind)*step(behind,1.0);
-  vB=behind<0.0?0.0:clamp(1.0-behind/(8.0+fract(aSeed*3.7)*12.0),0.0,1.0);
-  float rate=0.35+fract(aSeed*5.0+aK*0.13)*0.9+vHead*9.0;
-  vG=floor(fract(aSeed*13.1+aK*0.371+floor(uTime*rate+aK*0.61)*0.137)*64.0);
-  vec4 mv=modelViewMatrix*vec4(position,1.0);float d=-mv.z;
-  float ps=uCell*uScale/max(d,1.0);
-  vF=exp(-uFog*uFog*d*d)*(1.0-smoothstep(uMaxPx*0.4,uMaxPx,ps));   // far columns fade into the dark, ones that come too close dissolve
-  float dc=-(modelViewMatrix*vec4(0.0,0.0,0.0,1.0)).z;vF*=mix(0.1,1.0,smoothstep(dc*0.45,dc*0.9,d));   // columns in front of the galaxy core fall off before they cross it
-  gl_PointSize=min(ps,uMaxPx);
-  if(vB<=0.0||vF<0.01)gl_PointSize=0.0;
-  gl_Position=projectionMatrix*mv;}`;
-  const MTX_RAIN_FS=`uniform sampler2D uGlyph;uniform vec3 uCol;uniform vec3 uHeadCol;varying float vB;varying float vHead;varying float vG;varying float vF;
-void main(){if(vB<=0.0)discard;vec2 cell=vec2(mod(vG,8.0),floor(vG/8.0));vec2 pc=gl_PointCoord;
-  float a=texture2D(uGlyph,vec2((cell.x+pc.x)/8.0,1.0-(cell.y+pc.y)/8.0)).r;if(a<0.04)discard;
-  float b=vHead>0.5?1.0:vB*(0.25+0.6*vB);
-  gl_FragColor=vec4(mix(uCol,uHeadCol,vHead),a*b*vF);}`;
-  // 8×8 glyph atlas (mirrored half-width katakana, plain digits and symbols), drawn once and kept across reskins
-  function mtxGlyphTex(){if(mtxGlyphs)return mtxGlyphs;const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');
-    const G='ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜ0123456789Z:・.=*+-<>¦|';
-    x.fillStyle='#000';x.fillRect(0,0,512,512);x.fillStyle='#fff';x.font='bold 46px "MS Gothic","Hiragino Kaku Gothic ProN","Noto Sans Mono CJK JP","IPAGothic",monospace';x.textAlign='center';x.textBaseline='middle';
-    for(let i=0;i<64;i++){const ch=G[i%G.length];x.save();x.translate((i%8)*64+32,Math.floor(i/8)*64+34);if(ch>'\u00ff')x.scale(-1,1);x.fillText(ch,0,0);x.restore();}   // katakana mirrored, digits read true
-    mtxGlyphs=new THREE.CanvasTexture(c);return mtxGlyphs;}
-  function buildMatrix(){
-    const P=SKIN.phosphor||{},R=Math.max(60,galaxyR),uT={value:0};
-    const mat=(core,hot)=>new THREE.ShaderMaterial({vertexShader:MTX_NODE_VS,fragmentShader:MTX_NODE_FS,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
-      uniforms:{uRim:{value:new THREE.Color(P.rim||0xd6ffde)},uPow:{value:P.pow||1.8},uCore:{value:core},uMix:{value:P.mix||0.55},uTime:uT,uScan:{value:MTX_RM?0:(P.scan||0)},
-        uLines:{value:P.lines||0},uFog:{value:SKIN.fog},uBandK:{value:1/(R*0.45)},uHot:{value:hot}}});
-    // the node meshes were just built with the stock material; swap in the phosphor one (clearMeshes disposes it on the next build)
-    if(planets){planets.material.dispose();planets.material=mat(P.core||0.2,0);}
-    if(suns){suns.material.dispose();suns.material=mat(P.sunCore||0.3,P.sunHot||0.5);suns.geometry=mtxSunGeo||(mtxSunGeo=new THREE.SphereGeometry(1,40,28));}   // suns fill the screen up close: a rounder limb (few instances, cheap; kept across builds)
-    glows.forEach(g=>{if(g.isSprite&&g.material.opacity>0.5)g.material.opacity=P.glow||0.3;});   // sun halos (nebulae are the faint ones)
-    if(lines)lines.material.blending=THREE.AdditiveBlending;
-    const COLS=Math.round(Math.min(140,Math.max(64,R/2))*(LITE?0.55:1)),L=30,n=COLS*L,Pp=new Float32Array(n*3),K=new Float32Array(n),Sd=new Float32Array(n),rng=seeded(9),cell=R*0.045;
-    for(let c=0;c<COLS;c++){const a=(c+rng()*0.8)/COLS*Math.PI*2,rr=R*(1.25+rng()*1.75),seed=rng(),top=R*(0.45+rng()*0.9);
-      for(let k=0;k<L;k++){const i=c*L+k;Pp[i*3]=rr*Math.cos(a);Pp[i*3+1]=rr*Math.sin(a);Pp[i*3+2]=top-k*cell*1.08;K[i]=k;Sd[i]=seed;}}
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(Pp,3));g.setAttribute('aK',new THREE.BufferAttribute(K,1));g.setAttribute('aSeed',new THREE.BufferAttribute(Sd,1));
-    const dpr=renderer.getPixelRatio();
-    const rm=new THREE.ShaderMaterial({vertexShader:MTX_RAIN_VS,fragmentShader:MTX_RAIN_FS,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
-      uniforms:{uTime:uT,uLen:{value:L},uScale:{value:1},uCell:{value:cell},uFog:{value:0.36/R},uMaxPx:{value:30*dpr},
-        uGlyph:{value:mtxGlyphTex()},uCol:{value:new THREE.Color(0x3cff6a)},uHeadCol:{value:new THREE.Color(0xdcffe6)}}});
-    const pts=new THREE.Points(g,rm);pts.frustumCulled=false;pts.renderOrder=-1;extras.add(pts);
-    mtx={t:mtx?mtx.t:24,uT,rain:rm.uniforms};
-  }
-  function matrixStep(dt){
-    if(!MTX_RM)mtx.t+=dt;   // reduced motion: the rain and scan band hold still
-    mtx.uT.value=mtx.t;mtx.rain.uScale.value=renderer.domElement.height/2/Math.tan(camera.fov*Math.PI/360);
-    if(lines&&lines.material.blending!==THREE.AdditiveBlending)lines.material.blending=THREE.AdditiveBlending;   // buildEdges() alone (inferred toggle) makes a stock material
   }
   let lastT=performance.now();
   // ── idle tour: leave the page alone and the camera rides along with a monarch ──
@@ -1619,7 +1656,7 @@ void main(){if(vB<=0.0)discard;vec2 cell=vec2(mod(vG,8.0),floor(vG/8.0));vec2 pc
   ['pointerdown','pointermove','wheel','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,touch,{passive:true}));
   function pickFollow(now){const ms=monarchGroup.visible?monarchs.filter(m=>m!==follow):[],ws=walkerGroup.visible?walkers.filter(w=>w!==follow):[];
     const useW=ws.length&&(!ms.length||seedRng()<0.5);const pool=useW?ws:ms;follow=pool.length?pool[Math.floor(seedRng()*pool.length)]:null;idleW=useW?follow:null;
-    followSince=now;followUntil=now+(useW?25000:40000)+seedRng()*25000;idleEl.textContent=useW?'🧬 Watching a kinesin at work — move the mouse to take over':'🦋 Riding along with a monarch — move the mouse to take over';}
+    followSince=now;followUntil=now+(useW?25000:40000)+seedRng()*25000;idleEl.innerHTML=useW?(SKIN.cycles?ICO.cycle+'Riding along with a light cycle — move the mouse to take over':ICO.kinesin+'Watching a kinesin at work — move the mouse to take over'):ICO.butterfly+'Riding along with a monarch — move the mouse to take over';}
   function beginIdle(now){if(!((monarchs.length&&monarchGroup.visible)||(walkers.length&&walkerGroup.visible)))return;idle=true;tw=null;controls.autoRotate=false;tip.style.display='none';setHover(null);pickFollow(now);idleEl.classList.add('on');}
   function endIdle(){idle=false;follow=null;idleW=null;controls.autoRotate=state.rotate;idleEl.classList.remove('on');}
   function idleStep(dt,now){
@@ -1650,7 +1687,11 @@ void main(){if(vB<=0.0)discard;vec2 cell=vec2(mod(vG,8.0),floor(vG/8.0));vec2 pc
     setLineOpacity(){if(lines)lines.material.opacity=Math.min(1,SKIN.line*state.lw);},
     reskin(){_fade.set(SKIN.fade);scene.background.set(SKIN.sky);scene.fog.color.set(SKIN.sky);scene.fog.density=SKIN.fog;rim.color.set(SKIN.rim);ambient.intensity=SKIN.ambient;
       if(ride)endRide();if(walk)endWalk();build();buildMonarchs();monarchGroup.visible=state.monarchs&&SKIN.monarchs!==false;},
-    relabel(){if(focused!=null)showSystemLabels(focused);},
+    relabel(){if(focused!=null)showSystemLabels(focused);},lite:LITE,
+    monarchScreen(i){const m=monarchs[i||0];if(!m)return null;_v.copy(m.g.position).project(camera);return [(_v.x+1)/2*window.innerWidth,(1-_v.y)/2*window.innerHeight];},
+    bikes(){return tronBikes.map(b=>[b.gx,b.gy,b.d,+b.u.toFixed(2),b.rb.pts.length]);},
+    bikeCam(i){const b=tronBikes[i||0];if(!b)return;tw=null;controls.autoRotate=false;const c=tronCell,f=new THREE.Vector3(Math.cos(b.yaw),Math.sin(b.yaw),0);
+      const sd=c*3.4*Math.min(1,camera.aspect);controls.target.copy(b.p).addScaledVector(f,c*(camera.aspect<1?1:3));camera.position.copy(b.p).addScaledVector(f,-c*6).add(new THREE.Vector3(-f.y*sd,f.x*sd,c*2.6));controls.update();},
     systems};
 })();
 
@@ -1761,8 +1802,41 @@ function jarvisPreview(s){
   o+=`<path d="M120 12.5l-2 2.6h4z" fill="#dffcff"/><path d="M14 44A240 240 0 0 0 14 104" fill="none" stroke="${A}" stroke-opacity=".45" stroke-width=".6"/>`+[0,1,2,3,4,5,6,7,8].map(i=>{const y=50+i*6.5;return `<line x1="${i%4?11.5:9.5}" y1="${f(y)}" x2="13.4" y2="${f(y)}" stroke="${A}" stroke-opacity=".6" stroke-width=".6"/>`;}).join('');
   return o+`<rect width="${W}" height="${H}" fill="url(#jv-scan)"/></svg>`;
 }
+// TRON picker card: the Grid in miniature — a black void, a cyan light-grid floor running to a glowing horizon, identity-disc
+// systems joined by light trails, and two light cycles laying their walls on the floor
+function tronPreview(s){
+  const W=240,H=135,HY=64,VX=120,A=s.css.accent;const f=n=>n.toFixed(1);let _r=5;const rng=()=>{_r=(_r*9301+49297)%233280;return _r/233280;};
+  let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="tr-hz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${A}" stop-opacity="0"/><stop offset=".78" stop-color="${A}" stop-opacity=".22"/><stop offset="1" stop-color="${A}" stop-opacity="0"/></linearGradient>`+
+    `<linearGradient id="tr-fl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#001419"/></linearGradient><radialGradient id="tr-gl"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".3" stop-color="${A}" stop-opacity=".45"/><stop offset="1" stop-color="${A}" stop-opacity="0"/></radialGradient>`+
+    `<filter id="tr-bl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.3"/></filter></defs><rect width="${W}" height="${H}" fill="#000"/><rect y="${HY}" width="${W}" height="${H-HY}" fill="url(#tr-fl)"/><rect y="${HY-16}" width="${W}" height="20" fill="url(#tr-hz)"/>`;
+  // floor grid in perspective: rays from the vanishing point, rows closing up toward the horizon
+  const row=j=>HY+Math.pow(j/9,2.2)*(H-HY),X=(gx,y)=>VX+gx*(y-HY)*0.3;
+  let g='';for(let i=-22;i<=22;i++)g+=`<line x1="${VX}" y1="${HY}" x2="${f(X(i,H+8))}" y2="${H+8}" stroke-opacity="${i%4?0.3:0.7}"/>`;
+  for(let j=1;j<=9;j++){const y=row(j);g+=`<line x1="0" y1="${f(y)}" x2="${W}" y2="${f(y)}" stroke-opacity="${(0.12+0.6*j/9).toFixed(2)}"/>`;}
+  o+=`<g stroke="${A}" stroke-width=".6">${g}</g><rect y="${HY-0.6}" width="${W}" height="1.2" fill="${A}" opacity=".85"/>`;
+  // light cycles: a wall (a thin bright-topped band) along grid lines with a 90° corner, the bike at its head
+  const P=(gx,j)=>{const y=row(j);return [X(gx,y),y];},sc=j=>0.35+j/9*0.9;
+  const cycle=(pts,col,j,dir)=>{let wall='',top='';for(let k=0;k<pts.length-1;k++){const [a,b]=[P(...pts[k]),P(...pts[k+1])],ha=5.2*sc(pts[k][1]),hb=5.2*sc(pts[k+1][1]);
+      wall+=`<path d="M${f(a[0])} ${f(a[1])}L${f(b[0])} ${f(b[1])}L${f(b[0])} ${f(b[1]-hb)}L${f(a[0])} ${f(a[1]-ha)}Z" fill="${col}" fill-opacity="${(0.2+0.25*k/pts.length).toFixed(2)}"/>`;
+      top+=`<path d="M${f(a[0])} ${f(a[1]-ha)}L${f(b[0])} ${f(b[1]-hb)}" stroke="${col}" stroke-width="${f(0.6+0.5*k/pts.length)}" stroke-opacity="${(0.4+0.6*k/pts.length).toFixed(2)}"/>`;}
+    const [hx,hy]=P(...pts[pts.length-1]),k=sc(j);
+    return wall+top+`<circle cx="${f(hx)}" cy="${f(hy-2*k)}" r="${f(9*k)}" fill="url(#tr-gl)" opacity=".55"/><g transform="translate(${f(hx)} ${f(hy)}) scale(${f(k*dir)} ${f(k)})"><path d="M-9 -3.2C-8 -6.4 -5 -7.4 -2 -6.8L1 -5.4L4 -7C7 -7.4 10 -6.2 11 -3.6L10 -2.4H-8.2Z" fill="#02080a" stroke="${col}" stroke-width=".8"/>`+
+      `<circle cx="-5.4" cy="-3" r="3" fill="#000" stroke="${col}" stroke-width="1.3"/><circle cx="6.4" cy="-3" r="3" fill="#000" stroke="${col}" stroke-width="1.3"/></g>`;};
+  o+=cycle([[-7,3.2],[-7,6.4],[-2,6.4],[-2,8.4]],'#ff8a1f',8.4,1)+cycle([[8,2.4],[8,5.2],[3.5,5.2],[3.5,7.4]],A,7.4,-1);
+  // the graph above the floor: identity-disc systems joined by light trails
+  const sys=[[68,34,1.25],[170,26,0.9],[128,52,0.7]],cols=['#00e5ff','#ff2bd6','#ffe23a','#39ff9f','#ff8a1f'];
+  o+=`<g stroke="${A}" stroke-width=".7"><line x1="68" y1="34" x2="170" y2="26" stroke-opacity=".75"/><line x1="68" y1="34" x2="128" y2="52" stroke-opacity=".5"/><line x1="170" y1="26" x2="128" y2="52" stroke-opacity=".5"/></g><circle cx="${f(68+102*0.62)}" cy="${f(34-8*0.62)}" r="1.3" fill="#fff"/>`;
+  sys.forEach(([cx,cy,k],si)=>{const c=cols[si],n=si?5:7;
+    for(let q=0;q<n;q++){const a=q/n*6.283+si,rr=(15+((q*7)%3)*4)*k,x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr*0.5,pc=cols[(q+si+1)%cols.length];
+      o+=`<line x1="${cx}" y1="${cy}" x2="${f(x)}" y2="${f(y)}" stroke="${pc}" stroke-opacity=".3" stroke-width=".5"/><circle cx="${f(x)}" cy="${f(y)}" r="2.1" fill="#001014" stroke="${pc}" stroke-width=".9"/><circle cx="${f(x)}" cy="${f(y)}" r=".7" fill="${pc}"/>`;}
+    o+=`<ellipse cx="${cx}" cy="${cy}" rx="${f(11*k+3)}" ry="${f((11*k+3)*0.5)}" fill="none" stroke="${c}" stroke-opacity=".8" stroke-width=".8"/><circle cx="${cx}" cy="${cy}" r="${f(9*k)}" fill="url(#tr-gl)" opacity=".5"/>`+
+      `<circle cx="${cx}" cy="${cy}" r="${f(5*k+1.5)}" fill="#001014" stroke="${c}" stroke-width="1.1"/><circle cx="${cx}" cy="${cy}" r="${f(3*k+0.8)}" fill="none" stroke="${c}" stroke-width=".5" stroke-dasharray="1.6 .8"/><circle cx="${cx}" cy="${cy}" r="${f(1.6*k+0.6)}" fill="#fff"/>`;});
+  for(let i=0;i<14;i++)o+=`<circle cx="${f(rng()*W)}" cy="${f(rng()*(HY-22))}" r=".35" fill="${A}" opacity="${(0.15+rng()*0.3).toFixed(2)}"/>`;
+  return o+`<path d="M4 12V4h8M236 12V4h-8M4 123v8h8M236 123v8h-8" fill="none" stroke="${A}" stroke-opacity=".7" stroke-width=".8"/></svg>`;
+}
 function previewSVG(s){
   if(s.pv&&s.pv.holo)return jarvisPreview(s);
+  if(s.pv&&s.pv.tron)return tronPreview(s);
   const W=240,H=135,pv=s.pv||{};let _r=11;const rng=()=>{_r=(_r*9301+49297)%233280;return _r/233280;};let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="sun-${s.name}"><stop offset="0" stop-color="#ffe066"/><stop offset=".55" stop-color="#ff5fa8"/><stop offset="1" stop-color="#a03cff"/></radialGradient><pattern id="scan-${s.name}" width="1" height="3" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="rgba(0,0,0,.35)"/></pattern></defs><rect width="${W}" height="${H}" fill="${s.css.sky}"/>`;
   if(pv.deep){   // monarch: graded sky, milky band, soft nebulae, colour-temperature stars, warm sun glows
     o+=`<defs><linearGradient id="mn-sky" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#040407"/><stop offset=".55" stop-color="#08080e"/><stop offset="1" stop-color="#0e0f1e"/></linearGradient><radialGradient id="mn-sun"><stop offset="0" stop-color="#fff4e6" stop-opacity=".95"/><stop offset=".2" stop-color="#ffc48a" stop-opacity=".55"/><stop offset=".5" stop-color="#F0923F" stop-opacity=".16"/><stop offset="1" stop-color="#F0923F" stop-opacity="0"/></radialGradient><filter id="mn-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7"/></filter></defs><rect width="${W}" height="${H}" fill="url(#mn-sky)"/>`;
@@ -1773,9 +1847,6 @@ function previewSVG(s){
     [[74,64,24],[158,48,17],[128,102,13]].forEach(([cx,cy,r])=>{o+=`<circle cx="${cx}" cy="${cy}" r="${(r*0.62).toFixed(1)}" fill="url(#mn-sun)"/>`;});
   }
   if(pv.stars)for(let i=0;i<80;i++)o+=`<circle cx="${(rng()*W).toFixed(1)}" cy="${(rng()*H).toFixed(1)}" r="${(0.4+rng()*0.7).toFixed(2)}" fill="${pv.stars}" opacity="${(0.3+rng()*0.6).toFixed(2)}"/>`;
-  if(pv.rain){const G='ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉ0123456789Z=*+<>';o+=`<g font-family="'MS Gothic','IPAGothic',monospace" text-anchor="middle">`;   // glyph columns, three depths, white heads
-    [[5.5,34,0.3],[7.5,16,0.55],[10,7,0.85]].forEach(([fs,n,op])=>{for(let i=0;i<n;i++){const x=(Math.floor(rng()*W/fs)+0.5)*fs,len=4+Math.floor(rng()*10),y0=rng()*(H+40);
-      for(let k=0;k<len;k++){const y=y0-k*fs*1.05;if(y<-2||y>H+fs)continue;const head=k===0;o+=`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${fs}" fill="${head?'#e0ffe6':s.css.accent}" opacity="${(head?op+0.15:op*(1-k/len)).toFixed(2)}">${G[Math.floor(rng()*G.length)]}</text>`;}}});o+='</g>';}
   if(pv.sun){const k='sw-'+s.name.replace(/\W/g,'');   // outrun sunset: haze, a banded sun and a neon mountain line on the horizon (y=74)
     o+=`<defs><linearGradient id="${k}-h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a0b52" stop-opacity="0"/><stop offset=".55" stop-color="#3a0b52" stop-opacity=".75"/><stop offset="1" stop-color="#c02a92"/></linearGradient><linearGradient id="${k}-s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe86b"/><stop offset=".55" stop-color="#ff5ea8"/><stop offset="1" stop-color="#b02ee0"/></linearGradient><radialGradient id="${k}-g"><stop offset=".5" stop-color="#ff3fd0" stop-opacity=".5"/><stop offset="1" stop-color="#ff3fd0" stop-opacity="0"/></radialGradient><mask id="${k}-m"><rect width="${W}" height="${H}" fill="#fff"/>${[[56,.9],[61,1.4],[65.5,1.9],[69.5,2.4],[73,2.9]].map(([y,h])=>`<rect y="${y}" width="${W}" height="${h}" fill="#000"/>`).join('')}</mask></defs>`
       +`<rect y="20" width="${W}" height="54" fill="url(#${k}-h)"/><circle cx="120" cy="52" r="46" fill="url(#${k}-g)"/><circle cx="120" cy="52" r="26" fill="url(#${k}-s)" mask="url(#${k}-m)"/>`
@@ -1783,29 +1854,6 @@ function previewSVG(s){
   if(pv.grid){o+=`<rect y="74" width="${W}" height="${H-74}" fill="#0d0322"/><rect y="73.4" width="${W}" height="1.2" fill="#ff7ae0" opacity=".9"/>`;
     for(let i=-12;i<=12;i++){const x=120+i*26;o+=`<line x1="${x}" y1="${H}" x2="${(120+i*2.2).toFixed(1)}" y2="74" stroke="#ff3fd0" stroke-opacity=".5" stroke-width=".7"/>`;}
     for(let j=1;j<9;j++){const y=74+Math.pow(j/8,2.1)*(H-74);o+=`<line x1="0" y1="${y.toFixed(1)}" x2="${W}" y2="${y.toFixed(1)}" stroke="#ff3fd0" stroke-opacity="${(0.15+0.5*j/8).toFixed(2)}" stroke-width=".7"/>`;}}
-  if(pv.blueprint){   // a drawing sheet: grid, frame, construction circles, ink nodes, centre marks, a dimension, a leader note, a title block
-    const F='font-family="SFMono-Regular,Consolas,Menlo,monospace"',ink='#fff',pp=s.css.sky;
-    for(let x=0;x<=W;x+=6)o+=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#fff" stroke-opacity="${x%30?0.045:0.12}"/>`;
-    for(let y=0;y<=H;y+=6)o+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#fff" stroke-opacity="${y%30?0.045:0.12}"/>`;
-    o+=`<rect x="4.5" y="4.5" width="${W-9}" height="${H-9}" fill="none" stroke="#fff" stroke-opacity=".6"/>`;
-    for(let i=1;i<8;i++){const x=4.5+(W-9)*i/8;o+=`<path d="M${x} 4.5v4M${x} ${H-4.5}v-4" stroke="#fff" stroke-opacity=".5"/>`;}
-    const S=[[70,60,30,0],[166,42,19,1],[128,100,14,2]],C=pv.cols;
-    o+=`<g stroke="#fff" stroke-opacity=".5" stroke-width=".7"><line x1="70" y1="60" x2="166" y2="42"/><line x1="70" y1="60" x2="128" y2="100"/><line x1="166" y1="42" x2="128" y2="100"/></g>`;
-    S.forEach(([cx,cy,r,si])=>{const c=C[si%C.length];
-      [0.55,1].forEach(k=>o+=`<ellipse cx="${cx}" cy="${cy}" rx="${(r*k).toFixed(1)}" ry="${(r*k*0.62).toFixed(1)}" fill="none" stroke="${c}" stroke-opacity=".55" stroke-width=".6" stroke-dasharray="2 1.6"/>`);
-      for(let j=0;j<8;j++){const a=j/8*6.283+si*0.7,k=j%2?1:0.55,x=cx+Math.cos(a)*r*k,y=cy+Math.sin(a)*r*k*0.62,pc=C[(j+si)%C.length];
-        o+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${j%3?1.8:2.4}" fill="${pp}" stroke="${pc}" stroke-width=".8"/>`;}
-      const q=r>20?6:4.6;o+=`<circle cx="${cx}" cy="${cy}" r="${q}" fill="${pp}" stroke="${ink}" stroke-width="1.1"/><path d="M${cx-q-3} ${cy}h${2*q+6}M${cx} ${cy-q-3}v${2*q+6}" stroke="${ink}" stroke-width=".6" stroke-dasharray="${q+1} 1.2 1.6 1.2"/>`;});
-    // dimension under the big system, leader note on the small one
-    const q=32*Math.SQRT1_2;o+=`<circle cx="70" cy="60" r="32" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width=".6" stroke-dasharray="4 2"/>`;
-    o+=`<g stroke="${ink}" stroke-width=".6" fill="none"><path d="M${70-q-3} ${60-q-3}L${70-q-9} ${60-q-9}H14M${70+q+3} ${60+q+3}l5 5"/></g><path d="M${70-q} ${60-q}l-3.8 -1.9 1.9 -1.9zM${70+q} ${60+q}l3.8 1.9 -1.9 1.9z" fill="${ink}"/>`;
-    o+=`<text x="15" y="${60-q-11}" ${F} font-size="6" fill="${ink}" letter-spacing=".3">Ø 64 · N=9</text>`;
-    o+=`<path d="M170 44L186 60h26" fill="none" stroke="${ink}" stroke-width=".6"/><circle cx="170" cy="44" r="1" fill="${ink}"/><text x="188" y="58" ${F} font-size="6" fill="${ink}" letter-spacing=".4">N=19</text>`;
-    // title block
-    o+=`<g stroke="#fff" stroke-opacity=".75" fill="none" stroke-width=".7"><rect x="166.5" y="104.5" width="64" height="24" fill="${pp}"/><path d="M166.5 116.5h64M198.5 116.5v12"/></g>`;
-    o+=`<text x="170" y="112.6" ${F} font-size="5.4" fill="#fff" letter-spacing=".5">MONARCH ATLAS</text><text x="170" y="125" ${F} font-size="4.6" fill="#b6cbee">SCALE 1:1</text><text x="202" y="125" ${F} font-size="4.6" fill="#b6cbee">SHT 1/1</text>`;
-    o+=`<path d="M12 ${H-12}h24" stroke="#fff" stroke-width="2.2" stroke-dasharray="6 6"/><rect x="12" y="${H-13.1}" width="24" height="2.2" fill="none" stroke="#fff" stroke-width=".5"/>`;
-    return o+'</svg>';}
   const sys=[[74,64,24],[158,48,17],[128,102,13]],cols=pv.cols;
   o+=`<g stroke="${s.css.accent}" stroke-opacity=".45"><line x1="74" y1="64" x2="158" y2="48"/><line x1="74" y1="64" x2="128" y2="102"/><line x1="158" y1="48" x2="128" y2="102"/></g>`;
   sys.forEach(([cx,cy,r],si)=>{o+=`<circle cx="${cx}" cy="${cy}" r="${r*0.6}" fill="${cols[si%cols.length]}" opacity=".14"/>`;
@@ -1814,50 +1862,28 @@ function previewSVG(s){
       if(k%3===0)o+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${c}" stroke-opacity=".35"/>`;}
     o+=`<circle cx="${cx}" cy="${cy}" r="4.2" fill="${pv.wire?s.css.accent:'#fff'}"/>`;});
   if(pv.rings)o+=`<g fill="none" stroke="${s.css.accent}"><circle cx="74" cy="64" r="30" stroke-dasharray="7 4" opacity=".8"/><circle cx="74" cy="64" r="36" stroke-dasharray="1 5" opacity=".55"/><circle cx="74" cy="64" r="42" stroke-dasharray="14 8" opacity=".35"/></g><g stroke="${s.css.accent}" opacity=".6"><path d="M6 6h14M6 6v14M234 6h-14M234 6v14M6 129h14M6 129v-14M234 129h-14M234 129v-14" fill="none" stroke-width="1.5"/></g>`;
-  if(pv.butterfly)o+=`<text x="188" y="112" font-size="16">🦋</text><text x="40" y="118" font-size="11">🦋</text>`;
+  if(pv.butterfly){const bf=(x,y,k,a)=>`<g transform="translate(${x} ${y}) rotate(${a}) scale(${k})" fill="#ff5fd6" stroke="#2a0648" stroke-width=".7" stroke-linejoin="round"><path d="M0 0C-2-7-11-12-15-8C-17-4-11 0 0 0ZM0 0C2-7 11-12 15-8C17-4 11 0 0 0Z"/><path d="M0 0C-1 3-7 9-10 6C-12 3-7 0 0 0ZM0 0C1 3 7 9 10 6C12 3 7 0 0 0Z" fill="#c43cf0"/><path d="M0-3.5V5" stroke-width="1.4" stroke-linecap="round"/></g>`;
+    o+=bf(194,106,0.8,-14)+bf(42,114,0.5,12);}
   if(pv.deep){const bf=(x,y,k,a)=>`<g transform="translate(${x} ${y}) rotate(${a}) scale(${k})" stroke="#140c06" stroke-width=".9" stroke-linejoin="round"><path d="M0 0C-2-7-11-12-15-8C-17-4-11 0 0 0ZM0 0C2-7 11-12 15-8C17-4 11 0 0 0Z" fill="#ec8a1e"/><path d="M0 0C-1 3-7 9-10 6C-12 3-7 0 0 0ZM0 0C1 3 7 9 10 6C12 3 7 0 0 0Z" fill="#c9640f"/><path d="M0-3.5V5" stroke-width="1.6" stroke-linecap="round"/><g fill="#fff4e6" stroke="none"><circle cx="-13.2" cy="-8.4" r=".8"/><circle cx="13.2" cy="-8.4" r=".8"/><circle cx="-14.8" cy="-5.6" r=".6"/><circle cx="14.8" cy="-5.6" r=".6"/></g></g>`;
     o+=bf(192,106,0.95,-14)+bf(38,114,0.6,12);}
   if(pv.scan)o+=`<rect width="${W}" height="${H}" fill="url(#scan-${s.name})"/>`;
   return o+'</svg>';
 }
 function applySkin(key,first){
-  if(!SKINS[key])return;skinKey=key;SKIN=SKINS[key];
+  key=skinOf(key);if(!key)return;skinKey=key;SKIN=SKINS[key];
   const r=document.documentElement.style;Object.entries(SKIN.css).forEach(([k,v])=>r.setProperty('--'+k,v));if(!SKIN.css.font)r.removeProperty('--font');
-  document.body.dataset.skin=key;document.getElementById('brand-mark').textContent=SKIN.mark;document.getElementById('skin-name').textContent=SKIN.name;
+  document.body.dataset.skin=key;const bm=document.getElementById('brand-mark');if(SKIN.icon)bm.innerHTML=SKIN.icon;else bm.textContent=SKIN.mark;document.getElementById('skin-name').textContent=SKIN.name;
+  // the link riders are kinesins everywhere but TRON, where they're light cycles
+  const cyc=!!SKIN.cycles,tx=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  tx('walkers-t',cyc?'Light cycles':'Kinesins');tx('walkers-s',cyc?'Light cycles riding some links, laying light walls — zoom in to watch them, click one to ride it':'Tiny carriers walking data along some links — zoom in to watch them, click one to walk it');
+  tx('idle-s',cyc?'Left alone for 10 s, the camera rides a monarch or chases a light cycle':'Left alone for 10 s, the camera rides a monarch or watches a kinesin work');
   document.querySelectorAll('.skin').forEach(el=>el.classList.toggle('on',el.dataset.skin===key));
   try{localStorage.setItem('atlas.skin',key);}catch(e){}
   if(!first&&V3)V3.reskin();
-  rain(key==='matrix');
 }
-// matrix rain, 2D layer: a faint screen-space rain under the labels, in three depths (small, dim and slow far away; bigger,
-// brighter and faster up close). Heads are near-white, trails are left behind and fade out. The 3D rain lives in the scene.
-let rainTimer=null,rainResize=null;
-function rain(on){const c=document.getElementById('fx-canvas');if(rainTimer){cancelAnimationFrame(rainTimer);rainTimer=null;}if(rainResize){window.removeEventListener('resize',rainResize);rainResize=null;}
-  if(!on){c.width=c.height=1;return;}
-  const x=c.getContext('2d'),G='ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜ0123456789Z:.=*+-<>|';
-  let rm=false;try{rm=matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
-  const LAY=[{px:10,a:0.3,v:0.45,gap:2.4},{px:13,a:0.48,v:0.7,gap:4.5},{px:17,a:0.66,v:1.0,gap:11}];   // far → near
-  let drops=[],dpr=1,last=0;
-  const glyph=()=>G[Math.floor(Math.random()*G.length)];
-  const size=()=>{dpr=Math.min(LITE?1:1.5,window.devicePixelRatio||1);   // a faint overlay: full retina resolution buys nothing
-c.width=Math.ceil(innerWidth*dpr);c.height=Math.ceil(innerHeight*dpr);drops=[];
-    const k=Math.max(0.62,Math.min(1,Math.sqrt(innerWidth/1100)));   // phones get smaller type, so the near layer doesn't shout
-    (LITE?LAY.slice(1):LAY).forEach((L0,li)=>{const l={px:Math.round(L0.px*k),a:L0.a,v:L0.v},cw=l.px*1.1,n=Math.ceil(innerWidth/cw/L0.gap),rows=innerHeight/l.px;
-      for(let i=0;i<n;i++)drops.push({l,li,x:(Math.floor(Math.random()*innerWidth/cw)+0.5)*cw,y:-Math.random()*rows*1.4,v:l.v*(0.7+Math.random()*0.6),row:-1,ch:''});});
-    x.setTransform(dpr,0,0,dpr,0,0);x.textAlign='center';x.textBaseline='top';};
-  const step=()=>{x.globalCompositeOperation='destination-out';x.fillStyle='rgba(0,0,0,.09)';x.fillRect(0,0,innerWidth,innerHeight);x.globalCompositeOperation='source-over';
-    for(const d of drops){const l=d.l;d.y+=d.v;const row=Math.floor(d.y);if(row===d.row)continue;
-      x.font=l.px+'px "MS Gothic","IPAGothic",monospace';
-      if(d.row>=0){x.clearRect(d.x-l.px*0.6,d.row*l.px,l.px*1.2,l.px);x.fillStyle=`rgba(60,255,106,${l.a.toFixed(2)})`;x.fillText(d.ch,d.x,d.row*l.px);}   // the old head cools to green
-      d.row=row;d.ch=glyph();if(row>=0){x.fillStyle=`rgba(225,255,232,${Math.min(1,l.a+0.2).toFixed(2)})`;x.fillText(d.ch,d.x,row*l.px);}
-      if(row*l.px>innerHeight+l.px*4&&Math.random()<0.06){d.y=-Math.random()*8;d.row=-1;}}};
-  size();rainResize=()=>{size();if(rm)for(let i=0;i<90;i++)step();};window.addEventListener('resize',rainResize);
-  if(rm){for(let i=0;i<90;i++)step();return;}   // reduced motion: one still frame of rain
-  for(let i=0;i<40;i++)step();
-  const tick=t=>{rainTimer=requestAnimationFrame(tick);if(t-last<55)return;last=t;step();};rainTimer=requestAnimationFrame(tick);}
 const skinsEl=document.getElementById('skins'),skinsGrid=document.getElementById('skins-grid');
 Object.entries(SKINS).forEach(([k,s])=>{const d=document.createElement('div');d.className='skin'+(k===skinKey?' on':'');d.dataset.skin=k;
-  d.innerHTML=`${previewSVG(s)}<div class="meta"><b>${s.mark} ${esc(s.name)}${k===DEFAULT_SKIN?'<em>default</em>':''}</b><p>${esc(s.tag)}</p><div class="chips">${s.features.map(f=>`<i>${esc(f)}</i>`).join('')}</div></div>`;
+  d.innerHTML=`${previewSVG(s)}<div class="meta"><b>${s.icon?`<span style="color:${s.css.accent};display:inline-flex">${s.icon}</span>`:s.mark} ${esc(s.name)}${k===DEFAULT_SKIN?'<em>default</em>':''}</b><p>${esc(s.tag)}</p><div class="chips">${s.features.map(f=>`<i>${esc(f)}</i>`).join('')}</div></div>`;
   d.addEventListener('click',()=>{applySkin(k);closeSkins();});skinsGrid.appendChild(d);});
 function openSkins(){skinsEl.classList.add('on');}function closeSkins(){skinsEl.classList.remove('on');}
 document.getElementById('skin-btn').addEventListener('click',openSkins);document.getElementById('skin-btn-2').addEventListener('click',openSkins);

@@ -67,7 +67,9 @@ def _realms(G) -> tuple[str, str]:
     return json.dumps(realms), json.dumps(meta)
 
 
-SKIN_KEYS = ("monarch", "jarvis", "synthwave", "matrix", "blueprint")
+SKIN_KEYS = ("monarch", "jarvis", "synthwave", "tron")
+# retired skins: "matrix" became TRON; anything else unknown (e.g. the old "blueprint") falls back to monarch
+SKIN_ALIASES = {"matrix": "tron"}
 
 
 def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
@@ -86,6 +88,7 @@ def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,
     realms_json, realm_meta_json = _realms(G)
     title = os.environ.get("GRAPHIFY_ATLAS_TITLE") or title
     default_skin = (os.environ.get("GRAPHIFY_ATLAS_SKIN") or "monarch").strip().lower()
+    default_skin = SKIN_ALIASES.get(default_skin, default_skin)
     if default_skin not in SKIN_KEYS:
         default_skin = "monarch"
     if G is not None and G.graph.get("realms"):
