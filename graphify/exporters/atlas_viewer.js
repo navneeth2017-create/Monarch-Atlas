@@ -771,48 +771,112 @@ const V3=(()=>{
     }
   }
   // ── light cycles (TRON): a bike and its light wall, shared by the riders on the floor grid and the ones on the links ──
-  // A bike is two meshes on shared geometry, unit length along +x, wheels on z=0, up +z: a dark glass shell (the extruded
-  // Tron: Legacy side profile, the rider tucked into it, dark wheel discs) and one glow mesh in the bike's colour (two big
-  // wheel rings, a light line down each flank, nose and tail lights), plus a soft glow sprite so a far-off bike still reads.
-  let CYC=null;
-  function mergeGeo(list){let n=0;const parts=list.map(g=>{const q=g.index?g.toNonIndexed():g;n+=q.attributes.position.count;return q;});
-    const P=new Float32Array(n*3);let o=0;parts.forEach(q=>{P.set(q.attributes.position.array,o);o+=q.attributes.position.array.length;});
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));return g;}
-  function cycleGeo(){
-    if(CYC)return CYC;
-    const sh=new THREE.Shape();sh.moveTo(-0.47,0.1);sh.lineTo(-0.53,0.2);sh.quadraticCurveTo(-0.46,0.35,-0.25,0.345);sh.lineTo(-0.09,0.265);
-    sh.quadraticCurveTo(0.06,0.24,0.2,0.305);sh.quadraticCurveTo(0.43,0.345,0.53,0.17);sh.lineTo(0.47,0.1);sh.lineTo(-0.47,0.1);
-    const shell=new THREE.ExtrudeGeometry(sh,{depth:0.09,bevelEnabled:false,curveSegments:5});shell.translate(0,0,-0.045);shell.rotateX(Math.PI/2);
-    const torso=new THREE.BoxGeometry(0.2,0.07,0.055);torso.rotateY(0.32);torso.translate(-0.05,0,0.3);
-    const helmet=new THREE.SphereGeometry(0.045,8,6);helmet.scale(1.3,1,0.9);helmet.translate(0.075,0,0.325);
-    const disc=x=>{const d=new THREE.CircleGeometry(0.15,18);d.rotateX(Math.PI/2);d.translate(x,0,0.175);return d;};
-    const ring=x=>{const t=new THREE.TorusGeometry(0.158,0.019,5,26);t.rotateX(Math.PI/2);t.translate(x,0,0.175);return t;};
-    // the silhouette in light: a thin band traced round the side profile, on each flank
-    const outl=sh.getPoints(5),strip=y=>{const P=[],t=0.0095;for(let i=0;i<outl.length;i++){const a=outl[i],b=outl[(i+1)%outl.length],dx=b.x-a.x,dz=b.y-a.y,l=Math.hypot(dx,dz);if(l<1e-5)continue;
-        const nx=-dz/l*t,nz=dx/l*t,q=[[a.x-nx,a.y-nz],[a.x+nx,a.y+nz],[b.x+nx,b.y+nz],[b.x-nx,b.y-nz]];[0,1,2,0,2,3].forEach(k=>P.push(q[k][0],y,q[k][1]));}
+  // Modelled from a side profile, unit length along +x, wheels on z=0, up +z: a long low shell that wraps both wheels in fender
+  // arches (a smoothed spline outline extruded with rounded bevels), a prone rider tucked into it, and two hubless wheels (a dark
+  // tyre round a dark disc). Three meshes on shared geometry: the shell in glossy black glass (a fresnel rim in the bike's colour,
+  // the horizon's glow in the gloss, one hard highlight), one additive light mesh (rim rings, a dashed inner ring that spins with
+  // the road, light lines hugging the arches and the top of each flank, head and tail lights), and a glow sprite so a far-off
+  // bike still reads. A floor bike also casts a pool of its light on the grid.
+  const CYC_RM=(()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}})();   // reduced motion: no lean, no wheel spin
+  const CY={R:0.15,xf:0.31,xr:-0.31,A:0.166,W:0.034,bt:0.022,bs:0.012},CYC={};
+  function mergeGeo(list){let n=0;const parts=list.map(([g,k])=>{const q=g.index?g.toNonIndexed():g;if(!q.attributes.normal)q.computeVertexNormals();n+=q.attributes.position.count;return [q,k||0];});
+    const P=new Float32Array(n*3),N=new Float32Array(n*3),K=new Float32Array(n);let o=0;
+    parts.forEach(([q,k])=>{const c=q.attributes.position.count;P.set(q.attributes.position.array,o*3);N.set(q.attributes.normal.array,o*3);K.fill(k,o,o+c);o+=c;});
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('normal',new THREE.BufferAttribute(N,3));g.setAttribute('aK',new THREE.BufferAttribute(K,1));return g;}
+  // smooth vertex normals across faces that meet at under `deg` degrees (r128's ExtrudeGeometry is faceted), hard edges above it
+  function creaseNormals(g,deg){const p=g.attributes.position.array,nv=p.length/3,nf=nv/3,FN=new Float32Array(nf*3),cos=Math.cos(deg*Math.PI/180),map=new Map(),keys=new Array(nv);
+    for(let f=0;f<nf;f++){const a=f*9,ux=p[a+3]-p[a],uy=p[a+4]-p[a+1],uz=p[a+5]-p[a+2],vx=p[a+6]-p[a],vy=p[a+7]-p[a+1],vz=p[a+8]-p[a+2];FN[f*3]=uy*vz-uz*vy;FN[f*3+1]=uz*vx-ux*vz;FN[f*3+2]=ux*vy-uy*vx;}
+    for(let i=0;i<nv;i++){const k=keys[i]=Math.round(p[i*3]*2e4)+','+Math.round(p[i*3+1]*2e4)+','+Math.round(p[i*3+2]*2e4);let l=map.get(k);if(!l)map.set(k,l=[]);l.push(i);}
+    const N=new Float32Array(nv*3);
+    for(let i=0;i<nv;i++){const f=(i/3)|0,fx=FN[f*3],fy=FN[f*3+1],fz=FN[f*3+2],fl=Math.hypot(fx,fy,fz)||1;let sx=0,sy=0,sz=0;
+      for(const j of map.get(keys[i])){const h=(j/3)|0,hx=FN[h*3],hy=FN[h*3+1],hz=FN[h*3+2];if(fx*hx+fy*hy+fz*hz>=cos*fl*(Math.hypot(hx,hy,hz)||1)){sx+=hx;sy+=hy;sz+=hz;}}
+      const l=Math.hypot(sx,sy,sz)||1;N[i*3]=sx/l;N[i*3+1]=sy/l;N[i*3+2]=sz/l;}
+    g.setAttribute('normal',new THREE.BufferAttribute(N,3));return g;}
+  function cycleGeo(lite){
+    if(CYC[lite])return CYC[lite];
+    const {R,xf,xr,A,W,bt,bs}=CY,seg=[12,8,4][lite],V=(x,y)=>new THREE.Vector2(x,y),rad=Math.PI/180;
+    const arc=(cx,a0,a1,r,n,out=[])=>{for(let i=0;i<=n;i++){const a=(a0+(n?(a1-a0)*i/n:0))*rad;out.push(V(cx+r*Math.cos(a),R+r*Math.sin(a)));}return out;};
+    // the side profile: rear arch, belly, front arch, then one spline from under the nose, over the top, round the tail
+    const aF=arc(xf,-20,-20,A+0.035,0)[0],aR=arc(xr,200,200,A+0.035,0)[0];   // blunt fender tips: the bevel can't take a knife edge
+    const topPts=[aF,...[[0.535,0.1],[0.553,0.128],[0.562,0.168],[0.556,0.212],[0.527,0.256],[0.472,0.3],[0.4,0.331],[0.32,0.345],[0.24,0.34],[0.16,0.322],[0.06,0.302],[-0.05,0.302],
+      [-0.15,0.32],[-0.25,0.338],[-0.34,0.346],[-0.42,0.336],[-0.49,0.308],[-0.54,0.264],[-0.565,0.21],[-0.562,0.155],[-0.543,0.117],[-0.522,0.095]].map(p=>V(p[0],p[1])),aR];
+    const top=new THREE.SplineCurve(topPts).getPoints(seg*5);
+    const prof=arc(xr,200,-25,A,seg);arc(xr,-25,-25,A+0.02,0,prof);prof.push(V(-0.07,0.074),V(0.07,0.074));arc(xf,205,205,A+0.02,0,prof);arc(xf,205,-20,A,seg,prof);prof.push(...top);
+    const rider=new THREE.SplineCurve([[0.2,0.3],[0.29,0.322],[0.33,0.352],[0.338,0.39],[0.315,0.422],[0.268,0.438],[0.222,0.432],[0.19,0.412],[0.12,0.405],[0.03,0.412],[-0.07,0.408],[-0.16,0.397],
+      [-0.235,0.379],[-0.285,0.352],[-0.278,0.322],[-0.15,0.3],[0.05,0.29],[0.2,0.3]].map(p=>V(p[0],p[1]))).getPoints(seg*4);rider.pop();
+    const ext=(pts,w,t,s)=>{const g=new THREE.ExtrudeGeometry(new THREE.Shape(pts),{depth:w*2,bevelEnabled:true,bevelThickness:t,bevelSize:s,bevelSegments:[4,2,1][lite],curveSegments:1});g.translate(0,0,-w);g.rotateX(Math.PI/2);return creaseNormals(g.index?g.toNonIndexed():g,50);};
+    const tyre=x=>{const t=new THREE.TorusGeometry(R-0.021,0.021,[7,5,3][lite],[40,24,14][lite]);t.rotateX(Math.PI/2);t.scale(1,2.3,1);t.translate(x,0,R);return t;};
+    const disc=x=>{const c=new THREE.CylinderGeometry(R-0.03,R-0.03,0.074,[36,16,10][lite],1);c.translate(x,0,R);return c;};
+    // light: rings on the wheels, and lines laid on the flat flanks of the shell and the rider
+    const ring=(x,y,r0,r1)=>{const g=new THREE.RingGeometry(r0,r1,[56,28,18][lite],1);g.rotateX(Math.PI/2);g.translate(x,y,R);return g;};
+    const strip=(pts,y,t)=>{const P=[],n=pts.length,off=[];
+      for(let i=0;i<n;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(n-1,i+1)],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;off.push([-dy/l*t/2,dx/l*t/2]);}
+      for(let i=0;i<n-1;i++){const a=pts[i],b=pts[i+1],oa=off[i],ob=off[i+1],q=[[a.x-oa[0],a.y-oa[1]],[a.x+oa[0],a.y+oa[1]],[b.x+ob[0],b.y+ob[1]],[b.x-ob[0],b.y-ob[1]]];
+        [0,1,2,0,2,3].forEach(k=>P.push(q[k][0],y,q[k][1]));}
       const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));return g;};
-    const nose=new THREE.BoxGeometry(0.05,0.1,0.02);nose.translate(0.49,0,0.15);const tail=new THREE.BoxGeometry(0.03,0.08,0.025);tail.translate(-0.515,0,0.21);
-    const hub=x=>{const t=new THREE.TorusGeometry(0.055,0.01,4,14);t.rotateX(Math.PI/2);t.translate(x,0,0.175);return t;};
-    return CYC={shell:mergeGeo([shell,torso,helmet,disc(-0.3),disc(0.3)]),glow:mergeGeo([ring(-0.3),ring(0.3),strip(0.047),strip(-0.047),nose,tail,hub(-0.3),hub(0.3)])};
+    const inset=(pts,d)=>pts.map((p,i)=>{const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)],dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;return V(p.x-dy/l*d,p.y+dx/l*d);});
+    const lowR=arc(xr,188,-16,A+0.021,seg),lowF=arc(xf,196,-8,A+0.021,seg);
+    const upper=inset(top.filter(p=>p.y>0.19),0.028);
+    const rTop=inset(rider.filter(p=>p.y>0.37&&p.x<0.17&&p.x>-0.25),0.013),visor=inset(rider.filter(p=>p.x>0.28&&p.y>0.345&&p.y<0.43),0.009);
+    const spine=(pts,lift,w)=>{const P=[];for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];[[a,-1],[a,1],[b,1],[a,-1],[b,1],[b,-1]].forEach(([q,sd])=>P.push(q.x,sd*w/2,q.y+lift));}
+      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));return g;};
+    const lamp=(x,z,w,h)=>{const g=new THREE.PlaneGeometry(h,w);g.rotateY(Math.PI/2);g.translate(x,0,z);return g;};
+    const yS=W+bt+0.0015,yR=0.016+0.018+0.0015,glow=[],shell=[[ext(prof,W,bt,bs)],[ext(rider,0.016,0.018,0.016)],[tyre(xf)],[tyre(xr)],[disc(xf)],[disc(xr)]];
+    for(const s of [1,-1]){
+      glow.push([strip(lowR,s*yS,0.011)],[strip(lowF,s*yS,0.011)],[strip(upper,s*yS,0.007),3],[strip(rTop,s*yR,0.008)],[strip(visor,s*yR,0.012),2]);
+      for(const x of [xf,xr])glow.push([ring(x,s*0.0495,R-0.032,R-0.02),2],[ring(x,s*0.0375,R-0.07,R-0.059),1]);}
+    glow.push([spine(top.filter(p=>p.y>0.29&&(p.x>0.22||p.x<-0.26)),bs+0.002,0.012)],[lamp(0.574,0.18,0.08,0.024),2],[lamp(-0.577,0.215,0.09,0.03),2]);
+    return CYC[lite]={shell:mergeGeo(shell),glow:mergeGeo(glow)};
   }
-  const CYC_SHELL=new THREE.MeshBasicMaterial({color:0x03090c,transparent:true,opacity:0.88,depthWrite:false});
-  function makeCycle(col){
-    const G=cycleGeo(),g=new THREE.Group(),hot=new THREE.Color(col).lerp(new THREE.Color(0xffffff),0.3);
-    const shell=new THREE.Mesh(G.shell,CYC_SHELL);const gm=new THREE.MeshBasicMaterial({color:hot,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
-    const glow=new THREE.Mesh(G.glow,gm);glow.renderOrder=2;
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:new THREE.Color(col),transparent:true,opacity:0.55,depthWrite:false,blending:THREE.AdditiveBlending}));sp.scale.set(1.5,1.5,1);sp.position.z=0.18;
+  const CYS_VS=`uniform float uFog;varying vec3 vN,vV;varying float vF;
+void main(){vec4 w=modelMatrix*vec4(position,1.0);vN=mat3(modelMatrix)*normal;vV=cameraPosition-w.xyz;vec4 mv=viewMatrix*w;vF=exp(-uFog*uFog*mv.z*mv.z);gl_Position=projectionMatrix*mv;}`;
+  const CYS_FS=`uniform vec3 uC;varying vec3 vN,vV;varying float vF;
+void main(){vec3 n=normalize(vN),v=normalize(vV);float ndv=clamp(dot(n,v),0.0,1.0),fr=pow(1.0-ndv,3.0);vec3 r=reflect(-v,n);
+ vec3 c=vec3(0.006,0.011,0.015)+vec3(0.012,0.03,0.036)*max(n.z,0.0);
+ c+=vec3(0.0,0.55,0.68)*exp(-abs(r.z+0.02)*9.0)*0.14*(0.3+0.7*fr);
+ float l=max(dot(r,normalize(vec3(0.3,-0.5,0.81))),0.0);
+ c+=vec3(0.85,0.97,1.0)*pow(l,48.0)*0.6+vec3(0.4,0.62,0.72)*pow(l,5.0)*0.07;
+ c+=uC*(0.32*fr+0.6*fr*fr);
+ gl_FragColor=vec4(c*vF,1.0);}`;
+  const CYG_VS=`attribute float aK;uniform float uFog;varying float vK,vF;varying vec3 vP;
+void main(){vK=aK;vP=position;vec4 mv=modelViewMatrix*vec4(position,1.0);vF=exp(-uFog*uFog*mv.z*mv.z);gl_Position=projectionMatrix*mv;}`;
+  const CYG_FS=`uniform vec3 uC;uniform float uSpin,uOp;varying float vK,vF;varying vec3 vP;
+void main(){float a=1.0;vec3 c=mix(uC,vec3(1.0),0.15)*1.15;
+ if(vK>0.5&&vK<1.5){float cx=vP.x>0.0?${CY.xf}:${CY.xr};float d=fract(atan(vP.z-${CY.R},vP.x-cx)*0.7957747+uSpin);a=0.25+0.75*smoothstep(0.0,0.06,d)*(1.0-smoothstep(0.52,0.58,d));}
+ if(vK>1.5&&vK<2.5)c=mix(uC,vec3(1.0),0.55)*1.3;
+ if(vK>2.5)c=uC*0.7;
+ gl_FragColor=vec4(c*a*uOp*vF,1.0);}`;
+  const POOL_GEO=new THREE.PlaneGeometry(1.7,0.7);
+  const cycCol=k=>{const c=k.clone(),m=Math.max(c.r,c.g,c.b,1e-3);return c.multiplyScalar(1/m);};   // a group colour at full brightness, so a dark one still glows
+  function makeCycle(col,floor){
+    const G=cycleGeo(LITE?1:0),g=new THREE.Group(),c=cycCol(new THREE.Color(col));cycleGeo(1);cycleGeo(2);
+    const sm=new THREE.ShaderMaterial({vertexShader:CYS_VS,fragmentShader:CYS_FS,uniforms:{uC:{value:c.clone()},uFog:{value:SKIN.fog}}});
+    const gm=new THREE.ShaderMaterial({vertexShader:CYG_VS,fragmentShader:CYG_FS,uniforms:{uC:{value:c.clone()},uSpin:{value:0},uOp:{value:1},uFog:{value:SKIN.fog}},
+      transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+    const shell=new THREE.Mesh(G.shell,sm),glow=new THREE.Mesh(G.glow,gm);glow.renderOrder=2;let lod=LITE?1:0;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:c.clone(),transparent:true,opacity:0.32,depthWrite:false,blending:THREE.AdditiveBlending}));sp.scale.set(1.3,1.3,1);sp.position.z=0.2;
     g.add(shell,glow,sp);
-    return {g,gm,sp,setColor(c){gm.color.copy(c).lerp(_cw,0.3);sp.material.color.copy(c);},dispose(){gm.dispose();sp.material.dispose();}};
+    let pool=null,spin=0;
+    if(floor){pool=new THREE.Mesh(POOL_GEO,new THREE.MeshBasicMaterial({map:glowTex,color:c.clone(),transparent:true,opacity:0.45,depthWrite:false,blending:THREE.AdditiveBlending}));pool.position.z=0.004;pool.renderOrder=1;g.add(pool);}
+    return {g,gm,sp,
+      setColor(k){sm.uniforms.uC.value.copy(cycCol(k));gm.uniforms.uC.value.copy(sm.uniforms.uC.value);sp.material.color.copy(sm.uniforms.uC.value);if(pool)pool.material.color.copy(sm.uniforms.uC.value);},
+      roll(d){if(CYC_RM)return;spin=(spin+d/(2*Math.PI*CY.R)*5)%1;gm.uniforms.uSpin.value=spin;},   // d: distance ridden, in bike lengths
+      // px: the bike's length on screen. The halo is for far-off bikes (up close it would only fog the body), and the mesh
+      // steps down with size: full detail over ~110 px (never on LITE), the LITE mesh in between, a tiny one under ~40 px
+      near(px){const t=Math.min(1,Math.max(0,(px-50)/220)),f=Math.min(1,Math.max(0,(70-px)/40));sp.material.opacity=0.34-0.28*t*t*(3-2*t)+0.2*f;
+        const l=px<(lod===2?44:36)?2:LITE||px<(lod?120:100)?1:0;if(l!==lod){lod=l;shell.geometry=CYC[l].shell;glow.geometry=CYC[l].glow;}},
+      dispose(){sm.dispose();gm.dispose();sp.material.dispose();if(pool)pool.material.dispose();}};
   }
-  const _cw=new THREE.Color(0xffffff),_rbv=new THREE.Vector3(),_UPZ=new THREE.Vector3(0,0,1);
-  // the light wall: a tall thin ribbon along the path, additive, brightest along its top edge, fading out toward the tail.
+  const _rbv=new THREE.Vector3(),_UPZ=new THREE.Vector3(0,0,1);
+  // the light wall: a tall thin ribbon along the path, additive, a hot white core along its top edge over a bright band in the
+  // bike's colour, a faint glassy body with a glowing foot, fading out toward the tail.
   // Capped buffer: the head is the bike, then the corners it turned at (newest first); corners past the tail are dropped.
   const RIB_VS=`attribute float aD;attribute float aH;uniform float uL,uFog;varying float vD,vH,vF;
 void main(){vD=aD;vH=aH;vec4 mv=modelViewMatrix*vec4(position,1.0);vF=exp(-uFog*uFog*mv.z*mv.z);gl_Position=projectionMatrix*mv;}`;
   const RIB_FS=`uniform vec3 uC;uniform float uL,uGap,uOp;varying float vD,vH,vF;
-void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(3.0-2.0*t)*smoothstep(uGap,uGap*1.6,vD);
- float top=smoothstep(0.8,1.0,vH),bot=1.0-smoothstep(0.0,0.14,vH);
- vec3 c=uC*(0.2+0.24*vH+top*1.4+bot*0.55)+vec3(1.0)*smoothstep(0.93,1.0,vH)*0.55;
+void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(3.0-2.0*t)*smoothstep(uGap,uGap*1.3,vD);
+ float band=smoothstep(0.8,0.95,vH),core=smoothstep(0.93,0.985,vH),foot=1.0-smoothstep(0.0,0.07,vH);
+ vec3 c=uC*(0.07+0.2*vH*vH+band*1.45+foot*0.45)+vec3(1.0)*core*(0.35+0.5*t);
  gl_FragColor=vec4(c,fade*uOp*vF);}`;
   function makeRibbon(cap,col,h,L,gap){
     const P=new Float32Array(cap*6),D=new Float32Array(cap*2),H=new Float32Array(cap*2);for(let i=0;i<cap;i++)H[i*2+1]=1;
@@ -856,7 +920,7 @@ void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(
       const u=1.5*state.nsize,g=new THREE.Group();
       if(SKIN.cycles){   // TRON: a light cycle rides the links node to node, laying its light wall behind it
         const col=skinCol(new THREE.Color(),base[e.from].color),bike=makeCycle(col);bike.g.scale.setScalar(u*2.7);g.add(bike.g);
-        const rb=makeRibbon(LITE?14:24,col,u*1.25,u*(LITE?16:28),u*1.45);walkerGroup.add(rb.m);
+        const rb=makeRibbon(LITE?14:24,col,u*1.1,u*(LITE?16:28),u*1.35);walkerGroup.add(rb.m);
         const w={g,bike,rb,u,cargo:g,L:0,period:1,lead:0,i:-1,spd:6+wRng()*3};walkerSetEdge(w,i,wRng()<0.5?e.from:e.to);w.s=wRng()*w.len;
         rb.pts.push({p:pos[w.a].clone(),n:w.n.clone()});   // the wall starts where the ride did
         walkerGroup.add(g);walkers.push(w);continue;}
@@ -907,13 +971,18 @@ void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(
       if(bias){_wr.set(bias,0,0).applyQuaternion(camera.quaternion);let best=-2;for(const j of opts){const e=edgeList[j];const other=e.from===w.b?e.to:e.from;_wb2.copy(pos[other]).sub(pos[w.b]).normalize();const d=_wb2.dot(_wr);if(d>best){best=d;next=j;}}}}
     return next;}
   function cycleCorner(w,p,oldN){w.rb.pts.unshift({p:p.clone(),n:w.n.clone()},{p:p.clone(),n:oldN.clone()});if(w.rb.pts.length>w.rb.cap*2)w.rb.pts.length=w.rb.cap*2;}
+  const _wo=new THREE.Vector3(),_wq2=new THREE.Quaternion(),_XA=new THREE.Vector3(1,0,0);
   function cycleStep(w,dt,ctl,ppu,cam){
-    w.s+=w.u*w.spd*dt;
-    for(let guard=0;w.s>=w.len&&guard<4;guard++){const over=w.s-w.len,node=pos[w.b],next=cycleNext(w,ctl);_wn.copy(w.n);
-      walkerSetEdge(w,next!=null?next:w.i,w.b);w.s=Math.min(over,w.len*0.5);cycleCorner(w,node,_wn);}
+    const ds=w.u*w.spd*dt;w.s+=ds;w.bike.roll(ds/(w.u*2.7));
+    for(let guard=0;w.s>=w.len&&guard<4;guard++){const over=w.s-w.len,node=pos[w.b],next=cycleNext(w,ctl);_wn.copy(w.n);_wo.copy(w.dir);
+      walkerSetEdge(w,next!=null?next:w.i,w.b);w.s=Math.min(over,w.len*0.5);cycleCorner(w,node,_wn);
+      w.lk=CYC_RM?0:Math.max(-1,Math.min(1,_wy.crossVectors(_wo,w.dir).dot(w.n)))*0.55;}   // lean into the turn it just took
     _wa.copy(pos[w.a]).addScaledVector(w.dir,w.s);
-    const dist=cam.distanceTo(_wa),px=w.u*2.2*ppu/dist;w.g.visible=px>5||ctl||w===idleW;w.rb.m.visible=w.g.visible;if(!w.g.visible)return;
-    w.g.position.copy(_wa);_wy.crossVectors(w.n,w.dir);_wm.makeBasis(w.dir,_wy,w.n);w.g.quaternion.setFromRotationMatrix(_wm);
+    const dist=cam.distanceTo(_wa),px=w.u*2.2*ppu/dist;w.g.visible=px>5||ctl||w===idleW;w.rb.m.visible=w.g.visible;if(!w.g.visible){w.q=null;return;}
+    w.bike.near(w.u*2.7*ppu/dist);w.g.position.copy(_wa);_wy.crossVectors(w.n,w.dir);_wm.makeBasis(w.dir,_wy,w.n);_wq2.setFromRotationMatrix(_wm);
+    if(!w.q)w.q=_wq2.clone();else w.q.slerp(_wq2,1-Math.exp(-dt*12));   // swing round a corner, don't snap
+    w.lk=(w.lk||0)*Math.exp(-dt*3.5);w.lean=(w.lean||0)+((w.lk||0)-(w.lean||0))*Math.min(1,dt*10);
+    w.g.quaternion.copy(w.q).multiply(_wq.setFromAxisAngle(_XA,-w.lean));
     ribbonWrite(w.rb,_wa,w.n);}
   // ── ride a monarch: click one and you're flying it — arrows / WASD steer, Shift boosts, Space hovers, Esc hops off ──
   const rideEl=document.getElementById('ride-hint');
@@ -984,8 +1053,8 @@ void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(
   function walkCam(w,k){
     _ws.crossVectors(w.dir,w.n).normalize();
     _wc.copy(pos[w.a]).addScaledVector(w.dir,w.s);const u=w.u;
-    if(w.bike){   // chase cam: steeply above and behind the bike, off to one side: its light wall shows (not edge-on) and the node it just left stays under the line of sight it's riding
-      const nar=Math.min(1,camera.aspect*1.2);_wt.copy(_wc).addScaledVector(w.dir,u*3*nar);_wc.addScaledVector(w.n,u*7.5).addScaledVector(w.dir,-u*6).addScaledVector(_ws,u*3.6*nar);
+    if(w.bike){   // chase cam: low and close behind the bike and a touch to one side, looking up the link it's riding: the bike fills the lower middle, its wall trails off beside it
+      const nar=Math.min(1,camera.aspect*1.2),back=camera.aspect<1?6.2:5.3;_wt.copy(_wc).addScaledVector(w.dir,u*3).addScaledVector(w.n,u*0.8);_wc.addScaledVector(w.n,u*2.2).addScaledVector(w.dir,-u*back).addScaledVector(_ws,u*1.3*nar);
       for(const id of [w.a,w.b]){const sl=slotOf[id];if(!sl)continue;const r=(sl.mesh==='s'?rSun(sysBySun[id]):rPlanet(id))*1.7;_wr.copy(_wc).sub(pos[id]);const d=_wr.length();   // never inside the node it left or is heading for
         if(d<r){_wc.copy(pos[id]).addScaledVector(d>1e-4?_wr.multiplyScalar(1/d):w.n,r);}}
       camera.position.lerp(_wc,k);controls.target.lerp(_wt,Math.min(1,k*1.5));return;}
@@ -1611,26 +1680,40 @@ void main(){float x=fract(vS+uT*(0.16+vS*0.12));float d=fract(x-vT);float p=exp(
     // light cycles on the floor grid: they ride grid lines inside an arena under the galaxy (sized to what the home view shows),
     // go straight or turn a crisp 90° at an intersection, and always turn back in at the arena's edge
     tronBikes.forEach(b=>{b.bike.dispose();});tronBikes=[];
-    const rng=seeded(2001),nB=LITE?2:4,Lb=cell*1.1,AX=Math.round(R*Math.min(1.4,Math.max(0.5,1.05*camera.aspect))/cell),Y0=Math.round(-R*0.6/cell),Y1=Math.round(R*0.45/cell);
+    // each corner is a tight arc (radius RF cells) the bike leans into, and its wall follows the arc; wheels spin with the road
+    const rng=seeded(2001),nB=LITE?2:4,Lb=cell*1.1,RF=0.3,ARC=LITE?3:5,AX=Math.round(R*Math.min(1.4,Math.max(0.5,1.05*camera.aspect))/cell),Y0=Math.round(-R*0.6/cell),Y1=Math.round(R*0.45/cell);
     const DIR=[[1,0],[0,1],[-1,0],[0,-1]],inside=(x,y)=>x>=-AX&&x<=AX&&y>=Y0&&y<=Y1;
-    for(let i=0;i<nB;i++){const col=new THREE.Color(TRON_COLS[i%TRON_COLS.length]),bike=makeCycle(col);bike.g.scale.setScalar(Lb);add(bike.g);
-      const rb=makeRibbon(LITE?16:32,col,Lb*0.5,cell*(RM?2.6:LITE?7:14),Lb*0.5);add(rb.m);
+    const decide=b=>{const ix=b.gx+DIR[b.d][0],iy=b.gy+DIR[b.d][1];   // the way out of the next intersection
+      if(inside(ix+DIR[b.d][0],iy+DIR[b.d][1])&&rng()>=0.16)return b.d;
+      const opts=[(b.d+1)%4,(b.d+3)%4].filter(k=>inside(ix+DIR[k][0],iy+DIR[k][1]));return opts.length?opts[Math.floor(rng()*opts.length)]:b.d;};
+    const wallPt=(b,x,y)=>{b.rb.pts.unshift({p:new THREE.Vector3(x*cell,y*cell,z0),n:_UPZ});if(b.rb.pts.length>b.rb.cap)b.rb.pts.length=b.rb.cap;};
+    const arcAt=(A,th)=>{const D=DIR[A.d],N=DIR[A.nd],c=Math.cos(th),s=Math.sin(th);return [A.ix-D[0]*RF+N[0]*RF*(1-c)+D[0]*RF*s,A.iy-D[1]*RF+N[1]*RF*(1-c)+D[1]*RF*s,Math.atan2(N[1]*s+D[1]*c,N[0]*s+D[0]*c)];};
+    for(let i=0;i<nB;i++){const col=new THREE.Color(TRON_COLS[i%TRON_COLS.length]),bike=makeCycle(col,true);bike.g.scale.setScalar(Lb);bike.g.rotation.order='ZYX';add(bike.g);
+      const rb=makeRibbon(LITE?18:34,col,Lb*0.42,cell*(RM?2.6:LITE?7:14),Lb*0.5);add(rb.m);
       const gx=Math.round((rng()*2-1)*AX*0.8),gy=Math.round(Y0+(Y1-Y0)*(0.15+rng()*0.7)),d=Math.floor(rng()*4);
-      const b={bike,rb,gx,gy,d,u:0,spd:(2.2+rng()*0.9),yaw:Math.atan2(DIR[d][1],DIR[d][0]),p:new THREE.Vector3()};
+      const b={bike,rb,gx,gy,d,u:0,nd:d,arc:null,spd:(2.2+rng()*0.9),yaw:Math.atan2(DIR[d][1],DIR[d][0]),lean:0,p:new THREE.Vector3()};b.nd=decide(b);
       const back=RM?2.4:1;rb.pts.push({p:new THREE.Vector3((gx-DIR[d][0]*back)*cell,(gy-DIR[d][1]*back)*cell,z0),n:_UPZ});   // where the wall starts (parked under reduced motion: a short one)
       tronBikes.push(b);}
     const bikeStep=dt=>{
       for(const b of tronBikes){
-        if(!RM){b.u+=b.spd*dt;
-          while(b.u>=1){b.u-=1;b.gx+=DIR[b.d][0];b.gy+=DIR[b.d][1];   // at an intersection
-            const nx=b.gx+DIR[b.d][0],ny=b.gy+DIR[b.d][1];
-            if(!inside(nx,ny)||rng()<0.16){const L=(b.d+1)%4,Rt=(b.d+3)%4,opts=[L,Rt].filter(k=>inside(b.gx+DIR[k][0],b.gy+DIR[k][1]));
-              const nd=opts.length?opts[Math.floor(rng()*opts.length)]:(b.d+2)%4;if(nd!==b.d){b.d=nd;b.rb.pts.unshift({p:new THREE.Vector3(b.gx*cell,b.gy*cell,z0),n:_UPZ});if(b.rb.pts.length>b.rb.cap)b.rb.pts.length=b.rb.cap;}}}}
-        const dx=DIR[b.d][0],dy=DIR[b.d][1];b.p.set((b.gx+dx*b.u)*cell,(b.gy+dy*b.u)*cell,z0);
-        let dy2=Math.atan2(dy,dx)-b.yaw;dy2-=Math.round(dy2/(Math.PI*2))*Math.PI*2;b.yaw+=dy2*Math.min(1,dt*28);   // a crisp turn, not a snap
-        // from far off a bike (and its wall) grows up to 2.2× so it stays a readable ~26 px; up close it's true to the grid
-        const k=Math.min(2.2,Math.max(1,(26*camera.position.distanceTo(b.p)/pxPer())/Lb));b.rb.h=Lb*0.5*k;b.rb.m.material.uniforms.uGap.value=Lb*0.5*k;
-        b.bike.g.position.copy(b.p);b.bike.g.rotation.set(0,0,b.yaw);b.bike.g.scale.setScalar(Lb*k);ribbonWrite(b.rb,b.p,_UPZ);}};
+        let ds=RM?0:b.spd*dt;const dist=ds;
+        for(let guard=0;ds>1e-9&&guard<8;guard++){
+          if(b.arc){const A=b.arc,len=Math.PI/2*RF,take=Math.min(ds,len-A.s);A.s+=take;ds-=take;
+            while(A.k<ARC-1&&A.s>=len*(A.k+1)/ARC){A.k++;const q=arcAt(A,Math.PI/2*A.k/ARC);wallPt(b,q[0],q[1]);}
+            if(A.s>=len-1e-9){b.gx=A.ix;b.gy=A.iy;b.d=A.nd;b.u=RF;b.arc=null;wallPt(b,A.ix+DIR[b.d][0]*RF,A.iy+DIR[b.d][1]*RF);b.nd=decide(b);}
+            continue;}
+          const lim=b.nd===b.d?1:1-RF,take=Math.min(ds,lim-b.u);b.u+=take;ds-=take;
+          if(b.u>=lim-1e-9){const ix=b.gx+DIR[b.d][0],iy=b.gy+DIR[b.d][1];
+            if(b.nd===b.d){b.gx=ix;b.gy=iy;b.u=0;b.nd=decide(b);}
+            else{b.arc={ix,iy,d:b.d,nd:b.nd,s:0,k:0};wallPt(b,ix-DIR[b.d][0]*RF,iy-DIR[b.d][1]*RF);}}}
+        let yawT,leanT=0;
+        if(b.arc){const A=b.arc,q=arcAt(A,A.s/RF);b.p.set(q[0]*cell,q[1]*cell,z0);yawT=q[2];const D=DIR[A.d],N=DIR[A.nd];leanT=(D[0]*N[1]-D[1]*N[0])*0.5;}
+        else{const dx=DIR[b.d][0],dy=DIR[b.d][1];b.p.set((b.gx+dx*b.u)*cell,(b.gy+dy*b.u)*cell,z0);yawT=Math.atan2(dy,dx);}
+        let dy2=yawT-b.yaw;dy2-=Math.round(dy2/(Math.PI*2))*Math.PI*2;b.yaw+=dy2*Math.min(1,dt*30);
+        b.lean+=(leanT-b.lean)*Math.min(1,dt*9);
+        // from far off a bike (and its wall) grows up to 2.8× so it stays a readable ~34 px; up close it's true to the grid
+        const cd=camera.position.distanceTo(b.p),k=Math.min(2.8,Math.max(1,(34*cd/pxPer())/Lb));b.bike.near(Lb*k*pxPer()/cd);b.rb.h=Lb*0.42*k;b.rb.m.material.uniforms.uGap.value=Lb*0.5*k;
+        b.bike.g.position.copy(b.p);b.bike.g.rotation.set(-b.lean,0,b.yaw);b.bike.g.scale.setScalar(Lb*k);b.bike.roll(dist*cell/(Lb*k));ribbonWrite(b.rb,b.p,_UPZ);}};
     bikeStep(0);
     const own=dome,sc=()=>(renderer.domElement.height/2)/Math.tan(camera.fov*Math.PI/360);
     extras.userData.step=(dt)=>{
@@ -1689,8 +1772,8 @@ void main(){float x=fract(vS+uT*(0.16+vS*0.12));float d=fract(x-vT);float p=exp(
       if(ride)endRide();if(walk)endWalk();build();buildMonarchs();monarchGroup.visible=state.monarchs&&SKIN.monarchs!==false;},
     relabel(){if(focused!=null)showSystemLabels(focused);},lite:LITE,
     monarchScreen(i){const m=monarchs[i||0];if(!m)return null;_v.copy(m.g.position).project(camera);return [(_v.x+1)/2*window.innerWidth,(1-_v.y)/2*window.innerHeight];},
-    bikes(){return tronBikes.map(b=>[b.gx,b.gy,b.d,+b.u.toFixed(2),b.rb.pts.length]);},
-    bikeCam(i){const b=tronBikes[i||0];if(!b)return;tw=null;controls.autoRotate=false;const c=tronCell,f=new THREE.Vector3(Math.cos(b.yaw),Math.sin(b.yaw),0);
+    bikes(){return tronBikes.map(b=>[b.gx,b.gy,b.d,+b.u.toFixed(2),b.rb.pts.length,b.arc?+b.arc.s.toFixed(2):-1,+b.lean.toFixed(2)]);},
+    bikeCam(i,near){const b=tronBikes[i||0];if(!b)return;tw=null;controls.autoRotate=false;const c=tronCell*(near||1),f=new THREE.Vector3(Math.cos(b.yaw),Math.sin(b.yaw),0);
       const sd=c*3.4*Math.min(1,camera.aspect);controls.target.copy(b.p).addScaledVector(f,c*(camera.aspect<1?1:3));camera.position.copy(b.p).addScaledVector(f,-c*6).add(new THREE.Vector3(-f.y*sd,f.x*sd,c*2.6));controls.update();},
     systems};
 })();
@@ -1820,8 +1903,10 @@ function tronPreview(s){
       wall+=`<path d="M${f(a[0])} ${f(a[1])}L${f(b[0])} ${f(b[1])}L${f(b[0])} ${f(b[1]-hb)}L${f(a[0])} ${f(a[1]-ha)}Z" fill="${col}" fill-opacity="${(0.2+0.25*k/pts.length).toFixed(2)}"/>`;
       top+=`<path d="M${f(a[0])} ${f(a[1]-ha)}L${f(b[0])} ${f(b[1]-hb)}" stroke="${col}" stroke-width="${f(0.6+0.5*k/pts.length)}" stroke-opacity="${(0.4+0.6*k/pts.length).toFixed(2)}"/>`;}
     const [hx,hy]=P(...pts[pts.length-1]),k=sc(j);
-    return wall+top+`<circle cx="${f(hx)}" cy="${f(hy-2*k)}" r="${f(9*k)}" fill="url(#tr-gl)" opacity=".55"/><g transform="translate(${f(hx)} ${f(hy)}) scale(${f(k*dir)} ${f(k)})"><path d="M-9 -3.2C-8 -6.4 -5 -7.4 -2 -6.8L1 -5.4L4 -7C7 -7.4 10 -6.2 11 -3.6L10 -2.4H-8.2Z" fill="#02080a" stroke="${col}" stroke-width=".8"/>`+
-      `<circle cx="-5.4" cy="-3" r="3" fill="#000" stroke="${col}" stroke-width="1.3"/><circle cx="6.4" cy="-3" r="3" fill="#000" stroke="${col}" stroke-width="1.3"/></g>`;};
+    return wall+top+`<circle cx="${f(hx)}" cy="${f(hy-2*k)}" r="${f(9*k)}" fill="url(#tr-gl)" opacity=".55"/><g transform="translate(${f(hx)} ${f(hy)}) scale(${f(k*dir)} ${f(k)})"><path d="M-4.6 -6.2C-2.6 -7.7 1.6 -7.9 4.2 -8.2C5.6 -8.5 6.6 -7.8 6.5 -6.6Z" fill="#02080a" stroke="${col}" stroke-width=".55"/>`+
+      `<path d="M-10.3 -1.9C-11.3 -3.6 -10.6 -5.9 -8.6 -6.6C-6.6 -7.1 -4.4 -6.6 -2.6 -6.1C-0.6 -5.8 1.6 -5.9 3.6 -6.4C5.6 -7 8 -6.9 9.8 -5.6C11.1 -4.6 11.4 -3 10.6 -1.9Z" fill="#02080a" stroke="${col}" stroke-width=".7"/>`+
+      `<circle cx="-6.1" cy="-3" r="2.95" fill="#000" stroke="${col}" stroke-width="1.2"/><circle cx="6.1" cy="-3" r="2.95" fill="#000" stroke="${col}" stroke-width="1.2"/>`+
+      `<circle cx="-6.1" cy="-3" r="1.5" fill="none" stroke="${col}" stroke-width=".45" stroke-opacity=".8"/><circle cx="6.1" cy="-3" r="1.5" fill="none" stroke="${col}" stroke-width=".45" stroke-opacity=".8"/><path d="M10.8 -3.4h.8" stroke="#fff" stroke-width=".9"/></g>`;};
   o+=cycle([[-7,3.2],[-7,6.4],[-2,6.4],[-2,8.4]],'#ff8a1f',8.4,1)+cycle([[8,2.4],[8,5.2],[3.5,5.2],[3.5,7.4]],A,7.4,-1);
   // the graph above the floor: identity-disc systems joined by light trails
   const sys=[[68,34,1.25],[170,26,0.9],[128,52,0.7]],cols=['#00e5ff','#ff2bd6','#ffe23a','#39ff9f','#ff8a1f'];
