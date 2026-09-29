@@ -82,7 +82,12 @@ const ATLAS_CSS=`
   #card .rel{display:inline-block;padding:2px 8px;border-radius:10px;background:var(--bg-3);font-size:12px;margin-top:4px} #card .rel.inf{border:1px dashed var(--border-2)}
   #card .act{margin-top:10px;display:flex;gap:8px} #card .act button{background:var(--bg-3);border:1px solid var(--border-2);color:var(--text);border-radius:6px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
   #card .act button:hover{border-color:var(--accent);color:var(--accent-2)}
-  ::-webkit-scrollbar{width:8px} ::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:4px}
+  /* scrollbars: thin pill inset from the panel's rounded corners, tinted per skin via --sb */
+  ::-webkit-scrollbar{width:12px;height:12px;background:transparent} ::-webkit-scrollbar-track{background:transparent;margin:12px 0} ::-webkit-scrollbar-corner{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--sb,var(--border-2));border:4px solid transparent;border-radius:8px;background-clip:padding-box;min-height:36px} ::-webkit-scrollbar-thumb:hover{background-color:var(--sb-hi,var(--accent));border-width:3px}
+  @supports not selector(::-webkit-scrollbar){*{scrollbar-width:thin;scrollbar-color:var(--sb,var(--border-2)) transparent}}
+  body[data-skin="pokemon"]{--sb:rgba(59,76,202,.45);--sb-hi:#3b4cca} body[data-skin="pacman"]{--sb:rgba(35,35,255,.7);--sb-hi:#ffe100} body[data-skin="mario"]{--sb:rgba(255,255,255,.45);--sb-hi:#e52521}
+  body[data-skin="tron"]{--sb:rgba(0,229,255,.35);--sb-hi:#00e5ff} body[data-skin="city"]{--sb:rgba(184,155,255,.4)} body[data-skin="jarvis"]{--sb:rgba(25,211,224,.35)} body[data-skin="synthwave"]{--sb:rgba(255,63,208,.4)}
   /* ── skins: everything visual hangs off the CSS variables above plus body[data-skin] ── */
   #fx{position:absolute;inset:0;pointer-events:none;z-index:1;display:none}
   #fx .ck{position:absolute;width:26px;height:26px;border:2px solid var(--accent);opacity:.55} #fx .tl{left:14px;top:14px;border-right:0;border-bottom:0} #fx .tr{right:14px;top:14px;border-left:0;border-bottom:0} #fx .bl{left:14px;bottom:14px;border-right:0;border-top:0} #fx .br{right:14px;bottom:14px;border-left:0;border-top:0}
@@ -397,7 +402,7 @@ const ATLAS_MARKUP=`
   </div></details>
   <details><summary>Display</summary><div class="body">
     <div id="skin-row"><span>Skin: <b id="skin-name">Monarch</b></span><button id="skin-btn-2">Change…</button></div>
-    <label class="row"><span>Labels<span class="sub only-3d">Names appear once you fly into a group</span></span><input class="tg" type="checkbox" id="labels" checked></label>
+    <label class="row"><span>Labels<span class="sub only-3d">Names appear once you fly into a group</span></span><input class="tg" type="checkbox" id="labels-tg" checked></label>
     <label class="row only-3d"><span>Monarchs<span class="sub">Butterflies drifting between the systems</span></span><input class="tg" type="checkbox" id="monarchs" checked></label>
     <label class="row only-3d"><span><span id="walkers-t">Kinesins</span><span class="sub" id="walkers-s">Tiny carriers walking data along some links — zoom in to watch them, click one to walk it</span></span><input class="tg" type="checkbox" id="walkers" checked></label>
     <div class="rng"><div class="top"><span>Node size</span><span id="nsize-v">1.0</span></div><input type="range" id="nsize" min="0.4" max="2.5" step="0.1" value="1"></div>
@@ -3116,7 +3121,7 @@ renderGroups();
 document.getElementById('grp-all').addEventListener('click',()=>{state.hidden.clear();renderGroups();applyVisibility();});
 document.getElementById('grp-none').addEventListener('click',()=>{LEGEND.forEach(g=>state.hidden.add(g.cid));renderGroups();applyVisibility();});
 document.getElementById('inferred').addEventListener('change',ev=>{state.inferred=ev.target.checked;if(V3)V3.buildEdges();if(network)window.__apply2D();});
-document.getElementById('labels').addEventListener('change',ev=>{state.labels=ev.target.checked;if(V3)V3.relabel();if(network)window.__apply2D();});
+document.getElementById('labels-tg').addEventListener('change',ev=>{state.labels=ev.target.checked;if(V3)V3.relabel();if(network)window.__apply2D();});
 document.getElementById('monarchs').addEventListener('change',ev=>{state.monarchs=ev.target.checked;if(V3)V3.setMonarchs(state.monarchs);});
 document.getElementById('walkers').addEventListener('change',ev=>{state.walkers=ev.target.checked;if(V3)V3.setWalkers(state.walkers);});
 const slider=(id,fmt,fn)=>{const el=document.getElementById(id),v=document.getElementById(id+'-v');el.addEventListener('input',()=>{v.textContent=fmt(parseFloat(el.value));fn(parseFloat(el.value));});};
