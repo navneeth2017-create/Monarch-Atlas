@@ -91,9 +91,9 @@ def test_skins_match_the_viewer_and_retired_ones_fall_back(tmp_path, monkeypatch
     from graphify.exporters.atlas_html import SKIN_KEYS
     viewer = (Path(__file__).resolve().parents[1] / "graphify/exporters/atlas_viewer.js").read_text(encoding="utf-8")
     block = re.search(r"const SKINS=\{([\s\S]*?)\n\};", viewer).group(1)
-    assert tuple(re.findall(r"^\s{2}([a-z0-9_]+):\{name:", block, re.M)) == SKIN_KEYS == ("monarch", "jarvis", "synthwave", "tron", "pacman")
+    assert tuple(re.findall(r"^\s{2}([a-z0-9_]+):\{name:", block, re.M)) == SKIN_KEYS == ("monarch", "jarvis", "synthwave", "tron", "pacman", "mario")
     monkeypatch.setenv("GRAPHIFY_THEME", "atlas")
-    for asked, got in (("tron", "tron"), ("matrix", "tron"), ("pacman", "pacman"), ("blueprint", "pacman"), ("nope", "monarch")):
+    for asked, got in (("tron", "tron"), ("matrix", "tron"), ("pacman", "pacman"), ("mario", "mario"), ("blueprint", "pacman"), ("nope", "monarch")):
         monkeypatch.setenv("GRAPHIFY_ATLAS_SKIN", asked)
         out = tmp_path / f"{asked}.html"
         to_html(_graph(), {0: ["a", "b"]}, str(out), community_labels={0: "Test"})

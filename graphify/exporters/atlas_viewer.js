@@ -224,6 +224,52 @@ const ATLAS_CSS=`
   body[data-skin="pacman"] #tip b{color:var(--accent-2);text-transform:uppercase;letter-spacing:.1em}
   body[data-skin="pacman"] .seg button.on{background:var(--accent);color:#000} body[data-skin="pacman"] .tg:checked{background:var(--accent)}
   body[data-skin="pacman"] .skin.on{box-shadow:0 0 0 1px var(--accent),0 0 16px rgba(255,210,31,.4)}
+  body[data-skin="mario"] .lbl{font-family:var(--mono);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 2px 0 #000}
+  body[data-skin="mario"] .lbl.sun{color:var(--lbl-sun);letter-spacing:.1em}
+  body[data-skin="mario"] .lbl:not(.sun):not(.realm){padding:0 4px;background:rgba(0,0,0,.45);border-radius:3px}
+  body[data-skin="mario"] .lbl.realm{background:#e52521;border:2px solid #000;border-radius:4px;box-shadow:0 3px 0 #000;color:#fff!important;text-shadow:0 1px 0 #000}
+  body[data-skin="mario"] #settings,body[data-skin="mario"] #card,body[data-skin="mario"] #skins .box{background:rgba(12,12,20,.9);border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 3px #000,0 8px 0 rgba(0,0,0,.35)}
+  body[data-skin="mario"] .bar b,body[data-skin="mario"] summary{font-family:var(--mono);font-weight:700;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2)}
+  body[data-skin="mario"] details,body[data-skin="mario"] .bar{border-color:rgba(255,255,255,.18)} body[data-skin="mario"] summary::before{border-left-color:var(--accent)}
+  body[data-skin="mario"] #brand .mark{color:#fbd000;background:#c84c0c;border:2px solid #000;border-radius:4px;box-shadow:inset 0 0 0 2px #f8b800}
+  body[data-skin="mario"] #brand .name{font-family:var(--mono);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#fff;text-shadow:2px 2px 0 #000} body[data-skin="mario"] #brand .name small{color:#fff;text-shadow:1px 1px 0 #000}
+  body[data-skin="mario"] #stats{font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;font-size:10.5px;color:#fff;text-shadow:1px 1px 0 #000}
+  body[data-skin="mario"] #tip,body[data-skin="mario"] #crumb,body[data-skin="mario"] #idle-hint,body[data-skin="mario"] #ride-hint{background:rgba(12,12,20,.92);border:2px solid #fff;border-radius:8px;box-shadow:0 0 0 2px #000;font-family:var(--mono)}
+  body[data-skin="mario"] #tip b{color:var(--accent-2);text-transform:uppercase;letter-spacing:.08em}
+  body[data-skin="mario"] .seg button.on{background:var(--accent);color:#fff} body[data-skin="mario"] .tg:checked{background:var(--accent)}
+  body[data-skin="mario"] .skin.on{box-shadow:0 0 0 2px var(--accent-2)}
+  /* MARIO WORLD, the game: the arcade HUD in four columns, chunky outlined type, A/B and a pad on phones */
+  #mario-game{position:absolute;inset:0;z-index:9;pointer-events:none;display:none;font-family:var(--mono);color:#fff;text-transform:uppercase}
+  body.mario-on #mario-game{display:block}
+  body.mario-on #settings,body.mario-on #card,body.mario-on #labels,body.mario-on #stats,body.mario-on #crumb,body.mario-on #tip,body.mario-on #idle-hint,body.mario-on #ride-hint,body.mario-on #skins{display:none!important}
+  #mario-game .mg-hud{position:absolute;left:50%;top:12px;transform:translateX(-50%);display:none;gap:clamp(18px,6vw,64px);font-weight:800;font-size:15px;letter-spacing:.1em;text-shadow:2px 2px 0 #000;white-space:nowrap}
+  body.mario-play #mario-game .mg-hud{display:flex} #mario-game .mg-hud span{display:flex;flex-direction:column;align-items:center;line-height:1.2} #mario-game .mg-hud small{font-size:13px;font-weight:800} #mario-game .mg-coins{color:#fbd000}
+  #mario-game .mg-banner{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);display:none;flex-direction:column;align-items:center;gap:12px;padding:18px 34px;background:rgba(0,0,0,.82);border:3px solid #fff;border-radius:8px;box-shadow:0 0 0 3px #000;text-align:center}
+  #mario-game .mg-banner.on{display:flex} #mario-game .mg-banner b{font-size:clamp(22px,4.5vw,36px);letter-spacing:.12em;text-shadow:3px 3px 0 #e52521} #mario-game .mg-banner span{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;color:#fbd000}
+  #mario-game .mg-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(580px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;box-sizing:border-box;padding:24px 28px;text-align:center;display:none;pointer-events:auto;
+    background:#101018;border:4px solid #fff;border-radius:12px;box-shadow:0 0 0 4px #000,0 10px 0 4px rgba(0,0,0,.4);animation:pg-in .45s ease-out}
+  #mario-game .mg-card.on{display:block}
+  #mario-game .mg-art{display:flex;align-items:flex-end;justify-content:center;gap:18px;margin-bottom:10px} #mario-game .mg-art svg{display:block}
+  #mario-game .mg-q{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;margin-bottom:26px;background:#f8b800;color:#8b4a00;font-size:28px;font-weight:900;border:3px solid #8b4a00;border-radius:4px;box-shadow:inset 2px 2px 0 #fff0a0;animation:mg-bob 1s ease-in-out infinite}
+  @keyframes mg-bob{50%{transform:translateY(-6px)}}
+  .mg-title small{display:block;font-size:clamp(13px,2.6vw,18px);font-weight:800;letter-spacing:.45em;margin-right:-.45em}
+  .mg-title b{display:block;margin:6px 0 2px;font-size:clamp(38px,9.5vw,74px);font-weight:900;letter-spacing:.02em;line-height:1.05}
+  .mg-title b i{font-style:normal;-webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:0 5px 0 #000}
+  .mg-title.over b{color:#fff;font-size:clamp(34px,8vw,60px);-webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:0 5px 0 #e52521}
+  #mario-game .mg-card p{margin:12px auto 14px;max-width:460px;font-size:13px;line-height:1.6;letter-spacing:.02em;text-transform:none;color:#e6e6f2} #mario-game .mg-card p b{color:#fbd000}
+  .mg-keys{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;font-size:11.5px;letter-spacing:.1em;color:#c9cbe0}
+  #mario-game kbd{display:inline-block;min-width:13px;margin-right:3px;padding:1px 5px;border:2px solid #fff;border-radius:4px;font:inherit;font-size:11px;color:#fff}
+  .mg-touch{display:none;margin-top:10px;font-size:11.5px;letter-spacing:.1em;color:#c9cbe0} @media (pointer:coarse){.mg-touch{display:block}.mg-keys{display:none}.mg-act kbd{display:none}}
+  .mg-act{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:18px}
+  .mg-act button{font:inherit;font-size:14px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;padding:10px 22px;cursor:pointer;color:#fff;background:#e52521;border:3px solid #000;border-radius:8px;box-shadow:0 4px 0 #000;text-shadow:1px 1px 0 #000}
+  .mg-act button kbd{margin:0 0 0 8px!important;border-color:rgba(255,255,255,.6)!important}
+  .mg-act button.ghost{background:#2b50d8}
+  .mg-act button:hover,.mg-act button:focus-visible{outline:none;transform:translateY(-1px);box-shadow:0 5px 0 #000,0 0 0 3px #fbd000}
+  #mario-game .mg-pad{display:none;position:absolute;left:14px;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));justify-content:space-between;pointer-events:none}
+  @media (pointer:coarse){body.mario-play #mario-game .mg-pad{display:flex}}
+  #mario-game .mg-pad div{display:flex;gap:12px} #mario-game .mg-pad button{pointer-events:auto;width:66px;height:66px;font:900 22px var(--mono);color:#fff;background:rgba(0,0,0,.55);border:3px solid #fff;border-radius:50%;touch-action:manipulation;-webkit-tap-highlight-color:transparent;text-shadow:1px 1px 0 #000}
+  #mario-game .mg-ab button{background:rgba(229,37,33,.8)} #mario-game .mg-pad button:active{background:rgba(251,208,0,.7)}
+  @media (max-width:720px){#mario-game .mg-hud{top:62px;font-size:12px;gap:16px} #mario-game .mg-hud small{font-size:11px}}
   #skins{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   #skins.on{display:flex}
   #skins .box{width:min(1040px,calc(100vw - 40px));max-height:calc(100vh - 40px);overflow:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -378,6 +424,8 @@ const ICO={
   kinesin:ico('<circle cx="8" cy="19" r="2.6"/><circle cx="16" cy="19" r="2.6"/><path d="M8 17L12 12L16 17M12 12V8.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 2.4L15.6 6L12 9.6L8.4 6Z"/>'),
   cycle:ico('<circle cx="6" cy="15.6" r="3.9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18.4" cy="15.6" r="3.9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M1.4 13.4C2 10.6 4.2 9.1 7.2 9.3L10.9 11L14.3 8.9C17.6 8.4 21.4 9.4 22.9 12.9H20.6C18.8 11.4 15.8 11.5 13.9 12.8L9.7 13.8L4.8 11.7C3.5 11.9 2.4 12.5 1.4 13.4Z"/>'),
   pac:ico('<path d="M12 12L20.9 7.46A10 10 0 1 0 20.9 16.54Z"/>'),
+  coin:ico('<ellipse cx="12" cy="12" rx="7.2" ry="10"/><rect x="10.6" y="6.5" width="2.8" height="11" rx="1.2" fill="#000" opacity=".35"/>'),
+  block:ico('<rect x="2.5" y="2.5" width="19" height="19" rx="2"/><path d="M9.3 9.6C9.3 7.9 10.5 7 12.1 7S14.8 8 14.8 9.4C14.8 11.3 12.3 11.4 12.3 13.4" fill="none" stroke="#000" stroke-width="2.2" opacity=".55"/><rect x="11" y="15.2" width="2.6" height="2.6" fill="#000" opacity=".55"/>'),
   disc:ico('<circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="5.7" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4.3 1.6"/><circle cx="12" cy="12" r="2.3"/>'),
 };
 // PAC-MAN node bodies: arcade toon shading (two tones, one hard highlight, an inked edge). Suns are Pac-Men: a wedge of the sphere
@@ -409,6 +457,28 @@ void main(){
   c=mix(c,vec3(1.0),smoothstep(0.93,0.96,dot(reflect(-L,n),v))*0.8);
   c*=mix(0.22,1.0,smoothstep(0.14,0.3,ndv));
   gl_FragColor=vec4(c*f,1.0);}`});
+}
+// MARIO WORLD node bodies: bright toon spheres (two tones, one hard highlight, an inked edge), and the suns look back at you with
+// a pair of tall eyes, like the star — drawn from the view-space normal, so they always face the camera.
+function marioBodyMat(emis){
+  return new THREE.ShaderMaterial({uniforms:{uSun:{value:emis?1:0},uT:{value:0},uFog:{value:0.00009},uFogC:{value:new THREE.Color(0x5c94fc)}},
+    vertexShader:`varying vec3 vN,vV,vC;varying float vD;
+void main(){vec4 p=vec4(position,1.0);vec3 n=normal;
+#ifdef USE_INSTANCING
+p=instanceMatrix*p;n=mat3(instanceMatrix)*n;
+#endif
+vC=vec3(1.0);
+#ifdef USE_INSTANCING_COLOR
+vC=instanceColor;
+#endif
+vec4 mv=modelViewMatrix*p;vN=normalize(normalMatrix*n);vV=normalize(-mv.xyz);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`uniform float uSun,uT,uFog;uniform vec3 uFogC;varying vec3 vN,vV,vC;varying float vD;
+void main(){vec3 n=normalize(vN),v=normalize(vV),L=normalize(vec3(-0.35,0.55,0.76));float ndl=dot(n,L),ndv=clamp(dot(n,v),0.0,1.0);
+  vec3 c=vC*mix(0.68,1.08,smoothstep(0.0,0.12,ndl));
+  c=mix(c,vec3(1.0),smoothstep(0.93,0.96,dot(reflect(-L,n),v))*0.85);
+  if(uSun>0.5){float blink=step(0.06,fract(uT*0.23+vC.r*3.7));for(int i=0;i<2;i++){vec2 q=(n.xy-vec2(i==0?-0.2:0.2,0.1))/vec2(0.075,0.2*blink+0.02);if(dot(q,q)<1.0)c=vec3(0.06);}}
+  c*=mix(0.2,1.0,smoothstep(0.14,0.3,ndv));
+  gl_FragColor=vec4(mix(uFogC,c,exp(-uFog*uFog*vD*vD)),1.0);}`});
 }
 // TRON node bodies: identity discs. A sphere is shaded by its screen-space radius (r = √(1 − (n·v)²)), so from any angle
 // it reads as a disc: dark tinted glass, a white-hot rim, a thin inner ring and a glowing core in the group's neon colour.
@@ -498,6 +568,13 @@ void main(){vec3 n=normalize(vN);float ndv=clamp(dot(n,normalize(vV)),0.0,1.0),f
     wings:{base:'#1a1ab0',mid:'#2d2df0',tip:'#6b6bff',vein:'rgba(0,0,20,.9)',margin:'#05052a',spot:'rgba(255,233,122,.95)',glow:'rgba(255,233,122,.9)',shade:'rgba(0,0,30,.5)',body:0x05052a},kin:{head:0xffd21f,headEm:0x5a4800,stalk:0x2323ff},
     pv:{pac:true},
     features:['Neon maze floor','Pac-Man & four ghosts','Power pellets','Chomping suns','Dotted links','Drive a Pac-Man','Play PAC-MAN: click Pac-Man on the maze']},
+  mario:{name:'Mario World',mark:'?',icon:ICO.block,tag:'A sunny sky over a grass plain, and a whole platform level on it: pipes, ? blocks, goombas, coins and a flag. Mario runs it by himself until you take over.',
+    css:{bg:'#101018','bg-2':'#16161f','bg-3':'#24242f',border:'#3a3a4a','border-2':'#55556a',text:'#ffffff',muted:'#c9cbe0',faint:'#8e90aa',accent:'#e52521','accent-2':'#fbd000',sky:'#5c94fc',lbl:'#ffffff','lbl-sun':'#fbd000',halo:'#000000',font:'var(--mono)'},
+    sky:0x5c94fc,fog:0.00009,rim:0xffffff,ambient:1.0,stars:[],nebula:0,fade:0x5c94fc,line:0.62,sunEmissive:0xffffff,wire:false,monarchs:false,extras:'mario',mario:true,
+    body:emis=>marioBodyMat(emis),
+    wings:{base:'#e52521',mid:'#ff6a3d',tip:'#fbd000',vein:'rgba(40,10,0,.9)',margin:'#3a1000',spot:'rgba(255,255,255,.95)',glow:'rgba(255,240,200,.9)',shade:'rgba(60,10,0,.5)',body:0x3a1000},kin:{head:0xffc81e,headEm:0x8a5a00,stalk:0xffffff},
+    pv:{mario:true},
+    features:['Sky & grass plain','A whole platform level','Mario running it on his own','Goombas, pipes & ? blocks','Suns with eyes','Coins on the links','Play MARIO WORLD: click Mario']},
 };
 // retired skins: a saved or linked "matrix" becomes Tron and "blueprint" Pac-Man, their successors; any other unknown name is the default
 const SKIN_ALIAS={matrix:'tron',blueprint:'pacman'};
@@ -668,7 +745,7 @@ const V3=(()=>{
   const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(-9,-9);let hover=null,pendingPick=false,selected=null;
   function idAt(hit){if(!hit)return null;return hit.object===planets?planetIds[hit.instanceId]:sunIds[hit.instanceId];}
   let hoverM=null,hoverW=null;
-  function pick(){pendingPick=false;if(tg||pacOn())return;ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects([planets,suns].filter(Boolean));
+  function pick(){pendingPick=false;if(tg||pacOn()||marioOn())return;ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects([planets,suns].filter(Boolean));
     // a light cycle on the floor grid (TRON) under the pointer, unless a node is in front of it: click it to play
     const fb=floorBikeAt(mouse.x,mouse.y);
     if(fb>=0&&(!hits[0]||hits[0].distance>camera.position.distanceTo(tronBikes[fb].p))){if(hoverFB!==fb){hoverM=null;hoverW=null;setHover(null);hoverFB=fb;renderer.domElement.style.cursor='pointer';tip.innerHTML=`<b>${ICO.cycle}Light cycle</b><span>click to play TRON</span>`;tip.style.display='block';}return;}
@@ -677,13 +754,17 @@ const V3=(()=>{
     const fp=floorPacAt(mouse.x,mouse.y);
     if(fp&&(!hits[0]||hits[0].distance>camera.position.distanceTo(fp.o.position))){if(hoverPM!==fp.name){hoverM=null;hoverW=null;setHover(null);hoverPM=fp.name;renderer.domElement.style.cursor='pointer';tip.innerHTML=`<b>${ICO.pac}${esc(fp.name)}</b><span>click to play PAC-MAN</span>`;tip.style.display='block';}return;}
     if(hoverPM){hoverPM=null;tip.style.display='none';renderer.domElement.style.cursor='';}
+    // Mario on his level (Mario World skin): click to play
+    const fm=floorMarioAt(mouse.x,mouse.y);
+    if(fm&&(!hits[0]||hits[0].distance>camera.position.distanceTo(fm.position))){if(!hoverMW){hoverM=null;hoverW=null;setHover(null);hoverMW=true;renderer.domElement.style.cursor='pointer';tip.innerHTML=`<b>${ICO.block}Mario</b><span>click to play MARIO WORLD</span>`;tip.style.display='block';}return;}
+    if(hoverMW){hoverMW=false;tip.style.display='none';renderer.domElement.style.cursor='';}
     // a monarch under the pointer wins over whatever is behind it (never the one you're riding — it's right in front of the camera)
     let mh=null;if(monarchGroup.visible){const h=ray.intersectObject(monarchGroup,true)[0];if(h&&(!hits[0]||h.distance<hits[0].distance)){let o=h.object;while(o&&o.parent!==monarchGroup)o=o.parent;mh=monarchs.find(m=>m.g===o)||null;if(mh===ride)mh=null;}}
     if(mh!==hoverM){hoverM=mh;if(hoverM){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML=`<b>${ICO.butterfly}Monarch</b><span>click to ride it · steer with the arrow keys or WASD</span>`;tip.style.display='block';}else{tip.style.display='none';renderer.domElement.style.cursor='';}}
     if(hoverM)return;
     // a kinesin under the pointer (only the visible, zoomed-in ones can be hit)
     let wh=null;if(walkerGroup.visible&&!mh){const h=ray.intersectObject(walkerGroup,true)[0];if(h&&(!hits[0]||h.distance<hits[0].distance)){let o=h.object;while(o&&o.parent!==walkerGroup)o=o.parent;wh=walkers.find(w=>w.g===o)||null;if(wh===walk)wh=null;}}
-    if(wh!==hoverW){hoverW=wh;if(hoverW){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML=SKIN.pac?`<b>${ICO.pac}Pac-Man</b><span>click to drive it · arrows or WASD pick the turns</span>`:SKIN.cycles?`<b>${ICO.cycle}Light cycle</b><span>click to ride it · arrows or WASD pick the turns</span>`:`<b>${ICO.kinesin}Kinesin</b><span>click to take it for a walk · arrows or WASD steer</span>`;tip.style.display='block';}else if(!hoverM){tip.style.display='none';renderer.domElement.style.cursor='';}}
+    if(wh!==hoverW){hoverW=wh;if(hoverW){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML=SKIN.mario?`<b>${ICO.coin}Coin</b><span>click to ride it · arrows or WASD pick the turns</span>`:SKIN.pac?`<b>${ICO.pac}Pac-Man</b><span>click to drive it · arrows or WASD pick the turns</span>`:SKIN.cycles?`<b>${ICO.cycle}Light cycle</b><span>click to ride it · arrows or WASD pick the turns</span>`:`<b>${ICO.kinesin}Kinesin</b><span>click to take it for a walk · arrows or WASD steer</span>`;tip.style.display='block';}else if(!hoverM){tip.style.display='none';renderer.domElement.style.cursor='';}}
     if(hoverW)return;
     const id=idAt(hits[0]);if(id!==hover){setHover(id);}}
   function scaleSlot(id,k){const sl=slotOf[id];if(!sl)return;const mesh=sl.mesh==='p'?planets:suns;const r=(sl.mesh==='p'?rPlanet(id):rSun(systems.find(x=>x.sun===id)))*k;_m.makeScale(r,r,r).setPosition(pos[id]);mesh.setMatrixAt(sl.i,_m);mesh.instanceMatrix.needsUpdate=true;}
@@ -699,8 +780,8 @@ const V3=(()=>{
   let downAt=null;
   renderer.domElement.addEventListener('pointerdown',ev=>{downAt=[ev.clientX,ev.clientY];if(tg&&ev.pointerType!=='mouse')tgTurn(ev.clientX<window.innerWidth/2?1:-1);if(pacOn())pacCtx.swipe(ev,'down');});
   renderer.domElement.addEventListener('pointerup',ev=>{if(pacOn())pacCtx.swipe(ev,'up');});   // PAC-MAN: a swipe steers   // in a TRON game a tap on either half of the screen turns that way
-  renderer.domElement.addEventListener('click',ev=>{if(tg||pacOn()||!downAt||Math.hypot(ev.clientX-downAt[0],ev.clientY-downAt[1])>4)return;pick();if(hoverFB>=0){tronGameStart(hoverFB);return;}if(hoverPM&&pacCtx){hoverPM=null;pacCtx.start();return;}if(hoverM){beginRide(hoverM);return;}if(hoverW){beginWalk(hoverW);return;}if(hover)select(hover);});
-  renderer.domElement.addEventListener('dblclick',ev=>{if(ride||walk||tg||pacOn())return;pick();if(hover)flyToSystem(sysOf[hover]);else flyHome();});
+  renderer.domElement.addEventListener('click',ev=>{if(tg||pacOn()||marioOn()||!downAt||Math.hypot(ev.clientX-downAt[0],ev.clientY-downAt[1])>4)return;pick();if(hoverFB>=0){tronGameStart(hoverFB);return;}if(hoverPM&&pacCtx){hoverPM=null;pacCtx.start();return;}if(hoverMW&&marioCtx){hoverMW=false;marioCtx.start();return;}if(hoverM){beginRide(hoverM);return;}if(hoverW){beginWalk(hoverW);return;}if(hover)select(hover);});
+  renderer.domElement.addEventListener('dblclick',ev=>{if(ride||walk||tg||pacOn()||marioOn())return;pick();if(hover)flyToSystem(sysOf[hover]);else flyHome();});
   function select(id){selected=id;showCard(id);}
   // ── camera ──
   let tw=null,focused=null;
@@ -776,7 +857,7 @@ const V3=(()=>{
   function start(){if(running)return;running=true;frame();}
   function stop(){running=false;}
   window.addEventListener('resize',()=>fitView(false));
-  window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName)){if(document.getElementById('skins').classList.contains('on'))return;if(tg)tronGameEnd();else if(pacOn())pacCtx.exit();else if(ride)endRide();else if(walk)endWalk();else flyHome();}});
+  window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName)){if(document.getElementById('skins').classList.contains('on'))return;if(tg)tronGameEnd();else if(pacOn())pacCtx.exit();else if(marioOn())marioCtx.exit();else if(ride)endRide();else if(walk)endWalk();else flyHome();}});
 
   // ── monarchs: a few butterflies drifting through the galaxy ──
   // Built from primitives (no model to load): a body, four wings with a
@@ -1024,6 +1105,9 @@ void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(
   // ── Pac-Man on the links (the Pac-Man skin's riders): a yellow chomper that eats its way along, with the light cycles' controls.
   // It rides through the same code as a light cycle, so it has the bike's shape of API: roll() works its jaw, the rest is a no-op.
   const PAC_GEO=new THREE.SphereGeometry(1,28,20);
+  // Mario World's riders: a gold coin spinning its way along
+  function makeCoinRider(u){const m=new THREE.MeshLambertMaterial({color:0xffc81e,emissive:0x8a5a00}),mesh=new THREE.Mesh(MW_COIN,m),g=new THREE.Group();mesh.scale.set(u*2.2,u*2.2,u*2.8);mesh.position.z=u*0.9;g.add(mesh);
+    return {g,roll(d){mesh.rotation.z+=d*2.5;},near(){},setColor(){},dispose(){m.dispose();}};}
   function makePacRider(u){const m=pacBodyMat(null,0xffd21f),mesh=new THREE.Mesh(PAC_GEO,m),g=new THREE.Group();mesh.scale.setScalar(u*0.95);mesh.position.z=u*0.2;g.add(mesh);let ph=0;
     return {g,roll(d){ph+=d;m.uniforms.uMouth.value=Math.abs(Math.sin(ph*Math.PI*1.5));},near(){},setColor(){},dispose(){m.dispose();}};}
   // ── kinesins: like the motor protein, a two-footed carrier walks hand-over-hand along a connection with a
@@ -1041,16 +1125,17 @@ void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(
     if(w.bike){skinCol(_c,base[w.a].color);w.bike.setColor(_c);w.rb.m.material.uniforms.uC.value.copy(_c);}
     else{skinCol(w.cargo.material.color,base[w.a].color);w.cargo.material.emissive.copy(w.cargo.material.color);}}
   function buildWalkers(){
-    if(walk)endWalk();idleW=null;walkers.forEach(w=>{walkerGroup.remove(w.g);if(w.bike){w.bike.dispose();disposeRibbon(w.rb);}});walkers.length=0;skinKinesins();
+    if(walk)endWalk();if(idleW&&follow===idleW)follow=null;idleW=null;   // the idle tour lets go of a rider that's about to be rebuilt (it was left following a ghost, and threw every frame)
+    walkers.forEach(w=>{walkerGroup.remove(w.g);if(w.bike){w.bike.dispose();disposeRibbon(w.rb);}});walkers.length=0;skinKinesins();
     const ok=[];for(let i=0;i<edgeList.length;i++)if(walkerEdgeOK(i))ok.push(i);
     const count=Math.min(150,Math.max(0,Math.round(edgeList.length/25)),ok.length);
     for(let k=0;k<count;k++){
       const i=ok.splice(Math.floor(wRng()*ok.length),1)[0];const e=edgeList[i];
       const u=1.5*state.nsize,g=new THREE.Group();
-      if(SKIN.cycles||SKIN.pac){   // TRON: a light cycle rides the links node to node, laying its light wall behind it (Pac-Man: a Pac-Man, no wall)
-        const col=skinCol(new THREE.Color(),base[e.from].color),bike=SKIN.pac?makePacRider(u):makeCycle(col);if(!SKIN.pac)bike.g.scale.setScalar(u*2.7);g.add(bike.g);
+      if(SKIN.cycles||SKIN.pac||SKIN.mario){   // TRON: a light cycle rides the links node to node, laying its light wall behind it (Pac-Man: a Pac-Man, no wall)
+        const col=skinCol(new THREE.Color(),base[e.from].color),bike=SKIN.pac?makePacRider(u):SKIN.mario?makeCoinRider(u):makeCycle(col);if(!SKIN.pac&&!SKIN.mario)bike.g.scale.setScalar(u*2.7);g.add(bike.g);
         const rb=makeRibbon(LITE?14:24,col,u*1.1,u*(LITE?16:28),u*1.35);walkerGroup.add(rb.m);
-        const w={g,bike,rb,u,cargo:g,L:0,period:1,lead:0,i:-1,spd:6+wRng()*3,pac:!!SKIN.pac};walkerSetEdge(w,i,wRng()<0.5?e.from:e.to);w.s=wRng()*w.len;
+        const w={g,bike,rb,u,cargo:g,L:0,period:1,lead:0,i:-1,spd:6+wRng()*3,pac:!!(SKIN.pac||SKIN.mario)};walkerSetEdge(w,i,wRng()<0.5?e.from:e.to);w.s=wRng()*w.len;
         rb.pts.push({p:pos[w.a].clone(),n:w.n.clone()});   // the wall starts where the ride did
         walkerGroup.add(g);walkers.push(w);continue;}
       const heads=[0,1].map(()=>{const h=new THREE.Mesh(HEAD_GEO,HEAD_MAT);h.scale.setScalar(0.2*u);g.add(h);return h;});
@@ -1165,7 +1250,7 @@ void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(
   // ── walk a kinesin: click one and you're it. ↑/W hurry, ↓/S turn around, ←/→ pick the link at the next node, Shift sprint, Space rest, J jump to another galaxy ──
   let walk=null,idleW=null;const _wc=new THREE.Vector3(),_ws=new THREE.Vector3(),_wt=new THREE.Vector3();
   const RIDE_HTML=document.getElementById('ride-hint').innerHTML.replace('<!--ico-->',ICO.butterfly);setHint(RIDE_HTML);
-  const WALK_HTML=()=>SKIN.pac?ICO.pac+'<kbd>↑</kbd><kbd>W</kbd> hurry &nbsp; <kbd>↓</kbd><kbd>S</kbd> turn back &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next turn &nbsp; <kbd>Shift</kbd> boost &nbsp; <kbd>Space</kbd> brake &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · let go</button>'
+  const WALK_HTML=()=>(SKIN.pac||SKIN.mario)?(SKIN.mario?ICO.coin:ICO.pac)+'<kbd>↑</kbd><kbd>W</kbd> hurry &nbsp; <kbd>↓</kbd><kbd>S</kbd> turn back &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next turn &nbsp; <kbd>Shift</kbd> boost &nbsp; <kbd>Space</kbd> brake &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · let go</button>'
     :SKIN.cycles?ICO.cycle+'<kbd>↑</kbd><kbd>W</kbd> throttle &nbsp; <kbd>↓</kbd><kbd>S</kbd> U-turn &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next turn &nbsp; <kbd>Shift</kbd> boost &nbsp; <kbd>Space</kbd> brake &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · get off</button>'
     :ICO.kinesin+'<kbd>↑</kbd><kbd>W</kbd> hurry &nbsp; <kbd>↓</kbd><kbd>S</kbd> turn around &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next link &nbsp; <kbd>Shift</kbd> sprint &nbsp; <kbd>Space</kbd> rest &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · let go</button>';
   function setHint(html){const el=document.getElementById('ride-hint');el.innerHTML=html;el.querySelector('#ride-off').addEventListener('click',()=>{if(ride)endRide();if(walk)endWalk();});}
@@ -1587,6 +1672,7 @@ void main(){float l=dot(vC,vec3(0.3,0.5,0.2));vec3 c=mix(vC,mix(uA,uB,vT)*l*1.7,
     if(SKIN.extras==='monarch')deepSky();
     if(SKIN.extras==='tron')tronBuild();
     if(SKIN.extras==='pac')pacBuild();
+    if(SKIN.extras==='mario')marioBuild();
   }
   // ── monarch: the deep-space sky ──
   // A sky dome with a milky band, colour-temperature stars that twinkle, soft dust nebulae around the systems,
@@ -1882,7 +1968,7 @@ void main(){float x=fract(vS+uT*(0.16+vS*0.12));float d=fract(x-vT);float p=exp(
   // from far off, like TRON's trails). Per frame the CPU moves five sprites-worth of meshes; the dots are one draw.
   // while you play PAC-MAN the camera looks down through the galaxy onto the board, so the galaxy steps out of the way
   let galaxyHidden=false;
-  function galaxyVis(v){galaxyHidden=!v;[planets,suns].forEach(o=>{if(o)o.visible=v;});glows.forEach(g=>{g.visible=v;});walkerGroup.visible=v&&document.getElementById('walkers').checked;if(v&&lines)lines.visible=true;}
+  function galaxyVis(v){galaxyHidden=!v;[planets,suns].forEach(o=>{if(o)o.visible=v;});glows.forEach(g=>{g.visible=v&&!(SKIN.mario&&g.isSprite);});walkerGroup.visible=v&&document.getElementById('walkers').checked;if(v&&lines)lines.visible=true;}
   let pacCtx=null;   // the running arcade: its game controls and what can be clicked
   const GHOST_COLS=[0xff1a1a,0xffb8ff,0x19ffff,0xffb852],GHOST_NAMES=['Blinky','Pinky','Inky','Clyde'];
   const GHOST_GEO=(()=>{   // a dome on a short skirt with a scalloped hem: unit width, up +z, the hem's points at z=0
@@ -2098,6 +2184,251 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
     };
     extras.userData.step(0,0);
   }
+  // ── MARIO WORLD ──
+  // A daytime sky and a grass plain under the galaxy, and standing on it, side-on to the home view, a platform level built of
+  // blocks: ground with pits, pipes, rows of bricks and ? blocks, staircases, coins, goombas, and a flag and a castle at the end.
+  // The level is generated from a seed (every world is new), and Mario runs it by himself — jumping pits, pipes and goombas,
+  // bumping the odd ? block — until you click him: WELCOME TO MARIO WORLD, and it's yours. Blocks, Mario and the goombas are
+  // voxels (instanced cubes from small pixel maps), textures are 16-px pixel art with nearest filtering so they stay crisp.
+  let marioCtx=null;
+  const MW_PAL={R:0xe52521,S:0xffc59a,B:0x6b3a12,K:0x151515,U:0x2b50d8,Y:0xffd500,W:0xffffff,N:0xa0522d,T:0xf4c78a,F:0x2a1408};
+  const MW_HERO=["...RRRRR....","..RRRRRRRRR.","..BBBSSKS...",".BSBSSSKSSS.",".BSBBSSSSSSS",".BBSSSSBBBB.","...SSSSSSS..","..RRURRR....",".RRRURRURRR.","RRRRUUUURRRR","SSRUYUUYURSS","SSSUUUUUUSSS","..UUU..UUU..",".BBB....BBB."];
+  const MW_HERO_RUN=MW_HERO.slice(0,11).concat(["SSUUUUUUUUSS",".UUU....UUU.","BBB......BBB"]);
+  const MW_HERO_JUMP=["...RRRRR..SS","..RRRRRRRRSS","..BBBSSKS.RR",".BSBSSSKSSRR",".BSBBSSSSSSR",".BBSSSSBBBR.","...SSSSSSSR.","SSRRURRRUR..","SSRRURRUR...","..RRUUUUU...",".RUYUUYUU...","RRUUUUUUU...","BUUU.UUUU...","BB....BBB..."];
+  const MW_GOOMBA=["...NNNN...","..NNNNNN..",".NWKNNKWN.","NNWKNNKWNN","NNNNNNNNNN","..TTTTTT..","..TTTTTT..",".FFF..FFF."];
+  const MW_SOLID=[0,1,1,1,1,1,1,1];   // 1 ground, 2 brick, 3 ? block, 4 used block, 5 pipe, 6 pipe top, 7 hard block
+  function mwVox(rows,depth,vox,mat){const W=rows[0].length,H=rows.length,cells=[];
+    rows.forEach((r,j)=>{for(let i=0;i<W;i++){const ch=r[i];if(ch&&ch!=='.')cells.push([i,H-1-j,ch]);}});
+    const m=new THREE.InstancedMesh(MW_BOX,mat,cells.length*depth),M=new THREE.Matrix4(),C=new THREE.Color();let k=0;
+    cells.forEach(([i,j,ch])=>{for(let d=0;d<depth;d++){M.makeScale(vox,vox,vox).setPosition((i-(W-1)/2)*vox,(d-(depth-1)/2)*vox,(j+0.5)*vox);m.setMatrixAt(k,M);m.setColorAt(k,C.set(MW_PAL[ch]));k++;}});
+    m.instanceMatrix.needsUpdate=true;m.instanceColor.needsUpdate=true;m.frustumCulled=false;return m;}
+  const MW_BOX=new THREE.BoxGeometry(1,1,1),MW_COIN=new THREE.CylinderGeometry(0.34,0.34,0.08,20);
+  // 16-px pixel-art textures
+  function mwTex(draw){const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');draw(g);const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.anisotropy=4;return t;}
+  const px=(g,col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x,y,w||1,h||1);};
+  function mwTextures(){
+    return {
+      ground:mwTex(g=>{px(g,'#c86b28',0,0,16,16);px(g,'#f0a868',0,0,16,1);px(g,'#f0a868',0,0,1,16);px(g,'#7a3a10',0,15,16,1);px(g,'#7a3a10',15,0,1,16);
+        px(g,'#7a3a10',9,1,1,6);px(g,'#7a3a10',2,7,7,1);px(g,'#7a3a10',10,9,5,1);px(g,'#7a3a10',5,10,1,5);px(g,'#f0a868',10,10,1,5);}),
+      brick:mwTex(g=>{px(g,'#b8541c',0,0,16,16);px(g,'#f8a070',0,0,16,1);for(const y of [0,4,8,12])px(g,'#1a0a02',0,y+3,16,1);
+        for(let r=0;r<4;r++)for(const x of (r%2?[3,11]:[7,15]))px(g,'#1a0a02',x,r*4,1,3);}),
+      question:mwTex(g=>{px(g,'#f8b800',0,0,16,16);px(g,'#fff0a0',0,0,16,1);px(g,'#fff0a0',0,0,1,16);px(g,'#8b4a00',0,15,16,1);px(g,'#8b4a00',15,0,1,16);
+        [[1,1],[14,1],[1,14],[14,14]].forEach(([x,y])=>px(g,'#8b4a00',x,y));
+        ['.####.','##..##','....##','...##.','..##..','..##..','......','..##..'].forEach((r,j)=>{for(let i=0;i<6;i++)if(r[i]==='#'){px(g,'#8b4a00',5+i,4+j);}});}),
+      used:mwTex(g=>{px(g,'#8b4a1a',0,0,16,16);px(g,'#5a2a08',0,15,16,1);px(g,'#5a2a08',15,0,1,16);[[1,1],[14,1],[1,14],[14,14]].forEach(([x,y])=>px(g,'#3a1a04',x,y));}),
+      hard:mwTex(g=>{px(g,'#c86b28',0,0,16,16);px(g,'#f0a868',0,0,15,1);px(g,'#f0a868',0,0,1,15);px(g,'#f0a868',1,1,13,1);px(g,'#f0a868',1,1,1,13);
+        px(g,'#6a300c',1,15,15,1);px(g,'#6a300c',15,1,1,15);px(g,'#6a300c',2,14,13,1);px(g,'#6a300c',14,2,1,13);}),
+      pipe:mwTex(g=>{px(g,'#1e8a1e',0,0,16,16);px(g,'#0c4a0c',0,0,1,16);px(g,'#0c4a0c',15,0,1,16);px(g,'#7de35a',3,0,2,16);px(g,'#4cc23c',5,0,2,16);px(g,'#156a15',12,0,2,16);}),
+      grass:(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');px(g,'#5cbf3f',0,0,64,64);px(g,'#52b238',0,0,32,32);px(g,'#52b238',32,32,32,32);
+        const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.NearestFilter;t.anisotropy=8;return t;})()};}
+  const mwCloudTex=(()=>{let t=null;return()=>{if(t)return t;const c=document.createElement('canvas');c.width=128;c.height=64;const g=c.getContext('2d');
+    const puff=(col,dx,dy)=>{g.fillStyle=col;[[34,40,20],[58,30,26],[86,38,20],[70,44,18],[46,46,16]].forEach(([x,y,r])=>{g.beginPath();g.arc(x+dx,y+dy,r,0,6.2832);g.fill();});};
+    puff('rgba(40,70,140,.55)',0,2);puff('#9fd0ff',0,0);puff('#ffffff',-2,-3);t=new THREE.CanvasTexture(c);return t;};})();
+  // a level from a seed: ground with pits, pipes, block rows, staircases, coins and goombas; a staircase, the flag and a castle at the end
+  function mwGen(seed,lv){
+    const rng=seeded(seed),LW=LITE?110:150,LH=13,T=new Uint8Array(LW*LH),at=(x,y)=>y*LW+x,set=(x,y,v)=>{if(x>=0&&x<LW&&y>=0&&y<LH)T[at(x,y)]=v;},get=(x,y)=>x>=0&&x<LW&&y>=0&&y<LH?T[at(x,y)]:0;
+    const goombas=[],coins=[];for(let x=0;x<LW;x++){set(x,0,1);set(x,1,1);}
+    let x=16,lastGap=false;const end=LW-27;
+    while(x<end){const r=rng();
+      if(r<0.18&&!lastGap){const w=2+Math.floor(rng()*(lv>1?2:1.5));for(let i=0;i<w;i++){set(x+i,0,0);set(x+i,1,0);coins.push([x+i+0.5,5]);}x+=w+4;lastGap=true;continue;}
+      lastGap=false;
+      if(r<0.38){const h=2+Math.floor(rng()*3);for(let y=2;y<2+h;y++){const v=y===1+h?6:5;set(x,y,v);set(x+1,y,v);}if(rng()<0.6)goombas.push(x+4+Math.floor(rng()*3));x+=6+Math.floor(rng()*3);continue;}
+      if(r<0.68){const n=3+Math.floor(rng()*4);for(let i=0;i<n;i++)set(x+i,5,rng()<0.35?3:2);
+        if(rng()<0.5){const m=Math.max(1,Math.floor(n/2)),o=x+Math.floor((n-m)/2);for(let i=0;i<m;i++){set(o+i,9,rng()<0.5?3:2);coins.push([o+i+0.5,10.5]);}}
+        if(rng()<0.7)goombas.push(x+Math.floor(n/2));if(lv>1&&rng()<0.5)goombas.push(x+n);x+=n+3+Math.floor(rng()*3);continue;}
+      if(r<0.84){const n=3+Math.floor(rng()*2);for(let i=0;i<n;i++)for(let y=2;y<3+i;y++)set(x+i,y,7);
+        if(rng()<0.5){for(let i=0;i<n;i++)for(let y=2;y<2+n-i;y++)set(x+n+i,y,7);x+=2*n+3;}else x+=n+3;continue;}
+      for(let i=0;i<4;i++)coins.push([x+i+0.5,3.5+(i%2)]);if(rng()<0.6)goombas.push(x+2);x+=6;}
+    const sx=LW-25;for(let i=0;i<8;i++)for(let y=2;y<3+i;y++)set(sx+i,y,7);for(let y=2;y<10;y++)set(sx+8,y,7);
+    const flagX=LW-12;set(flagX,2,7);
+    return {LW,LH,T,at,get,set,flagX,castleX:LW-6,
+      goombas:goombas.filter(gx=>gx>12&&gx<LW-28&&get(gx,1)===1&&!MW_SOLID[get(gx,2)]).map(gx=>({x:gx+0.5,y:2,vx:-2.2,w:0.9,h:0.9,dead:-1,flat:-1})),
+      coins:coins.map(([cx,cy])=>({x:cx,y:cy,got:false}))};}
+  function marioBuild(){
+    const R=Math.max(60,galaxyR),z0=-R*1.02,rm=CYC_RM;
+    const world=new THREE.Group();extras.add(world);
+    glows.forEach(g=>{if(g.isSprite)g.visible=false;});   // additive glows turn to white smudges on a daytime sky   // everything lives in here: buildExtras frees only its direct children, and the box is shared
+    const TX=mwTextures(),mats={};
+    for(const k of ['ground','brick','question','used','hard','pipe'])mats[k]=new THREE.MeshLambertMaterial({map:TX[k]});
+    const voxMat=new THREE.MeshLambertMaterial({color:0xffffff}),coinMat=new THREE.MeshLambertMaterial({color:0xffc81e,emissive:0x8a5a00}),poleMat=new THREE.MeshLambertMaterial({color:0x9ae66e,emissive:0x1a4a10}),
+      flagMat=new THREE.MeshLambertMaterial({color:0x2fbf2f,emissive:0x0e4a0e,side:THREE.DoubleSide}),hillMat=new THREE.MeshLambertMaterial({color:0x2e9e3a,emissive:0x0a2a0e}),doorMat=new THREE.MeshBasicMaterial({color:0x111111});
+    const own=[];   // disposables
+    // the grass plain, as far as the fog lets you see
+    const gW=R*60;TX.grass.repeat.set(gW/(R*0.12),gW/(R*0.12));
+    const grass=new THREE.Mesh(new THREE.PlaneGeometry(gW,gW),new THREE.MeshLambertMaterial({map:TX.grass}));grass.position.z=z0-R*0.002;world.add(grass);own.push(grass.geometry,grass.material);
+    // clouds: a few low over the level, bigger ones drifting round the galaxy
+    const clouds=[],crng=seeded(99);
+    for(let i=0;i<(LITE?10:22);i++){const big=i>=8,sp=new THREE.Sprite(new THREE.SpriteMaterial({map:mwCloudTex(),transparent:true,depthWrite:false,fog:false}))   // (in the haze a cloud's white went sky-blue and left its dark rim as a smudge);
+      const s=big?R*(0.25+crng()*0.3):R*(0.1+crng()*0.08);sp.scale.set(s*2,s,1);
+      if(big){const a=crng()*6.283,d=R*(1.1+crng()*0.8);sp.position.set(Math.cos(a)*d,Math.sin(a)*d,(crng()-0.3)*R*1.2);}else sp.position.set((crng()-0.5)*R*3.2,-R*0.05+crng()*R*0.3,z0+R*(0.33+crng()*0.12));
+      sp.userData.v=(0.5+crng())*R*0.004;world.add(sp);clouds.push(sp);own.push(sp.material);}
+    let L=null,t=1,LX0=0,Y0=-R*0.12,blocks={},coinMesh=null,hero=null,heroM=null,goombaT=null,flag=null,pole=null,deco=[];
+    const tileOf=(x,y)=>L.get(x,y);
+    const solid=(x,y)=>{if(y<0||y>=L.LH)return false;if(x<0||x>=L.LW)return true;return !!MW_SOLID[L.T[L.at(x,y)]];};
+    const bumps=[],pops=[];let dirty=true;
+    const TYPES=[[1,'ground'],[2,'brick'],[3,'question'],[4,'used'],[5,'pipe'],[6,'pipe'],[7,'hard']];
+    function clearLevel(){for(const k in blocks){world.remove(blocks[k]);blocks[k].dispose&&blocks[k].dispose();}blocks={};
+      if(coinMesh){world.remove(coinMesh);coinMesh=null;}if(heroM){heroM.forEach(m=>{world.remove(m);m.dispose();});}deco.forEach(o=>{world.remove(o);if(o.geometry&&o.geometry!==MW_BOX&&o.geometry!==MW_COIN)o.geometry.dispose();});deco=[];
+      if(L)L.goombas.forEach(g=>{if(g.m)world.remove(g.m);});}
+    function newLevel(seed,lv){
+      clearLevel();L=mwGen(seed,lv);t=R*2.9/L.LW;LX0=-L.LW*t/2;
+      // blocks: one instanced mesh per look, sized for the most it can ever hold
+      const cap={};for(let i=0;i<L.T.length;i++){const v=L.T[i];if(v)cap[v]=(cap[v]||0)+1;}cap[4]=(cap[4]||0)+(cap[3]||0);
+      const byMat={};TYPES.forEach(([v,k])=>{byMat[k]=(byMat[k]||0)+(cap[v]||0);});
+      for(const k in byMat){if(!byMat[k])continue;const m=new THREE.InstancedMesh(MW_BOX,mats[k],byMat[k]);m.count=0;m.frustumCulled=false;world.add(m);blocks[k]=m;}
+      coinMesh=new THREE.InstancedMesh(MW_COIN,coinMat,Math.max(1,L.coins.length+8));coinMesh.frustumCulled=false;world.add(coinMesh);
+      // Mario (three poses) and the goombas
+      heroM=[MW_HERO,MW_HERO_RUN,MW_HERO_JUMP].map(rows=>{const m=mwVox(rows,4,t/14,voxMat);world.add(m);return m;});
+      goombaT=goombaT||mwVox(MW_GOOMBA,4,t*0.95/8,voxMat);
+      L.goombas.forEach(g=>{const m=new THREE.InstancedMesh(goombaT.geometry,voxMat,goombaT.count);m.instanceMatrix=goombaT.instanceMatrix;m.instanceColor=goombaT.instanceColor;m.frustumCulled=false;world.add(m);g.m=m;});
+      // the flag, its pole, the castle, hills and bushes behind
+      const fx=LX0+(L.flagX+0.5)*t;
+      pole=new THREE.Mesh(new THREE.CylinderGeometry(t*0.07,t*0.07,t*8.6,8),poleMat);pole.rotation.x=Math.PI/2;pole.position.set(fx,Y0,z0+t*(3+4.3));world.add(pole);deco.push(pole);
+      const ball=new THREE.Mesh(new THREE.SphereGeometry(t*0.22,12,10),poleMat);ball.position.set(fx,Y0,z0+t*11.7);world.add(ball);deco.push(ball);
+      const fs=new THREE.Shape();fs.moveTo(0,0);fs.lineTo(-t*1.1,-t*0.45);fs.lineTo(0,-t*0.9);fs.lineTo(0,0);
+      flag=new THREE.Mesh(new THREE.ShapeGeometry(fs),flagMat);flag.rotation.x=Math.PI/2;flag.position.set(fx,Y0-t*0.02,z0+t*11.3);world.add(flag);deco.push(flag);
+      const cx=LX0+(L.castleX+0.5)*t;
+      const castle=[[0,0,5,3],[1,3,3,2]];castle.forEach(([ox,oz,w,h])=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w*t,t,h*t),mats.brick);b.position.set(cx+(ox+w/2-2.5)*t,Y0+t*0.3,z0+(2+oz+h/2)*t);world.add(b);deco.push(b);});
+      const door=new THREE.Mesh(new THREE.BoxGeometry(t,t*0.2,t*1.6),doorMat);door.position.set(cx,Y0-t*0.25,z0+t*2.8);world.add(door);deco.push(door);
+      const hr=seeded(seed+5);for(let i=0;i<9;i++){const r=t*(2+hr()*4),h=new THREE.Mesh(new THREE.SphereGeometry(r,20,12,0,Math.PI*2,0,Math.PI/2),hillMat);h.rotation.x=Math.PI/2;
+        h.position.set(LX0+hr()*L.LW*t,Y0+t*(3+hr()*6),z0+t*2);h.scale.set(1.4,1,1);world.add(h);deco.push(h);}
+      hero={x:3,y:2,vx:0,vy:0,w:0.75,h:0.95,ground:true,face:1,dead:-1,clear:-1,run:0,stuck:0,lastX:3,jumpHold:0};
+      bumps.length=0;pops.forEach(p=>world.remove(p.m));pops.length=0;dirty=true;}
+    const _M=new THREE.Matrix4(),_Q=new THREE.Quaternion(),_S=new THREE.Vector3(),_P=new THREE.Vector3(),_E=new THREE.Euler();
+    const wX=x=>LX0+x*t,wZ=y=>z0+y*t;
+    function drawBlocks(){const n={};for(const k in blocks)n[k]=0;
+      for(let y=0;y<L.LH;y++)for(let x=0;x<L.LW;x++){const v=L.T[L.at(x,y)];if(!v)continue;const k=TYPES.find(q=>q[0]===v)[1],m=blocks[k];if(!m)continue;
+        let lift=0;for(const b of bumps)if(b.x===x&&b.y===y)lift=Math.sin(Math.min(1,b.t/0.22)*Math.PI)*0.35;
+        const wide=v===6?1.14:v===5?0.96:1;_M.makeScale(t*wide,t*(v===5||v===6?wide:1),t).setPosition(wX(x+0.5),Y0,wZ(y+0.5+lift));m.setMatrixAt(n[k]++,_M);}
+      for(const k in blocks){blocks[k].count=n[k];blocks[k].instanceMatrix.needsUpdate=true;}dirty=bumps.length>0;}
+    // ── play state ──
+    let mg=null,T=0;const held=new Set();let jumpQ=0;   // jumpQ: a jump press held over for a moment, so one pressed just before landing still jumps
+    const hiKey='atlas.mario.hi';let hi=0;try{hi=+localStorage.getItem(hiKey)||0;}catch(e){}
+    const collideX=e=>{const y0=Math.floor(e.y+0.02),y1=Math.floor(e.y+e.h-0.02);
+      if(e.vx>0){const tx=Math.floor(e.x+e.w/2);for(let ty=y0;ty<=y1;ty++)if(solid(tx,ty)){e.x=tx-e.w/2-1e-4;return 1;}}
+      else if(e.vx<0){const tx=Math.floor(e.x-e.w/2);for(let ty=y0;ty<=y1;ty++)if(solid(tx,ty)){e.x=tx+1+e.w/2+1e-4;return -1;}}return 0;};
+    const collideY=e=>{const x0=Math.floor(e.x-e.w/2+0.02),x1=Math.floor(e.x+e.w/2-0.02);
+      if(e.vy<=0){const ty=Math.floor(e.y);for(let tx=x0;tx<=x1;tx++)if(solid(tx,ty)){e.y=ty+1;e.vy=0;return {land:true};}}
+      else{const ty=Math.floor(e.y+e.h);let hit=null,best=9;for(let tx=x0;tx<=x1;tx++)if(solid(tx,ty)){const d=Math.abs(tx+0.5-e.x);if(d<best){best=d;hit={tx,ty};}}if(hit){e.y=ty-e.h-1e-4;e.vy=0;return {head:hit};}}return null;};
+    function addScore(n){if(mg)mg.score+=n;}
+    function coinUp(){if(!mg)return;mg.coins++;if(mg.coins>=100){mg.coins-=100;mg.lives++;}}
+    function bump(tx,ty){const v=tileOf(tx,ty);
+      if(v===3){L.set(tx,ty,4);bumps.push({x:tx,y:ty,t:0});pops.push({x:tx+0.5,y:ty+1,vy:14,t:0,m:null});addScore(200);coinUp();}
+      else if(v===2){L.set(tx,ty,0);addScore(50);for(let i=0;i<4;i++)pops.push({x:tx+0.5,y:ty+0.5,vy:9+i%2*4,vx:(i<2?-1:1)*2.5,t:0,brick:true,m:null});}
+      else if(v===4||v===7||v===6||v===5||v===1)bumps.push({x:tx,y:ty,t:-1});
+      for(const g of L.goombas)if(g.dead<0&&g.flat<0&&Math.abs(g.x-tx-0.5)<0.9&&Math.abs(g.y-(ty+1))<0.3){g.dead=0;g.vy=10;addScore(100);}   // knocked out from below
+      dirty=true;}
+    function die(){if(hero.dead>=0||hero.clear>=0)return;hero.dead=0;hero.vy=hero.y<1?0:16;hero.vx=0;}   // caught: the hop and the fall; down a pit: just the fall
+    // Mario by himself: run right, jump what's in the way (a wall, a pit, a goomba), now and then bump a ? block, and never give up on a wall
+    function autoInput(){const f=Math.floor(hero.x+0.8),fy=Math.floor(hero.y+0.1);let jump=false;
+      if(solid(f,fy)||solid(f,fy+1)||solid(Math.floor(hero.x+1.4),fy))jump=true;
+      if(!solid(Math.floor(hero.x+1.1),fy-1)&&!solid(Math.floor(hero.x+1.1),fy-2)&&hero.ground)jump=true;
+      for(const g of L.goombas)if(g.dead<0&&g.flat<0&&g.x>hero.x&&g.x-hero.x<2.6&&Math.abs(g.y-hero.y)<1)jump=true;
+      if(hero.stuck>0.6)jump=true;
+      return {dir:1,run:false,jump};}
+    function stepHero(dt,inp){const e=hero;
+      if(e.dead>=0){e.dead+=dt;if(e.dead>0.45){e.vy-=50*dt;e.y+=e.vy*dt;}return;}
+      if(e.clear>=0){e.clear+=dt;e.face=1;if(!e.slid){e.y=Math.max(3,e.y-9*dt);if(e.y<=3)e.slid=true;}else{e.x+=4*dt;e.run+=dt*8;if(!solid(Math.floor(e.x),Math.floor(e.y-0.01)))e.y=Math.max(2,e.y-10*dt);if(e.x>L.castleX+0.5)e.gone=true;}
+        flag.position.z=Math.max(wZ(3.9),flag.position.z-9*t*dt);return;}
+      const target=inp.dir*(inp.run?9.5:6.5);e.vx+=(target-e.vx)*Math.min(1,dt*(e.ground?(inp.dir?10:14):5));if(inp.dir)e.face=inp.dir;
+      if(inp.jump&&e.ground){e.vy=23;e.ground=false;e.jumpHold=0.28;e.jumped=true;}
+      if(!inp.jumpHeld)e.jumpHold=0;e.jumpHold=Math.max(0,e.jumpHold-dt);
+      e.vy-=58*dt*(e.vy>0&&e.jumpHold<=0&&!inp.jumpHeld?2.4:1);e.vy=Math.max(e.vy,-28);
+      e.x+=e.vx*dt;if(collideX(e))e.vx=0;e.x=Math.max(e.w/2,e.x);
+      e.y+=e.vy*dt;const c=collideY(e);e.ground=!!(c&&c.land);if(c&&c.head)bump(c.head.tx,c.head.ty);
+      e.run+=Math.abs(e.vx)*dt*2.2;
+      if(e.y<-1.5)die();
+      // coins
+      for(const q of L.coins)if(!q.got&&Math.abs(q.x-e.x)<0.7&&q.y>e.y-0.3&&q.y<e.y+e.h+0.3){q.got=true;addScore(200);coinUp();}
+      // goombas: stomp from above, or they get you
+      for(const g of L.goombas){if(g.dead>=0||g.flat>=0)continue;if(Math.abs(g.x-e.x)<(g.w+e.w)/2&&e.y<g.y+g.h&&e.y+e.h>g.y){
+        if(e.vy<0&&e.y>g.y+g.h*0.35){g.flat=0;e.vy=13;e.jumpHold=inp.jumpHeld?0.2:0;addScore(100);}else die();}}
+      // the flag
+      if(e.x+e.w/2>=L.flagX-0.02&&e.y<12){e.clear=0;e.x=L.flagX+0.5-0.42;e.vx=0;e.vy=0;const h=e.y;const bonus=h>9?5000:h>7?2000:h>5?800:h>3.5?400:100;addScore(bonus);if(mg)mg.flagBonus=bonus;}
+      e.stuck=Math.abs(e.x-e.lastX)<0.01&&inp.dir?e.stuck+dt:0;e.lastX=e.x;}
+    function stepGoombas(dt){for(const g of L.goombas){
+      if(g.flat>=0){g.flat+=dt;continue;}
+      if(g.dead>=0){g.dead+=dt;g.vy-=50*dt;g.y+=g.vy*dt;continue;}
+      if(Math.abs(g.x-hero.x)>18)continue;   // asleep until you're near, as in the arcade
+      g.vy=(g.vy||0)-58*dt;g.vx=g.vx||-2.2;const sp=g.vx;g.x+=g.vx*dt;if(collideX(g))g.vx=-sp;g.y+=g.vy*dt;collideY(g);if(g.y<-3)g.dead=9;g.walk=(g.walk||0)+dt;}}
+    // ── drawing ──
+    function place(dt){
+      if(dirty)drawBlocks();
+      let k=0;for(const q of L.coins){if(q.got)continue;_E.set(0,0,T*4+q.x);_Q.setFromEuler(_E);_M.compose(_P.set(wX(q.x),Y0,wZ(q.y)),_Q,_S.set(t,t,t*1.25));coinMesh.setMatrixAt(k++,_M);}
+      for(const p of pops){if(p.brick)continue;_E.set(0,0,T*14);_Q.setFromEuler(_E);_M.compose(_P.set(wX(p.x),Y0,wZ(p.y)),_Q,_S.set(t,t,t*1.25));if(k<coinMesh.instanceMatrix.count)coinMesh.setMatrixAt(k++,_M);}
+      coinMesh.count=k;coinMesh.instanceMatrix.needsUpdate=true;
+      const e=hero,pose=e.dead>=0||!e.ground&&e.clear<0?2:Math.abs(e.vx)>0.4||e.clear>=0&&e.slid?(Math.floor(e.run)%2?1:0):0;
+      heroM.forEach((m,i)=>{m.visible=i===pose&&!e.gone;m.position.set(wX(e.x),Y0,wZ(e.y));m.scale.set(e.face,1,e.dead>=0?-1:1);if(e.dead>=0)m.position.z+=t;});
+      for(const g of L.goombas){if(!g.m)continue;g.m.visible=g.dead<1.5&&g.flat<0.6&&g.y>-3;g.m.position.set(wX(g.x),Y0,wZ(g.y));
+        g.m.scale.set(g.flat>=0?1.2:(Math.floor((g.walk||0)*5)%2?-1:1),1,g.flat>=0?0.35:g.dead>=0?-1:1);if(g.dead>=0)g.m.position.z+=t*0.9;}
+      for(let i=pops.length-1;i>=0;i--){const p=pops[i];p.t+=dt;p.vy-=(p.brick?40:45)*dt;p.y+=p.vy*dt;if(p.vx)p.x+=p.vx*dt;
+        if(p.brick){if(!p.m){p.m=new THREE.Mesh(MW_BOX,mats.brick);p.m.scale.setScalar(t*0.4);world.add(p.m);}p.m.position.set(wX(p.x),Y0-t*0.3,wZ(p.y));p.m.rotation.y+=dt*9;}
+        if(p.t>(p.brick?1.4:0.55)){if(p.m)world.remove(p.m);pops.splice(i,1);}}
+      for(let i=bumps.length-1;i>=0;i--){bumps[i].t+=dt;if(bumps[i].t>0.22){bumps.splice(i,1);dirty=true;}}
+      mats.question.color.setScalar(0.82+0.18*Math.max(0,Math.sin(T*4)));}
+    // ── the game: click Mario and it's yours ──
+    const mgDom=()=>{let el=document.getElementById('mario-game');if(el)return el;
+      document.body.insertAdjacentHTML('beforeend','<div id="mario-game"><div class="mg-hud"><span><small>MARIO</small><b class="mg-score"></b></span><span><small>&nbsp;</small><b class="mg-coins"></b></span><span><small>WORLD</small><b class="mg-world"></b></span><span><small>TIME</small><b class="mg-time"></b></span></div>'
+        +'<div class="mg-banner"></div><div class="mg-card"></div><div class="mg-pad"><div class="mg-lr"><button data-k="ArrowLeft" aria-label="Left">◀</button><button data-k="ArrowRight" aria-label="Right">▶</button></div><div class="mg-ab"><button data-k="Shift" aria-label="Run">B</button><button data-k=" " aria-label="Jump">A</button></div></div></div>');
+      el=document.getElementById('mario-game');
+      el.querySelectorAll('.mg-pad button').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',ev=>{ev.preventDefault();held.add(k);if(k===' ')jumpQ=0.15;});['pointerup','pointerleave','pointercancel'].forEach(t2=>b.addEventListener(t2,()=>held.delete(k)));});
+      return el;};
+    const mgCard=html=>{const el=mgDom().querySelector('.mg-card');el.innerHTML=html;el.classList.toggle('on',!!html);
+      el.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.act==='go')mgGo();else mgEnd();}));const go=el.querySelector('[data-act="go"]');if(go)try{go.focus({preventScroll:true});}catch(e){}};
+    const mgBanner=s=>{const el=mgDom().querySelector('.mg-banner');if(el.innerHTML!==s)el.innerHTML=s;el.classList.toggle('on',!!s);};
+    const pxSvg=(rows,s)=>{const W=rows[0].length,H=rows.length;let o=`<svg viewBox="0 0 ${W} ${H}" width="${W*s}" height="${H*s}" shape-rendering="crispEdges" aria-hidden="true">`;
+      rows.forEach((r,j)=>{for(let i=0;i<W;i++)if(r[i]!=='.')o+=`<rect x="${i}" y="${j}" width="1.02" height="1.02" fill="#${new THREE.Color(MW_PAL[r[i]]).getHexString()}"/>`;});return o+'</svg>';};
+    const TITLE='MARIO WORLD'.split('').map((c,i)=>c===' '?'<i> </i>':`<i style="color:${['#e52521','#fbd000','#43b047','#049cd8'][i%4]}">${c}</i>`).join('');
+    function mgStart(){
+      if(mg)return;if(idle)endIdle();if(ride)endRide();if(walk)endWalk();tw=null;setHover(null);tip.style.display='none';renderer.domElement.style.cursor='';
+      mg={phase:'intro',score:0,coins:0,lives:3,world:1,time:300,banner:0,from:[camera.position.clone(),controls.target.clone()],seed:1+Math.floor(Math.random()*1e5)};
+      newLevel(mg.seed,1);controls.enabled=false;controls.autoRotate=false;held.clear();document.body.classList.add('mario-on');mgDom();fitView(false);galaxyVis(false);
+      mgCard(`<div class="mg-art">${pxSvg(MW_HERO,6)}<span class="mg-q">?</span>${pxSvg(MW_GOOMBA,6)}</div><div class="mg-title"><small>Welcome to</small><b>${TITLE}</b></div>`
+        +`<p>Run right, jump the pits and the pipes, stomp the goombas, bump the <b>?</b> blocks for coins and grab the flag at the end. Every world is a brand-new level.</p>`
+        +`<div class="mg-keys"><span><kbd>←</kbd><kbd>→</kbd> run</span><span><kbd>Space</kbd><kbd>↑</kbd> jump</span><span><kbd>Shift</kbd> sprint</span><span><kbd>Esc</kbd> leave</span></div><div class="mg-touch">◀ ▶ to run · A to jump · B to sprint</div>`
+        +`<div class="mg-act"><button data-act="go">Start <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit</button></div>`);}
+    function mgGo(){if(!mg||(mg.phase!=='intro'&&mg.phase!=='over'))return;
+      if(mg.phase==='over'){Object.assign(mg,{score:0,coins:0,lives:3,world:1,seed:1+Math.floor(Math.random()*1e5)});newLevel(mg.seed,1);}
+      mg.phase='play';mg.banner=2;mg.time=300;mgCard('');document.body.classList.add('mario-play');}
+    function mgOver(){mg.phase='over';document.body.classList.remove('mario-play');mgBanner('');if(mg.score>hi){hi=mg.score;try{localStorage.setItem(hiKey,String(hi));}catch(e){}}
+      mgCard(`<div class="mg-title over"><b>GAME OVER</b></div><p>Score <b>${mg.score}</b> · world 1-${mg.world}${mg.score>=hi&&mg.score>0?' · a new best':' · best '+hi}</p>`
+        +`<div class="mg-act"><button data-act="go">Play again <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit <kbd>Esc</kbd></button></div>`);}
+    function mgEnd(silent){const G=mg;if(!G)return;mg=null;galaxyVis(true);document.body.classList.remove('mario-on','mario-play');mgCard('');mgBanner('');held.clear();controls.enabled=true;controls.autoRotate=false;lastInput=performance.now();fitView(false);
+      newLevel(1+Math.floor(Math.random()*1e5),1);if(!silent)flyTo(G.from[0],G.from[1],1300);}
+    const _cP=new THREE.Vector3(),_cT=new THREE.Vector3();
+    function mgCam(dt){const th=Math.tan(camera.fov*Math.PI/360),H=15*t,d=Math.max(H/2/th,(camera.aspect<1?11:22)*t/2/(th*camera.aspect)),half=d*th*camera.aspect;
+      const lo=wX(0)+half,hi2=wX(L.LW)-half,x=Math.min(hi2,Math.max(lo,wX(hero.x+3)));const zc=z0+Math.max(6.5*t,d*th-t*(camera.aspect<1?4.5:0.5));   // on a phone the ground sits above the A/B buttons
+      _cT.set(x,Y0,zc);_cP.set(x,Y0-d,zc);const k=1-Math.exp(-dt*6);camera.position.lerp(_cP,k);controls.target.lerp(_cT,k);}
+    function mgHud(){const el=mgDom(),set=(c,v)=>{const e=el.querySelector(c);if(e.textContent!==v)e.textContent=v;};
+      set('.mg-score',String(mg.score).padStart(6,'0'));set('.mg-coins','◉×'+String(mg.coins).padStart(2,'0'));set('.mg-world','1-'+mg.world);set('.mg-time',String(Math.max(0,Math.ceil(mg.time))));}
+    marioCtx={start:mgStart,go:()=>mgGo(),exit:()=>mgEnd(),playing:()=>!!mg,target:()=>heroM&&heroM.find(m=>m.visible)||heroM[0],tile:()=>t,
+      state:()=>mg?{phase:mg.phase,score:mg.score,coins:mg.coins,lives:mg.lives,world:mg.world,time:Math.ceil(mg.time),x:+hero.x.toFixed(2),y:+hero.y.toFixed(2),dead:hero.dead>=0,clear:hero.clear>=0}:{ambient:true,x:+hero.x.toFixed(2),y:+hero.y.toFixed(2),dead:hero.dead>=0,clear:hero.clear>=0,LW:L.LW},
+      sim(sec,keys){if(keys){keys.forEach(k=>held.add(k));if(keys.some(k=>[' ','ArrowUp'].includes(k)))jumpQ=0.15;}for(let s=0;s<sec;s+=0.05)extras.userData.step(0.05);if(keys)keys.forEach(k=>held.delete(k));},
+      key(k,down){if(!mg)return false;if(down){if((k==='Enter'||k===' ')&&mg.phase!=='play'){mgGo();return true;}held.add(k);if([' ','ArrowUp','w','z','k'].includes(k))jumpQ=0.15;}else held.delete(k);return true;}};
+    newLevel(1234,1);
+    extras.userData.step=(dt)=>{
+      if(!world.parent){if(mg)mgEnd(true);extras.userData.step=null;clearLevel();[...Object.values(mats),voxMat,coinMat,poleMat,flagMat,hillMat,doorMat].forEach(m=>m.dispose());Object.values(TX).forEach(x=>x.dispose());own.forEach(o=>o.dispose());if(goombaT){goombaT.dispose&&goombaT.dispose();}marioCtx=null;return;}
+      if(!rm)T+=dt;
+      if(suns&&suns.material.uniforms&&suns.material.uniforms.uT)suns.material.uniforms.uT.value=T;
+      clouds.forEach(c=>{c.position.x+=c.userData.v*dt;if(c.position.x>R*2.2)c.position.x=-R*2.2;});
+      if(rm)dt=0;
+      const n=Math.max(1,Math.ceil(dt/0.01)),h=dt/n;
+      const playing=mg&&mg.phase==='play'&&mg.banner<=0;
+      if(mg&&mg.phase==='play'&&mg.banner>0){mg.banner-=dt;mgBanner(`<b>WORLD 1-${mg.world}</b><span>${pxSvg(MW_HERO,3)} × ${mg.lives}</span>`);if(mg.banner<=0)mgBanner('');}
+      if(!mg||playing){
+        let inp;if(playing){const L2=held.has('ArrowLeft')||held.has('a'),R2=held.has('ArrowRight')||held.has('d');inp={dir:(R2?1:0)-(L2?1:0),run:held.has('Shift')||held.has('x')||held.has('j'),jump:jumpQ>0,jumpHeld:[' ','ArrowUp','w','z','k'].some(k=>held.has(k))};}
+        else{inp=autoInput();inp.jumpHeld=inp.jump||hero.jumpHold>0;}
+        for(let i=0;i<n;i++){stepHero(h,inp);if(hero.jumped){inp.jump=false;jumpQ=0;hero.jumped=false;}stepGoombas(h);}
+        jumpQ=Math.max(0,jumpQ-dt);
+        if(playing){mg.time-=dt*2.5;if(mg.time<=0&&hero.dead<0&&hero.clear<0)die();}
+        if(hero.dead>=0&&hero.dead>2.6){if(mg){mg.lives--;if(mg.lives<=0)mgOver();else{newLevel(mg.seed,mg.world);mg.banner=2;mg.time=300;}}else newLevel(1+Math.floor(Math.random()*1e5),1);}
+        if(hero.clear>=0){if(mg&&hero.gone&&mg.time>0){const d=Math.min(mg.time,dt*120);mg.time-=d;mg.score+=Math.round(d)*50;}
+          if(mg)mgBanner(hero.clear>0.2?`<b>COURSE CLEAR!</b><span>+${mg.flagBonus||0}</span>`:'');
+          if(hero.clear>(mg?5:4)){if(mg){mg.world++;mg.seed++;newLevel(mg.seed,mg.world);mg.banner=2;mg.time=300;}else newLevel(1+Math.floor(Math.random()*1e5),1);}}}
+      place(dt);
+      if(mg){mgCam(dt);mgHud();}};
+    extras.userData.step(0,0);
+  }
   // ── TRON: the game. Click a light cycle on the floor grid and it's yours — WELCOME TO TRON — three programs ride against you,
   // last cycle riding wins. It's played on the floor grid's own cells: every bike rides grid lines at a steady pace and can only
   // turn at an intersection, and each intersection it reaches is part of its light wall from then on. Riding into any wall
@@ -2113,7 +2444,15 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
     tronBikes.forEach((b,i)=>{if(!b.bike.g.visible)return;_v.copy(b.p);_v.z+=tronCell*0.25;const dist=camera.position.distanceTo(_v);_v.project(camera);if(_v.z>1)return;
       const d=Math.hypot((_v.x-nx)*W/2,(_v.y-ny)*H/2),r=Math.max(26,b.bike.g.scale.x*ppu/dist*0.75);if(d<r&&d<bd){bd=d;best=i;}});
     return best;}
-  let hoverPM=null;
+  let hoverPM=null,hoverMW=false;
+  const marioOn=()=>!!(marioCtx&&marioCtx.playing());
+  // Mario under the pointer on his level: the mesh, or null
+  function floorMarioAt(nx,ny){
+    if(!SKIN.mario||!marioCtx||marioOn()||ride||walk)return null;const o=marioCtx.target();if(!o||!o.visible)return null;const t=marioCtx.tile();
+    _v.copy(o.position);_v.z+=t*0.5;const dist=camera.position.distanceTo(_v);_v.project(camera);if(_v.z>1)return null;
+    const d=Math.hypot((_v.x-nx)*window.innerWidth/2,(_v.y-ny)*window.innerHeight/2);return d<Math.max(30,t*pxPer()/dist*1.3)?o:null;}
+  window.addEventListener('keydown',ev=>{if(!marioOn()||/INPUT|TEXTAREA/.test(ev.target.tagName))return;if(/^Arrow|^ $/.test(ev.key))ev.preventDefault();if(ev.repeat||ev.key==='Escape')return;marioCtx.key(keyName(ev),true);});
+  window.addEventListener('keyup',ev=>{if(marioCtx)marioCtx.key(keyName(ev),false);});
   const pacOn=()=>!!(pacCtx&&pacCtx.playing());
   // Pac-Man or a ghost under the pointer on the maze floor: {o, name} or null
   function floorPacAt(nx,ny){
@@ -2265,11 +2604,11 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
   ['pointerdown','pointermove','wheel','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,touch,{passive:true}));
   function pickFollow(now){const ms=monarchGroup.visible?monarchs.filter(m=>m!==follow):[],ws=walkerGroup.visible?walkers.filter(w=>w!==follow):[];
     const useW=ws.length&&(!ms.length||seedRng()<0.5);const pool=useW?ws:ms;follow=pool.length?pool[Math.floor(seedRng()*pool.length)]:null;idleW=useW?follow:null;
-    followSince=now;followUntil=now+(useW?25000:40000)+seedRng()*25000;idleEl.innerHTML=useW?(SKIN.pac?ICO.pac+'Chasing a Pac-Man along the links — move the mouse to take over':SKIN.cycles?ICO.cycle+'Riding along with a light cycle — move the mouse to take over':ICO.kinesin+'Watching a kinesin at work — move the mouse to take over'):ICO.butterfly+'Riding along with a monarch — move the mouse to take over';}
+    followSince=now;followUntil=now+(useW?25000:40000)+seedRng()*25000;idleEl.innerHTML=useW?(SKIN.mario?ICO.coin+'Chasing a coin along the links — move the mouse to take over':SKIN.pac?ICO.pac+'Chasing a Pac-Man along the links — move the mouse to take over':SKIN.cycles?ICO.cycle+'Riding along with a light cycle — move the mouse to take over':ICO.kinesin+'Watching a kinesin at work — move the mouse to take over'):ICO.butterfly+'Riding along with a monarch — move the mouse to take over';}
   function beginIdle(now){if(!((monarchs.length&&monarchGroup.visible)||(walkers.length&&walkerGroup.visible)))return;idle=true;tw=null;controls.autoRotate=false;tip.style.display='none';setHover(null);pickFollow(now);idleEl.classList.add('on');}
   function endIdle(){idle=false;follow=null;idleW=null;controls.autoRotate=state.rotate;idleEl.classList.remove('on');}
   function idleStep(dt,now){
-    if(ride||walk||tg||pacOn())return;
+    if(ride||walk||tg||pacOn()||marioOn())return;
     if(!state.idle||!(monarchGroup.visible||walkerGroup.visible)){if(idle)endIdle();return;}
     if(!idle){if(!tw&&now-lastInput>idleAfter)beginIdle(now);return;}
     if(!follow||now>followUntil)pickFollow(now);
@@ -2298,6 +2637,8 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
       if(ride)endRide();if(walk)endWalk();build();buildMonarchs();monarchGroup.visible=state.monarchs&&SKIN.monarchs!==false;},
     relabel(){if(focused!=null)showSystemLabels(focused);},lite:LITE,
     monarchScreen(i){const m=monarchs[i||0];if(!m)return null;_v.copy(m.g.position).project(camera);return [(_v.x+1)/2*window.innerWidth,(1-_v.y)/2*window.innerHeight];},
+    marioPlay(){if(marioCtx)marioCtx.start();},marioGo(){if(marioCtx)marioCtx.go();},marioExit(){if(marioCtx)marioCtx.exit();},marioState(){return marioCtx?marioCtx.state():null;},marioSim(s,k){if(marioCtx)marioCtx.sim(s,k);},
+    marioScreen(){if(!marioCtx)return null;const o=marioCtx.target();_v.copy(o.position);_v.z+=marioCtx.tile()*0.5;_v.project(camera);return _v.z>1?null:[(_v.x+1)/2*window.innerWidth,(1-_v.y)/2*window.innerHeight];},
     pacPlay(){if(pacCtx)pacCtx.start();},pacGo(){if(pacCtx)pacCtx.go();},pacSteer(d){if(pacCtx)pacCtx.steer(d);},pacExit(){if(pacCtx)pacCtx.exit();},pacState(){return pacCtx?pacCtx.state():null;},pacSim(s){if(pacCtx)pacCtx.sim(s);},
     pacScreen(i){if(!pacCtx)return null;const o=pacCtx.targets()[i||0];_v.copy(o.position);_v.project(camera);return _v.z>1?null:[(_v.x+1)/2*window.innerWidth,(1-_v.y)/2*window.innerHeight];},
     tronPlay(i){tronGameStart(i||0);},tronGo:()=>tgGo(),tronTurn:t=>tgTurn(t),tronExit:()=>tronGameEnd(),tronCam(m){if(tg)tg.cam=m;},tronAuto(on){if(tg)tg.auto=!!on;},tronSim(sec){for(let t=0;t<sec&&tg;t+=0.05)tronGameStep(0.05);},
@@ -2468,8 +2809,31 @@ function pacPreview(s){
   o+=pac(104,97,6.2,'#ffd21f',1,0.6)+ghost(138,97,'#ff1a1a')+ghost(154,97,'#ffb8ff')+ghost(170,97,'#19ffff')+ghost(186,97,'#ffb852');
   return o+'</svg>';
 }
+// Mario World picker card: a sunny sky with clouds and hills, a strip of level (ground, a pipe, bricks and ? blocks, coins),
+// Mario mid-jump and a goomba, and two suns with eyes up in the sky joined by a link
+const MW_PAL_PV={R:0xe52521,S:0xffc59a,B:0x6b3a12,K:0x151515,U:0x2b50d8,Y:0xffd500,W:0xffffff,N:0xa0522d,T:0xf4c78a,F:0x2a1408};
+const MW_HERO_PV=["...RRRRR..SS","..RRRRRRRRSS","..BBBSSKS.RR",".BSBSSSKSSRR",".BSBBSSSSSSR",".BBSSSSBBBR.","...SSSSSSSR.","SSRRURRRUR..","SSRRURRUR...","..RRUUUUU...",".RUYUUYUU...","RRUUUUUUU...","BUUU.UUUU...","BB....BBB..."];
+const MW_GOOMBA_PV=["...NNNN...","..NNNNNN..",".NWKNNKWN.","NNWKNNKWNN","NNNNNNNNNN","..TTTTTT..","..TTTTTT..",".FFF..FFF."];
+function marioPreview(s){
+  const W=240,H=135,px=(rows,x,y,k)=>{let o='';rows.forEach((r,j)=>{for(let i=0;i<r.length;i++)if(r[i]!=='.')o+=`<rect x="${(x+i*k).toFixed(2)}" y="${(y+j*k).toFixed(2)}" width="${(k+0.05).toFixed(2)}" height="${(k+0.05).toFixed(2)}" fill="#${new THREE.Color(MW_PAL_PV[r[i]]).getHexString()}"/>`;});return o;};
+  const blk=(x,y,f,e)=>`<rect x="${x}" y="${y}" width="10" height="10" fill="${f}" stroke="${e}" stroke-width=".8"/>`;
+  let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect width="${W}" height="${H}" fill="#5c94fc"/>`;
+  const cloud=(x,y,k)=>`<g transform="translate(${x} ${y}) scale(${k})" shape-rendering="auto"><g fill="#000" opacity=".85"><circle cx="0" cy="1" r="7"/><circle cx="9" cy="-3" r="9"/><circle cx="19" cy="1" r="7"/></g><g fill="#fff"><circle cx="0" cy="0" r="6"/><circle cx="9" cy="-4" r="8"/><circle cx="19" cy="0" r="6"/><rect x="0" y="0" width="19" height="6"/></g></g>`;
+  o+=cloud(22,24,1)+cloud(190,16,0.8)+cloud(120,58,0.6);
+  o+=`<g shape-rendering="auto"><line x1="70" y1="30" x2="160" y2="40" stroke="#fff" stroke-width="1" opacity=".8"/>`;
+  [[70,30,9,'#e52521'],[160,40,7,'#43b047']].forEach(([x,y,r,c])=>{o+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="#000" stroke-width="1.2"/><circle cx="${x-r*0.35}" cy="${y-r*0.4}" r="${r*0.25}" fill="#fff" opacity=".8"/><ellipse cx="${x-r*0.22}" cy="${y-r*0.05}" rx="${r*0.1}" ry="${r*0.24}" fill="#000"/><ellipse cx="${x+r*0.22}" cy="${y-r*0.05}" rx="${r*0.1}" ry="${r*0.24}" fill="#000"/>`;});
+  o+=`<path d="M0 115 Q24 84 48 115Z M150 115 Q180 76 210 115Z" fill="#2e9e3a" stroke="#000" stroke-width="1.2"/></g>`;
+  for(let x=0;x<W;x+=10){if(x>=100&&x<120)continue;o+=blk(x,115,'#c86b28','#7a3a10')+blk(x,125,'#c86b28','#7a3a10');}
+  o+=`<rect x="176" y="89" width="20" height="26" fill="#1e8a1e" stroke="#000" stroke-width="1"/><rect x="173" y="83" width="26" height="9" fill="#2fbf2f" stroke="#000" stroke-width="1"/><rect x="180" y="92" width="3" height="23" fill="#7de35a"/>`;
+  o+=blk(60,78,'#b8541c','#1a0a02')+blk(70,78,'#f8b800','#8b4a00')+blk(80,78,'#b8541c','#1a0a02')+blk(90,78,'#f8b800','#8b4a00');
+  o+=`<text x="75" y="86.5" font-size="8" font-weight="900" font-family="monospace" text-anchor="middle" fill="#8b4a00">?</text><text x="95" y="86.5" font-size="8" font-weight="900" font-family="monospace" text-anchor="middle" fill="#8b4a00">?</text>`;
+  [128,136,144].forEach(x=>o+=`<ellipse cx="${x}" cy="72" rx="2.6" ry="3.6" fill="#ffc81e" stroke="#8a5a00" stroke-width=".6" shape-rendering="auto"/>`);
+  o+=px(MW_HERO_PV,100,62,1.35)+px(MW_GOOMBA_PV,212,104,1.2);
+  return o+'</svg>';
+}
 function previewSVG(s){
   if(s.pv&&s.pv.holo)return jarvisPreview(s);
+  if(s.pv&&s.pv.mario)return marioPreview(s);
   if(s.pv&&s.pv.pac)return pacPreview(s);
   if(s.pv&&s.pv.tron)return tronPreview(s);
   const W=240,H=135,pv=s.pv||{};let _r=11;const rng=()=>{_r=(_r*9301+49297)%233280;return _r/233280;};let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="sun-${s.name}"><stop offset="0" stop-color="#ffe066"/><stop offset=".55" stop-color="#ff5fa8"/><stop offset="1" stop-color="#a03cff"/></radialGradient><pattern id="scan-${s.name}" width="1" height="3" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="rgba(0,0,0,.35)"/></pattern></defs><rect width="${W}" height="${H}" fill="${s.css.sky}"/>`;
@@ -2509,9 +2873,9 @@ function applySkin(key,first){
   const r=document.documentElement.style;Object.entries(SKIN.css).forEach(([k,v])=>r.setProperty('--'+k,v));if(!SKIN.css.font)r.removeProperty('--font');
   document.body.dataset.skin=key;const bm=document.getElementById('brand-mark');if(SKIN.icon)bm.innerHTML=SKIN.icon;else bm.textContent=SKIN.mark;document.getElementById('skin-name').textContent=SKIN.name;
   // the link riders are kinesins everywhere but TRON, where they're light cycles
-  const cyc=!!SKIN.cycles,pac=!!SKIN.pac,tx=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  tx('walkers-t',pac?'Pac-Men':cyc?'Light cycles':'Kinesins');tx('walkers-s',pac?'Pac-Men eating their way along some links — zoom in to watch them, click one to drive it':cyc?'Light cycles riding some links, laying light walls — zoom in to watch them, click one to ride it':'Tiny carriers walking data along some links — zoom in to watch them, click one to walk it');
-  tx('idle-s',pac?'Left alone for 10 s, the camera chases a Pac-Man along the links':cyc?'Left alone for 10 s, the camera rides a monarch or chases a light cycle':'Left alone for 10 s, the camera rides a monarch or watches a kinesin work');
+  const cyc=!!SKIN.cycles,pac=!!SKIN.pac,mw=!!SKIN.mario,tx=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  tx('walkers-t',mw?'Coins':pac?'Pac-Men':cyc?'Light cycles':'Kinesins');tx('walkers-s',mw?'Coins rolling along some links — zoom in to watch them, click one to ride it':pac?'Pac-Men eating their way along some links — zoom in to watch them, click one to drive it':cyc?'Light cycles riding some links, laying light walls — zoom in to watch them, click one to ride it':'Tiny carriers walking data along some links — zoom in to watch them, click one to walk it');
+  tx('idle-s',mw?'Left alone for 10 s, the camera chases a coin along the links':pac?'Left alone for 10 s, the camera chases a Pac-Man along the links':cyc?'Left alone for 10 s, the camera rides a monarch or chases a light cycle':'Left alone for 10 s, the camera rides a monarch or watches a kinesin work');
   const mr=document.getElementById('monarchs');if(mr&&mr.closest('.row'))mr.closest('.row').style.display=SKIN.monarchs===false?'none':'';   // a skin without butterflies has no switch for them
   document.querySelectorAll('.skin').forEach(el=>el.classList.toggle('on',el.dataset.skin===key));
   try{localStorage.setItem('atlas.skin',key);}catch(e){}
