@@ -343,6 +343,12 @@ const ATLAS_CSS=`
   #pac-game .pg-pad button[data-d="1"]{left:52px;top:0} #pac-game .pg-pad button[data-d="2"]{left:0;top:52px} #pac-game .pg-pad button[data-d="0"]{left:104px;top:52px} #pac-game .pg-pad button[data-d="3"]{left:52px;top:104px}
   #pac-game .pg-pad button:active{background:rgba(43,43,255,.45)}
   @media (pointer:coarse){.tg-act kbd,.pg-act kbd{display:none}}
+  .hs{margin:14px auto 2px;max-width:320px;text-align:left;text-transform:uppercase} .hs>b{display:block;text-align:center;font-size:11.5px;letter-spacing:.24em;margin-bottom:6px}
+  .hs ol{list-style:none;margin:0;padding:0} .hs li{display:flex;justify-content:space-between;gap:12px;padding:2px 8px;font-size:12.5px;letter-spacing:.08em;font-variant-numeric:tabular-nums} .hs li i{font-style:normal}
+  .hs li.me{background:rgba(255,255,255,.14);animation:hs-me 1s steps(2) 3} @keyframes hs-me{50%{background:rgba(255,255,255,.3)}}
+  .hs .none{margin:0!important;text-align:center;font-size:11.5px!important;opacity:.7}
+  #tron-game .hs>b{color:#8ff4ff} #tron-game .hs li{color:#dcfbff} #tron-game .tg-score{margin:6px auto 0!important} #tron-game .tg-score b{color:#fff}
+  #pac-game .hs>b{color:#ffd21f} #pac-game .hs li i{color:#ffd21f} #mario-game .hs>b{color:#fbd000} #mario-game .hs li i{color:#fbd000}
   @media (max-width:720px){#pac-game .pg-hud{top:62px;gap:12px;font-size:11px;letter-spacing:.08em} #pac-game .pg-lives{font-size:13px} #tron-game .tg-hud{top:62px;gap:12px;font-size:10.5px;letter-spacing:.14em}}
   @media (min-width:721px){#idle-hint,#ride-hint{left:calc((100vw - 314px)/2);transition:left .5s cubic-bezier(.2,.7,.2,1)} body.panel-min #idle-hint,body.panel-min #ride-hint{left:50%}}
   @media (max-width:720px){#settings{width:min(300px,calc(100vw - 28px))} #card{width:calc(100vw - 28px)} #ride-hint{left:14px;right:14px;transform:none;max-width:none;bottom:58px}}
@@ -398,6 +404,35 @@ document.head.insertAdjacentHTML('beforeend','<style>'+ATLAS_CSS+'</style>');
 document.body.insertAdjacentHTML('afterbegin',ATLAS_MARKUP);
 const RAW_NODES=ATLAS.nodes,RAW_EDGES=ATLAS.edges,LEGEND=ATLAS.legend,REALM=ATLAS.realm||{},REALMS=ATLAS.realms||[];   // node id -> realm map is empty for a single repo
 window.__ATLAS_SKIN__=ATLAS.skin;
+// ── high scores for the games (TRON, PAC-MAN, MARIO WORLD) ──
+// Kept in this browser the moment a game ends — at GAME OVER, when you leave mid-game, or when the page closes (they used to be
+// written only at GAME OVER, so leaving early lost them, and TRON kept none). When the page hosting the Atlas says where
+// (window.ATLAS_SCORES, a URL on its own site), they also go on a shared board every device and every player sees.
+const SCORES=(()=>{
+  const url=typeof window.ATLAS_SCORES==='string'&&window.ATLAS_SCORES?window.ATLAS_SCORES:null,board={},last={};
+  const auth=typeof window.ATLAS_SCORES_TOKEN==='string'&&window.ATLAS_SCORES_TOKEN?{Authorization:'Bearer '+window.ATLAS_SCORES_TOKEN}:{};   // the host's session, if it hands one over
+  const key=g=>'atlas.scores.'+g,legacy={pacman:'atlas.pac.hi',mario:'atlas.mario.hi'};
+  const cache={},local=g=>(cache[g]||(cache[g]=load(g))).slice(),load=g=>{let l=[];try{l=JSON.parse(localStorage.getItem(key(g))||'[]');}catch(e){}
+    try{const old=legacy[g]&&+localStorage.getItem(legacy[g]);if(old>0&&!l.some(e=>e.score===old))l.push({score:old,at:0});}catch(e){}   // the best from before this board
+    return Array.isArray(l)?l.filter(e=>e&&e.score>0).sort((a,b)=>b.score-a.score):[];};
+  const keep=(g,l)=>{cache[g]=l.slice(0,10);try{localStorage.setItem(key(g),JSON.stringify(cache[g]));}catch(e){}};
+  const q=(u,x)=>u+(u.indexOf('?')<0?'?':'&')+x;
+  const top=g=>(board[g]||local(g)).slice(0,5);
+  const fmt=n=>Number(n||0).toLocaleString('en-US');
+  const html=g=>{const l=top(g),me=last[g];let hit=false;
+    return '<b>High scores</b>'+(l.length?'<ol>'+l.map((e,i)=>{const mine=!hit&&me&&e.score===me.score&&(e.mine||!e.name||e.at===me.at);if(mine)hit=true;
+      return `<li${mine?' class="me"':''}><span>${i+1}. ${esc(String(e.name||'You').slice(0,14))}</span><i>${fmt(e.score)}</i></li>`;}).join('')+'</ol>':'<p class="none">No scores yet — be the first</p>');};
+  const paint=g=>document.querySelectorAll('.hs[data-g="'+g+'"]').forEach(el=>{el.innerHTML=html(g);});
+  function refresh(g){if(!url)return;fetch(q(url,'game='+encodeURIComponent(g)),{credentials:'same-origin',headers:auth}).then(r=>r.ok?r.json():null).then(j=>{if(j&&Array.isArray(j.top)){board[g]=j.top;paint(g);}}).catch(()=>{});}
+  return {
+    best:g=>Math.max(local(g)[0]?local(g)[0].score:0,board[g]&&board[g][0]?board[g][0].score:0),
+    // one finished game: into this browser's top ten now, then onto the shared board
+    record(g,score,meta){score=Math.floor(score||0);if(score<=0)return;const at=Date.now(),l=local(g);l.push({score,at});l.sort((a,b)=>b.score-a.score);keep(g,l);last[g]={score,at};paint(g);
+      if(url)fetch(url,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},auth),credentials:'same-origin',keepalive:true,body:JSON.stringify({game:g,score,meta:meta||{}})})
+        .then(r=>r.ok?r.json():null).then(j=>{if(j&&Array.isArray(j.top)){board[g]=j.top;paint(g);}}).catch(()=>{});},
+    board:g=>{refresh(g);return `<div class="hs" data-g="${g}">${html(g)}</div>`;},
+    shared:!!url};
+})();
 const HAS_REALMS = REALMS.length > 0;
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 const FONT='"Inter",-apple-system,"Segoe UI",sans-serif';
@@ -2101,7 +2136,7 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
     // ── PAC-MAN, the game: click Pac-Man (or a ghost) on the maze and it's yours — WELCOME TO PAC-MAN. The board fills up, the
     // camera rises over it, READY!, and you steer with the arrows (or a swipe). Three lives; dots 10, power pellets 50, ghosts
     // 200-400-800-1600 on one pellet; clear the board and the next level is faster with shorter blue time. Esc leaves.
-    const hiKey='atlas.pac.hi';let hi=0;try{hi=+localStorage.getItem(hiKey)||0;}catch(e){}
+    const pgRecord=()=>{if(pg&&!pg.recorded&&pg.score>0){pg.recorded=true;SCORES.record('pacman',pg.score,{level:pg.level});}};
     const pgDom=()=>{let el=document.getElementById('pac-game');if(el)return el;
       document.body.insertAdjacentHTML('beforeend','<div id="pac-game"><div class="pg-hud"><span class="pg-score"></span><span class="pg-hi"></span><span class="pg-lives"></span><span class="pg-lvl"></span></div><div class="pg-ready">READY!</div><div class="pg-card"></div>'
         +'<div class="pg-pad"><button data-d="1" aria-label="Up">▲</button><button data-d="2" aria-label="Left">◀</button><button data-d="0" aria-label="Right">▶</button><button data-d="3" aria-label="Down">▼</button></div></div>');
@@ -2118,14 +2153,14 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
       pgCard(`<div class="pg-art">${PAC_SVG}</div><div class="pg-title"><small>Welcome to</small><b>PAC-MAN</b></div>`
         +`<p>Clear every dot in the maze. Blinky, Pinky, Inky and Clyde are after you — eat a power pellet and for a few seconds you can eat them back.</p>`
         +`<div class="pg-keys"><span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> steer</span><span><kbd>Esc</kbd> leave</span></div><div class="pg-touch">On a phone: swipe to steer</div>`
-        +`<div class="pg-act"><button data-act="go">Play <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit</button></div>`);}
+        +SCORES.board('pacman')+`<div class="pg-act"><button data-act="go">Play <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit</button></div>`);}
     function pgGo(){if(!pg||(pg.phase!=='intro'&&pg.phase!=='over'))return;
-      if(pg.phase==='over'){Object.assign(pg,{score:0,lives:3,level:1,chain:0});DOn.fill(1);onA.needsUpdate=true;left=dots.length;reset();}
+      if(pg.phase==='over'){Object.assign(pg,{score:0,lives:3,level:1,chain:0,recorded:false});DOn.fill(1);onA.needsUpdate=true;left=dots.length;reset();}
       pg.phase='play';pg.ready=2.2;pg.want=null;pgCard('');document.body.classList.add('pac-play');}
-    function pgOver(){pg.phase='over';document.body.classList.remove('pac-play');if(pg.score>hi){hi=pg.score;try{localStorage.setItem(hiKey,String(hi));}catch(e){}}
-      pgCard(`<div class="pg-title over"><b>GAME OVER</b></div><p>Score <b>${pg.score}</b> · level ${pg.level}${pg.score>=hi&&pg.score>0?' · a new high score':' · high score '+hi}</p>`
+    function pgOver(){pg.phase='over';document.body.classList.remove('pac-play');const was=SCORES.best('pacman');pgRecord();
+      pgCard(`<div class="pg-title over"><b>GAME OVER</b></div><p>Score <b>${pg.score.toLocaleString('en-US')}</b> · level ${pg.level}${pg.score>was?' · a new high score!':''}</p>`+SCORES.board('pacman')
         +`<div class="pg-act"><button data-act="go">Play again <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit <kbd>Esc</kbd></button></div>`);}
-    function pgEnd(silent){const G=pg;if(!G)return;pg=null;galaxyVis(true);document.body.classList.remove('pac-on','pac-play');pgCard('');controls.enabled=true;controls.autoRotate=false;lastInput=performance.now();fitView(false);
+    function pgEnd(silent){const G=pg;if(!G)return;pgRecord();pg=null;galaxyVis(true);document.body.classList.remove('pac-on','pac-play');pgCard('');controls.enabled=true;controls.autoRotate=false;lastInput=performance.now();fitView(false);
       if(!silent)flyTo(G.from[0],G.from[1],1300);}
     function pacSteer(d){if(!pg||pg.phase!=='play')return;pg.want=d;}
     // the camera over the whole board, tipped a little toward you
@@ -2136,9 +2171,9 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
       const k=1-Math.exp(-dt*3);camera.position.lerp(_pgP,k);controls.target.lerp(_pgT,k);}
     const screenSteer=d=>pacSteer(pg&&pg.rot?(d+3)%4:d);
     function pgHud(){const el=pgDom(),pad=n=>String(n).padStart(5,'0'),set=(c,v)=>{const e=el.querySelector(c);if(e.textContent!==v)e.textContent=v;};
-      set('.pg-score','1UP '+pad(pg.score));set('.pg-hi','HIGH '+pad(Math.max(hi,pg.score)));set('.pg-lives','ᗧ'.repeat(Math.max(0,pg.lives-1)));set('.pg-lvl','LEVEL '+pg.level);
+      set('.pg-score','1UP '+pad(pg.score));set('.pg-hi','HIGH '+pad(Math.max(SCORES.best('pacman'),pg.score)));set('.pg-lives','ᗧ'.repeat(Math.max(0,pg.lives-1)));set('.pg-lvl','LEVEL '+pg.level);
       el.querySelector('.pg-ready').classList.toggle('on',pg.phase==='play'&&pg.ready>0);}
-    pacCtx={pac,ghosts,left:()=>left,W,H,tile,start:pacStart,go:()=>pgGo(),steer:pacSteer,exit:()=>pgEnd(),playing:()=>!!pg,
+    pacCtx={record:pgRecord,pac,ghosts,left:()=>left,W,H,tile,start:pacStart,go:()=>pgGo(),steer:pacSteer,exit:()=>pgEnd(),playing:()=>!!pg,
       state:()=>pg?{phase:pg.phase,score:pg.score,lives:pg.lives,level:pg.level,left,pac:[pac.x,pac.y,pac.d],dead:pac.dead}:null,
       sim(sec){for(let t=0;t<sec&&pg;t+=0.05)extras.userData.step(0.05);},targets:()=>[pacMesh].concat(ghosts.map(G=>G.g)),
       swipe(ev,phase){if(!pg||pg.phase!=='play')return;if(phase==='down')pg.sw=[ev.clientX,ev.clientY];else if(pg.sw){const dx=ev.clientX-pg.sw[0],dy=ev.clientY-pg.sw[1];pg.sw=null;if(Math.hypot(dx,dy)>18)screenSteer(Math.abs(dx)>Math.abs(dy)?(dx>0?0:2):(dy>0?3:1));}},
@@ -2303,7 +2338,6 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
       for(const k in blocks){blocks[k].count=n[k];blocks[k].instanceMatrix.needsUpdate=true;}dirty=bumps.length>0;}
     // ── play state ──
     let mg=null,T=0;const held=new Set();let jumpQ=0;   // jumpQ: a jump press held over for a moment, so one pressed just before landing still jumps
-    const hiKey='atlas.mario.hi';let hi=0;try{hi=+localStorage.getItem(hiKey)||0;}catch(e){}
     const collideX=e=>{const y0=Math.floor(e.y+0.02),y1=Math.floor(e.y+e.h-0.02);
       if(e.vx>0){const tx=Math.floor(e.x+e.w/2);for(let ty=y0;ty<=y1;ty++)if(solid(tx,ty)){e.x=tx-e.w/2-1e-4;return 1;}}
       else if(e.vx<0){const tx=Math.floor(e.x-e.w/2);for(let ty=y0;ty<=y1;ty++)if(solid(tx,ty)){e.x=tx+1+e.w/2+1e-4;return -1;}}return 0;};
@@ -2379,6 +2413,7 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
     const pxSvg=(rows,s)=>{const W=rows[0].length,H=rows.length;let o=`<svg viewBox="0 0 ${W} ${H}" width="${W*s}" height="${H*s}" shape-rendering="crispEdges" aria-hidden="true">`;
       rows.forEach((r,j)=>{for(let i=0;i<W;i++)if(r[i]!=='.')o+=`<rect x="${i}" y="${j}" width="1.02" height="1.02" fill="#${new THREE.Color(MW_PAL[r[i]]).getHexString()}"/>`;});return o+'</svg>';};
     const TITLE='MARIO WORLD'.split('').map((c,i)=>c===' '?'<i> </i>':`<i style="color:${['#e52521','#fbd000','#43b047','#049cd8'][i%4]}">${c}</i>`).join('');
+    const mgRecord=()=>{if(mg&&!mg.recorded&&mg.score>0){mg.recorded=true;SCORES.record('mario',mg.score,{world:mg.world});}};
     function mgStart(){
       if(mg)return;if(idle)endIdle();if(ride)endRide();if(walk)endWalk();tw=null;setHover(null);tip.style.display='none';renderer.domElement.style.cursor='';
       mg={phase:'intro',score:0,coins:0,lives:3,world:1,time:300,banner:0,from:[camera.position.clone(),controls.target.clone()],seed:1+Math.floor(Math.random()*1e5)};
@@ -2386,14 +2421,14 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
       mgCard(`<div class="mg-art">${pxSvg(MW_HERO,6)}<span class="mg-q">?</span>${pxSvg(MW_GOOMBA,6)}</div><div class="mg-title"><small>Welcome to</small><b>${TITLE}</b></div>`
         +`<p>Run right, jump the pits and the pipes, stomp the goombas, bump the <b>?</b> blocks for coins and grab the flag at the end. Every world is a brand-new level.</p>`
         +`<div class="mg-keys"><span><kbd>←</kbd><kbd>→</kbd> run</span><span><kbd>Space</kbd><kbd>↑</kbd> jump</span><span><kbd>Shift</kbd> sprint</span><span><kbd>Esc</kbd> leave</span></div><div class="mg-touch">◀ ▶ to run · A to jump · B to sprint</div>`
-        +`<div class="mg-act"><button data-act="go">Start <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit</button></div>`);}
+        +SCORES.board('mario')+`<div class="mg-act"><button data-act="go">Start <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit</button></div>`);}
     function mgGo(){if(!mg||(mg.phase!=='intro'&&mg.phase!=='over'))return;
-      if(mg.phase==='over'){Object.assign(mg,{score:0,coins:0,lives:3,world:1,seed:1+Math.floor(Math.random()*1e5)});newLevel(mg.seed,1);}
+      if(mg.phase==='over'){Object.assign(mg,{score:0,coins:0,lives:3,world:1,recorded:false,seed:1+Math.floor(Math.random()*1e5)});newLevel(mg.seed,1);}
       mg.phase='play';mg.banner=2;mg.time=300;mgCard('');document.body.classList.add('mario-play');}
-    function mgOver(){mg.phase='over';document.body.classList.remove('mario-play');mgBanner('');if(mg.score>hi){hi=mg.score;try{localStorage.setItem(hiKey,String(hi));}catch(e){}}
-      mgCard(`<div class="mg-title over"><b>GAME OVER</b></div><p>Score <b>${mg.score}</b> · world 1-${mg.world}${mg.score>=hi&&mg.score>0?' · a new best':' · best '+hi}</p>`
+    function mgOver(){mg.phase='over';document.body.classList.remove('mario-play');mgBanner('');const was=SCORES.best('mario');mgRecord();
+      mgCard(`<div class="mg-title over"><b>GAME OVER</b></div><p>Score <b>${mg.score.toLocaleString('en-US')}</b> · world 1-${mg.world}${mg.score>was?' · a new high score!':''}</p>`+SCORES.board('mario')
         +`<div class="mg-act"><button data-act="go">Play again <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit <kbd>Esc</kbd></button></div>`);}
-    function mgEnd(silent){const G=mg;if(!G)return;mg=null;galaxyVis(true);document.body.classList.remove('mario-on','mario-play');mgCard('');mgBanner('');held.clear();controls.enabled=true;controls.autoRotate=false;lastInput=performance.now();fitView(false);
+    function mgEnd(silent){const G=mg;if(!G)return;mgRecord();mg=null;galaxyVis(true);document.body.classList.remove('mario-on','mario-play');mgCard('');mgBanner('');held.clear();controls.enabled=true;controls.autoRotate=false;lastInput=performance.now();fitView(false);
       newLevel(1+Math.floor(Math.random()*1e5),1);if(!silent)flyTo(G.from[0],G.from[1],1300);}
     const _cP=new THREE.Vector3(),_cT=new THREE.Vector3();
     function mgCam(dt){const th=Math.tan(camera.fov*Math.PI/360),H=15*t,d=Math.max(H/2/th,(camera.aspect<1?11:22)*t/2/(th*camera.aspect)),half=d*th*camera.aspect;
@@ -2401,7 +2436,7 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
       _cT.set(x,Y0,zc);_cP.set(x,Y0-d,zc);const k=1-Math.exp(-dt*6);camera.position.lerp(_cP,k);controls.target.lerp(_cT,k);}
     function mgHud(){const el=mgDom(),set=(c,v)=>{const e=el.querySelector(c);if(e.textContent!==v)e.textContent=v;};
       set('.mg-score',String(mg.score).padStart(6,'0'));set('.mg-coins','◉×'+String(mg.coins).padStart(2,'0'));set('.mg-world','1-'+mg.world);set('.mg-time',String(Math.max(0,Math.ceil(mg.time))));}
-    marioCtx={start:mgStart,go:()=>mgGo(),exit:()=>mgEnd(),playing:()=>!!mg,target:()=>heroM&&heroM.find(m=>m.visible)||heroM[0],tile:()=>t,
+    marioCtx={record:mgRecord,start:mgStart,go:()=>mgGo(),exit:()=>mgEnd(),playing:()=>!!mg,target:()=>heroM&&heroM.find(m=>m.visible)||heroM[0],tile:()=>t,
       state:()=>mg?{phase:mg.phase,score:mg.score,coins:mg.coins,lives:mg.lives,world:mg.world,time:Math.ceil(mg.time),x:+hero.x.toFixed(2),y:+hero.y.toFixed(2),dead:hero.dead>=0,clear:hero.clear>=0}:{ambient:true,x:+hero.x.toFixed(2),y:+hero.y.toFixed(2),dead:hero.dead>=0,clear:hero.clear>=0,LW:L.LW},
       sim(sec,keys){if(keys){keys.forEach(k=>held.add(k));if(keys.some(k=>[' ','ArrowUp'].includes(k)))jumpQ=0.15;}for(let s=0;s<sec;s+=0.05)extras.userData.step(0.05);if(keys)keys.forEach(k=>held.delete(k));},
       key(k,down){if(!mg)return false;if(down){if((k==='Enter'||k===' ')&&mg.phase!=='play'){mgGo();return true;}held.add(k);if([' ','ArrowUp','w','z','k'].includes(k))jumpQ=0.15;}else held.delete(k);return true;}};
@@ -2444,6 +2479,7 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
     tronBikes.forEach((b,i)=>{if(!b.bike.g.visible)return;_v.copy(b.p);_v.z+=tronCell*0.25;const dist=camera.position.distanceTo(_v);_v.project(camera);if(_v.z>1)return;
       const d=Math.hypot((_v.x-nx)*W/2,(_v.y-ny)*H/2),r=Math.max(26,b.bike.g.scale.x*ppu/dist*0.75);if(d<r&&d<bd){bd=d;best=i;}});
     return best;}
+  window.addEventListener('pagehide',()=>{if(pacCtx&&pacCtx.playing())pacCtx.record();if(marioCtx&&marioCtx.playing())marioCtx.record();});
   let hoverPM=null,hoverMW=false;
   const marioOn=()=>!!(marioCtx&&marioCtx.playing());
   // Mario under the pointer on his level: the mesh, or null
@@ -2497,7 +2533,7 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
       +`<p>You ride the <i style="color:#${new THREE.Color(pc).getHexString()}">${name}</i> light cycle. Three programs ride against you. Touch a light wall — theirs or your own — or the edge of the Grid and you derez. Last cycle riding wins.</p>`
       +`<div class="tg-keys"><span><kbd>←</kbd><kbd>→</kbd> turn</span><span><kbd>↑</kbd> boost</span><span><kbd>↓</kbd> brake</span><span><kbd>C</kbd> camera</span><span><kbd>Esc</kbd> leave</span></div>`
       +`<div class="tg-touch">On a phone: tap the left or right side to turn</div>`
-      +`<div class="tg-act"><button data-act="go">Ride <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit the Grid</button></div>`);}
+      +SCORES.board('tron')+`<div class="tg-act"><button data-act="go">Ride <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit the Grid</button></div>`);}
   function tgSpawn(){
     const G=tg;
     G.bikes.forEach(b=>{b.bike.dispose();G.group.remove(b.bike.g);disposeRibbon(b.rb);});G.bursts.forEach(q=>{G.group.remove(q.pts);q.pts.geometry.dispose();q.pts.material.dispose();});
@@ -2549,10 +2585,11 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
     if(!b.alive){b.fall=Math.max(0,b.fall-dt*1.5);b.rb.h=G.Lb*0.5*b.fall*b.fall;b.rb.m.visible=b.fall>0;}
     if(b.alive){const cd=Math.max(1e-3,camera.position.distanceTo(b.p));b.bike.near(G.Lb*ppu/cd);b.bike.g.position.copy(b.p);b.bike.g.rotation.set(-b.lean,0,b.yaw);}
     if(b.rb.m.visible)ribbonWrite(b.rb,b.p,_UPZ);}
-  function tgOver(win){const G=tg;G.phase='over';G.t=0;if(win)tgWins++;document.body.classList.remove('tron-play');tgCount('');
-    const down=G.bikes.filter(b=>!b.me&&!b.alive).length;
+  // a round's score: 1,000 for each program derezzed, 2,000 for the win, and 10 for every tenth of a second you rode
+  function tgOver(win){const G=tg;G.phase='over';G.t=0;if(win){tgWins++;try{localStorage.setItem('atlas.tron.wins',String((+localStorage.getItem('atlas.tron.wins')||0)+1));}catch(e){}}document.body.classList.remove('tron-play');tgCount('');
+    const down=G.bikes.filter(b=>!b.me&&!b.alive).length,was=SCORES.best('tron'),score=down*1000+(win?2000:0)+Math.floor((G.endAt||G.clock)*10)*10;SCORES.record('tron',score,{win,down,ride:+(G.endAt||G.clock).toFixed(1)});
     tgCard(`<div class="tg-title ${win?'win':'lose'}"><b>${win?'You win':'Derezzed'}</b><small>End of line</small></div>`
-      +`<p>${win?'Every program derezzed in '+tgClock(G.endAt||G.clock):'You rode for '+tgClock(G.endAt||G.clock)+(down?' and took '+down+' of the 3 programs down with you':'')}${tgWins?` · ${tgWins} win${tgWins===1?'':'s'} this session`:''}</p>`
+      +`<p>${win?'Every program derezzed in '+tgClock(G.endAt||G.clock):'You rode for '+tgClock(G.endAt||G.clock)+(down?' and took '+down+' of the 3 programs down with you':'')}</p><p class="tg-score">Score <b>${score.toLocaleString('en-US')}</b>${score>was?' · a new high score!':''}</p>`+SCORES.board('tron')
       +`<div class="tg-act"><button data-act="go">Ride again <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit the Grid <kbd>Esc</kbd></button></div>`);}
   function tronGameEnd(silent){const G=tg;if(!G)return;tg=null;
     G.bikes.forEach(b=>{b.bike.dispose();disposeRibbon(b.rb);});G.bursts.forEach(q=>{q.pts.geometry.dispose();q.pts.material.dispose();});disposeRibbon(G.border);scene.remove(G.group);
