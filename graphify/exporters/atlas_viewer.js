@@ -518,7 +518,7 @@ void main(){
 // POKÉMON node bodies: Poké Balls. The top half in the group's colour, a black band round the middle, a white bottom, and the
 // button: drawn from the view-space normal, so it always faces you, on the band. Toon-shaded with one hard highlight.
 function pokeBodyMat(emis){
-  return new THREE.ShaderMaterial({uniforms:{uSun:{value:emis?1:0},uFog:{value:0.0001},uFogC:{value:new THREE.Color(0x9ad0f5)}},
+  return new THREE.ShaderMaterial({uniforms:{uSun:{value:emis?1:0},uFog:{value:0.00008},uFogC:{value:new THREE.Color(0xdcefff)}},
     vertexShader:`varying vec3 vN,vC,vL;varying float vD;
 void main(){vec4 p=vec4(position,1.0);vec3 n=normal;vL=position;
 #ifdef USE_INSTANCING
@@ -538,6 +538,7 @@ void main(){vec3 n=normalize(vN),L=normalize(vec3(-0.35,0.55,0.76));float ndl=do
   c*=mix(0.66,1.05,smoothstep(0.0,0.14,ndl));
   c=mix(c,vec3(1.0),smoothstep(0.94,0.97,dot(reflect(-L,n),vec3(0.0,0.0,1.0)))*0.9);
   c*=mix(0.3,1.0,smoothstep(0.12,0.28,n.z));
+  c+=vec3(0.55,0.75,1.0)*pow(1.0-clamp(n.z,0.0,1.0),3.0)*0.35;   // sky light on the rim
   gl_FragColor=vec4(mix(uFogC,c,exp(-uFog*uFog*vD*vD)),1.0);}`});
 }
 // CITY node bodies: each node a room, and a group's rooms together make its tower, so the facade is drawn in world space and
@@ -696,13 +697,13 @@ void main(){vec3 n=normalize(vN);float ndv=clamp(dot(n,normalize(vV)),0.0,1.0),f
     wings:{base:'#7a4fd8',mid:'#a07cff',tip:'#e2d6ff',vein:'rgba(10,0,30,.9)',margin:'#1a0a3a',spot:'rgba(255,250,240,.95)',glow:'rgba(220,200,255,.9)',shade:'rgba(20,0,40,.5)',body:0x1a0a3a},kin:{head:0xffe0c8,headEm:0x3a2a5a,stalk:0x5b4f99},
     pv:{city:true},
     features:['Districts for codebases','A tower for every group','A lit room for every node','Workers carrying data','Neon night','Walk along with a worker']},
-  pokemon:{name:'Pokémon',mark:'◓',icon:ICO.pokeball,tag:'Every node a Poké Ball over a grassy route. The biggest groups have a partner Pokémon, wild ones fly between the systems and wander the grass, and Pokémon run along the links.',
-    css:{bg:'#f7f7f2','bg-2':'#ffffff','bg-3':'#eef1f6',border:'#c9d1e0','border-2':'#8f9cbd',text:'#1f2638',muted:'#56607a',faint:'#8a93aa',accent:'#e3350d','accent-2':'#3b4cca',sky:'#9ad0f5',lbl:'#1f2638','lbl-sun':'#1f2638',halo:'#ffffff'},
-    sky:0x9ad0f5,fog:0.0001,rim:0xffffff,ambient:0.95,stars:[],nebula:0,fade:0x9ad0f5,line:0.42,sunEmissive:0xffffff,wire:false,monarchs:false,extras:'poke',poke:true,
+  pokemon:{name:'Pokémon',mark:'◓',icon:ICO.pokeball,tag:'A bright sky world: every node a Poké Ball over a sea of drifting clouds, partner Pokémon on floating battle platforms, legendaries flying between the systems.',
+    css:{bg:'#f7f9fc','bg-2':'#ffffff','bg-3':'#eef3fa',border:'#c9d6ea','border-2':'#8fa3c8',text:'#1f2638',muted:'#56607a',faint:'#8a93aa',accent:'#e3350d','accent-2':'#3b4cca',sky:'#cfeaff',lbl:'#1f2638','lbl-sun':'#1f2638',halo:'#ffffff'},
+    sky:0xdcefff,fog:0.00008,rim:0xffffff,ambient:0.95,stars:[],nebula:0,fade:0x6f9fd8,line:0.26,sunEmissive:0xffffff,wire:false,monarchs:false,extras:'poke',poke:true,nodeK:1.35,
     body:emis=>pokeBodyMat(emis),
     wings:{base:'#e3350d',mid:'#ff6a3d',tip:'#ffcb05',vein:'rgba(40,10,0,.9)',margin:'#3a1000',spot:'rgba(255,255,255,.95)',glow:'rgba(255,240,200,.9)',shade:'rgba(60,10,0,.5)',body:0x3a1000},kin:{head:0xffcb05,headEm:0x6a5000,stalk:0x3b4cca},
     pv:{poke:true},
-    features:['Poké Ball nodes','Partner Pokémon','Wild Pokémon flying','A grassy route','Pokémon on the links','Real sprites from PokeAPI']},
+    features:['Poké Ball nodes','A sea of clouds','Partners on battle platforms','Legendaries in flight','Pokémon on the links','Official artwork from PokeAPI']},
 };
 // retired skins: a saved or linked "matrix" becomes Tron and "blueprint" Pac-Man, their successors; any other unknown name is the default
 const SKIN_ALIAS={matrix:'tron',blueprint:'pacman'};
@@ -819,8 +820,8 @@ const V3=(()=>{
   const skinCol=(c,hex)=>{c.set(hex);if(SKIN.tint)c.lerp(_tc.set(SKIN.tint.color),SKIN.tint.k);
     if(SKIN.neon){c.getHSL(_nh);if(_nh.s<0.12)c.setHSL(0.52,0.35,0.74);else c.setHSL(_nh.h,Math.min(1,0.78+_nh.s*0.3),Math.min(0.62,Math.max(0.5,_nh.l)));}   // neon: same hue, full saturation
     return c;};
-  const rPlanet=id=>SKIN.city?CITY_ROOM*0.5:(1.1+2.4*Math.sqrt(Math.min(1,base[id].w/maxW)))*state.nsize;   // in the city every room is the same size
-  const rSun=s=>SKIN.city?CITY_ROOM*0.62:(3.6+3.2*Math.sqrt(s.n/maxN))*state.nsize;
+  const rPlanet=id=>SKIN.city?CITY_ROOM*0.5:(1.1+2.4*Math.sqrt(Math.min(1,base[id].w/maxW)))*state.nsize*(SKIN.nodeK||1);   // in the city every room is the same size
+  const rSun=s=>SKIN.city?CITY_ROOM*0.62:(3.6+3.2*Math.sqrt(s.n/maxN))*state.nsize*(SKIN.nodeK||1);
   const CITY_BOX=new THREE.BoxGeometry(2,2,2);   // (a room: rooms sit edge to edge, so a group's rooms read as one tower)
   function clearMeshes(){[planets,suns,lines].forEach(o=>{if(o){scene.remove(o);if(o.geometry&&o!==planets&&o!==suns)o.geometry.dispose();o.material.dispose();}});glows.forEach(g=>{scene.remove(g);g.material.dispose();});glows=[];lblLayer.innerHTML='';sunLbl={};planetLbl={};realmLbl=[];}
   let sunLbl={},planetLbl={},realmLbl=[];
@@ -2325,77 +2326,89 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
     };
     extras.userData.step(0,0);
   }
-  // ── POKÉMON: a route under the galaxy ──
-  // Every node is a Poké Ball (its group's colour on top), and the real Pokémon come from PokeAPI's public sprite set, loaded
-  // live by the page (nothing is stored in the repo; offline, the balls and the route are still there). The biggest groups each
-  // have a partner standing by their ball in official artwork; wild Pokémon fly between the systems and wander the grass of the
-  // route below, hopping as they go; and Pokémon run along the links (the riders).
+  // ── POKÉMON: a sky world ──
+  // Every node is a Poké Ball (its group's colour on top) floating in a bright anime sky over a sea of drifting clouds. The
+  // Pokémon are the real official artwork from PokeAPI's public sprite set, loaded live by the page (nothing stored in the repo;
+  // offline, the balls, sky and clouds are still there). The biggest groups each have a partner standing on a floating battle
+  // platform beside their ball; legendary birds and dragons fly from system to system; Pokémon run along the links.
   let pokeCtx=null;
   const PK_CDN='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
-  const PK_NAMES={1:'Bulbasaur',3:'Venusaur',4:'Charmander',6:'Charizard',7:'Squirtle',9:'Blastoise',10:'Caterpie',12:'Butterfree',16:'Pidgey',18:'Pidgeot',19:'Rattata',22:'Fearow',25:'Pikachu',35:'Clefairy',37:'Vulpix',39:'Jigglypuff',41:'Zubat',43:'Oddish',50:'Diglett',52:'Meowth',54:'Psyduck',58:'Growlithe',59:'Arcanine',60:'Poliwag',65:'Alakazam',68:'Machamp',74:'Geodude',79:'Slowpoke',81:'Magnemite',92:'Gastly',93:'Haunter',94:'Gengar',104:'Cubone',113:'Chansey',130:'Gyarados',131:'Lapras',133:'Eevee',142:'Aerodactyl',143:'Snorlax',144:'Articuno',145:'Zapdos',146:'Moltres',149:'Dragonite',150:'Mewtwo',151:'Mew'};
-  const PK_PARTNERS=[25,6,150,9,3,149,94,143,131,133,151,130,59,65,68,144,145,146,1,4,7,39,54,52];
-  const PK_FLIERS=[16,18,12,41,22,142,6,149,144,145,146,92,93,81,12,16];
-  const PK_GROUND=[25,1,4,7,133,39,52,54,19,10,43,60,79,104,113,58,37,35,50,74];
-  const PK_RIDERS=[25,133,4,7,1,39,52,58,37,35];
+  const PK_NAMES={1:'Bulbasaur',3:'Venusaur',4:'Charmander',6:'Charizard',7:'Squirtle',9:'Blastoise',12:'Butterfree',18:'Pidgeot',25:'Pikachu',39:'Jigglypuff',54:'Psyduck',59:'Arcanine',94:'Gengar',130:'Gyarados',131:'Lapras',133:'Eevee',142:'Aerodactyl',143:'Snorlax',144:'Articuno',145:'Zapdos',146:'Moltres',149:'Dragonite',150:'Mewtwo',151:'Mew',197:'Umbreon',249:'Lugia',250:'Ho-Oh',282:'Gardevoir',373:'Salamence',380:'Latias',381:'Latios',384:'Rayquaza',445:'Garchomp',448:'Lucario',468:'Togekiss',658:'Greninja',700:'Sylveon',778:'Mimikyu'};
+  const PK_PARTNERS=[25,6,150,133,94,143,448,658,282,197,700,778,445,151,131,149,59,9,3,7,4,1,39,54];
+  const PK_FLIERS=[249,250,384,6,149,144,145,146,18,380,381,468,373,142,12,130];
+  const PK_RIDERS=[25,133,4,7,1,39,54,151,197,700];
   const pkTex=(()=>{const cache={},tl=new THREE.TextureLoader();tl.setCrossOrigin('anonymous');
-    return (id,art)=>{const k=(art?'a':'s')+id;if(cache[k])return cache[k];
-      const t=tl.load(PK_CDN+(art?'other/official-artwork/':'')+id+'.png',undefined,undefined,()=>{t.__failed=true;});
-      if(!art){t.magFilter=THREE.NearestFilter;}t.anisotropy=4;cache[k]=t;return t;};})();
-  const pkSprite=(id,art,size)=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:pkTex(id,art),transparent:true,alphaTest:0.4,depthWrite:true}));s.scale.set(size,size,1);s.userData.pk=id;return s;};
-  function makePokeRider(u,i){const id=PK_RIDERS[i%PK_RIDERS.length],sp=pkSprite(id,false,u*7),g=new THREE.Group();sp.position.z=u*2.2;g.add(sp);let ph=Math.random()*6;
-    return {g,roll(d){ph+=d*3;sp.position.z=u*(2.2+Math.abs(Math.sin(ph))*0.9);},near(){},setColor(){},dispose(){sp.material.dispose();}};}
+    return id=>{if(cache[id])return cache[id];const t=tl.load(PK_CDN+'other/official-artwork/'+id+'.png',undefined,undefined,()=>{t.__failed=true;});t.anisotropy=4;cache[id]=t;return t;};})();
+  const pkSprite=(id,size)=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map:pkTex(id),transparent:true,alphaTest:0.35,depthWrite:true}));s.scale.set(size,size,1);s.userData.pk=id;return s;};
+  function makePokeRider(u,i){const id=PK_RIDERS[i%PK_RIDERS.length],sp=pkSprite(id,u*6),g=new THREE.Group();sp.position.z=u*2.6;g.add(sp);let ph=i*1.7;
+    return {g,roll(d){ph+=d*3;sp.position.z=u*(2.6+Math.abs(Math.sin(ph))*1.1);},near(){},setColor(){},dispose(){sp.material.dispose();}};}
+  // a soft round shadow, for the platforms and the fliers over the clouds
+  const pkShadowTex=(()=>{let t=null;return()=>{if(t)return t;const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
+    gr.addColorStop(0,'rgba(30,50,110,.5)');gr.addColorStop(1,'rgba(30,50,110,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);t=new THREE.CanvasTexture(c);return t;};})();
   function pokeBuild(){
     const R=Math.max(60,galaxyR),z0=-R*1.02,rm=CYC_RM,rng=seeded(151);
+    const add=o=>{o.frustumCulled=false;extras.add(o);return o;};
     const world=new THREE.Group();extras.add(world);   // (a group: buildExtras frees only direct children, and the sprite textures are shared)
-    // the route: short grass in two greens, patches of tall grass, a sandy path
-    const cv=document.createElement('canvas');cv.width=cv.height=256;const g=cv.getContext('2d');
-    g.fillStyle='#8fd16a';g.fillRect(0,0,256,256);g.fillStyle='#84c860';for(let y=0;y<256;y+=16)for(let x=(y/16%2)*16;x<256;x+=32)g.fillRect(x,y,16,16);
-    const tuft=(x,y,c)=>{g.fillStyle=c;g.fillRect(x,y+6,2,6);g.fillRect(x+3,y+3,2,9);g.fillRect(x+6,y+6,2,6);};
-    for(let i=0;i<40;i++)tuft(Math.floor(rng()*248),Math.floor(rng()*244),'#6fb04d');
-    const gt=new THREE.CanvasTexture(cv);gt.wrapS=gt.wrapT=THREE.RepeatWrapping;gt.magFilter=THREE.NearestFilter;gt.anisotropy=8;
-    const gW=R*60;gt.repeat.set(gW/(R*0.2),gW/(R*0.2));
-    const grass=new THREE.Mesh(new THREE.PlaneGeometry(gW,gW),new THREE.MeshLambertMaterial({map:gt}));grass.position.z=z0;world.add(grass);
-    const tcv=document.createElement('canvas');tcv.width=tcv.height=64;const tg=tcv.getContext('2d');tg.fillStyle='#3f9a3a';tg.fillRect(0,0,64,64);
-    for(let y=0;y<64;y+=8)for(let x=(y/8%2)*4;x<64;x+=8){tg.fillStyle='#2e7d2c';tg.fillRect(x,y+1,2,6);tg.fillRect(x+3,y,2,7);tg.fillStyle='#5cc04f';tg.fillRect(x+1,y,1,3);}
-    const tt=new THREE.CanvasTexture(tcv);tt.wrapS=tt.wrapT=THREE.RepeatWrapping;tt.magFilter=THREE.NearestFilter;
-    const tallMat=new THREE.MeshLambertMaterial({map:tt}),tall=[];
-    for(let i=0;i<(LITE?8:16);i++){const w=R*(0.12+rng()*0.22),h=R*(0.08+rng()*0.16),m=new THREE.Mesh(new THREE.BoxGeometry(w,h,R*0.012),tallMat);
-      const t2=tt.clone();t2.needsUpdate=true;t2.repeat.set(w/(R*0.03),h/(R*0.03));m.material=new THREE.MeshLambertMaterial({map:t2});
-      m.position.set((rng()-0.5)*R*3,-R*0.6+rng()*R*1.1,z0+R*0.006);world.add(m);tall.push(m);}
-    const path=new THREE.Mesh(new THREE.PlaneGeometry(R*4,R*0.07),new THREE.MeshLambertMaterial({color:0xe8d49a}));path.position.set(0,-R*0.18,z0+R*0.001);world.add(path);
-    // clouds
-    const clouds=[];for(let i=0;i<(LITE?8:16);i++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:mwCloudTex(),transparent:true,depthWrite:false,fog:false}));const s=R*(0.2+rng()*0.3);sp.scale.set(s*2,s,1);
-      const a=rng()*6.283,d=R*(1.2+rng()*0.9);sp.position.set(Math.cos(a)*d,Math.sin(a)*d,(rng()-0.2)*R*1.1);sp.userData.v=(0.5+rng())*R*0.004;world.add(sp);clouds.push(sp);}
-    // partners: the biggest groups' Pokémon, standing by their ball
-    const partners=[];systems.slice().sort((a,b)=>b.n-a.n).slice(0,LITE?10:PK_PARTNERS.length).forEach((s,i)=>{if(!pos[s.sun]||!sysBySun[s.sun])return;const r=rSun(s),sp=pkSprite(PK_PARTNERS[i],true,r*6.5);
-      sp.position.copy(pos[s.sun]).add(new THREE.Vector3(r*2.6,0,r*2.4));sp.userData.base=sp.position.clone();sp.userData.ph=i*1.3;world.add(sp);partners.push({sp,s});});
-    // wild Pokémon in the sky, flying from system to system
+    // the sky: deep blue overhead, bright cyan lower down, a pale warm glow at the horizon and a soft sun
+    const dome=add(new THREE.Mesh(new THREE.SphereGeometry(100,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,depthTest:false,
+      vertexShader:`varying vec3 vDir;void main(){vDir=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+      fragmentShader:`varying vec3 vDir;void main(){vec3 d=normalize(vDir);float e=d.z;
+ vec3 top=vec3(0.16,0.42,0.86),mid=vec3(0.38,0.72,0.97),hor=vec3(0.92,0.97,1.0);
+ vec3 c=e>0.0?mix(mix(hor,mid,smoothstep(0.0,0.18,e)),top,smoothstep(0.18,0.75,e)):mix(hor,vec3(0.62,0.8,0.97),smoothstep(0.0,0.2,-e));
+ vec3 sd=normalize(vec3(0.5,0.75,0.42));float s=max(0.0,dot(d,sd));c+=vec3(1.0,0.95,0.8)*(pow(s,600.0)*1.2+pow(s,24.0)*0.18);
+ gl_FragColor=vec4(c,1.0);}`})));dome.renderOrder=-10;
+    // the sea of clouds below the galaxies: soft fbm puffs, drifting, melting into the horizon
+    const CU={uT:{value:0},uR:{value:R},uCam:{value:new THREE.Vector3()}};
+    const sea=add(new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({uniforms:CU,depthWrite:false,
+      vertexShader:`varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.0);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
+      fragmentShader:`uniform float uT,uR;uniform vec3 uCam;varying vec3 vW;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+float fbm(vec2 p){float v=0.0,a=0.5;for(int i=0;i<5;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=0.5;}return v;}
+void main(){vec2 p=vW.xy/(uR*0.55)+vec2(uT*0.012,uT*0.004);float c=fbm(p),c2=fbm(p*1.9+vec2(4.0,1.0)-vec2(uT*0.01,0.0));
+  float puff=smoothstep(0.38,0.72,c*0.75+c2*0.35);
+  vec3 low=vec3(0.55,0.76,0.96),hi=vec3(1.0),shade=vec3(0.78,0.86,0.98);
+  vec3 col=mix(low,mix(shade,hi,smoothstep(0.55,0.95,c2+c*0.3)),puff);
+  float d=length(vW.xy-uCam.xy)/uR;col=mix(col,vec3(0.92,0.97,1.0),smoothstep(1.5,6.0,d));
+  gl_FragColor=vec4(col,1.0);}`})));sea.position.z=z0;sea.renderOrder=-9;
+    // a few big clouds up among the galaxies
+    const clouds=[];for(let i=0;i<(LITE?6:12);i++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:mwCloudTex(),transparent:true,depthWrite:false,fog:false,opacity:0.95}));const s=R*(0.18+rng()*0.26);sp.scale.set(s*2,s,1);
+      const a=rng()*6.283,d=R*(1.25+rng()*0.8);sp.position.set(Math.cos(a)*d,Math.sin(a)*d,(rng()-0.35)*R*1.1);sp.userData.v=(0.5+rng())*R*0.004;world.add(sp);clouds.push(sp);}
+    // partners: the biggest groups' Pokémon, each on a floating battle platform beside its ball
+    const platGeo=new THREE.CylinderGeometry(1,1.08,0.22,40).rotateX(Math.PI/2),platTop=new THREE.MeshLambertMaterial({color:0x7cc85a,emissive:0x1d3a12}),platRim=new THREE.MeshLambertMaterial({color:0xf2efe6,emissive:0x333028});
+    const partners=[];systems.slice().sort((a,b)=>b.n-a.n).slice(0,LITE?10:PK_PARTNERS.length).forEach((s,i)=>{if(!pos[s.sun])return;const r=rSun(s),size=r*7;
+      const base=pos[s.sun].clone().add(new THREE.Vector3(r*3.2,-r*0.6,-r*0.4)),g=new THREE.Group();g.position.copy(base);
+      const rim=new THREE.Mesh(platGeo,platRim);rim.scale.set(size*0.42,size*0.26,size*0.5);g.add(rim);
+      const top=new THREE.Mesh(platGeo,platTop);top.scale.set(size*0.38,size*0.235,size*0.3);top.position.z=size*0.06;g.add(top);
+      const sp=pkSprite(PK_PARTNERS[i],size);sp.position.z=size*0.5;g.add(sp);world.add(g);partners.push({g,sp,s,base,ph:i*1.3,size});});
+    // legendary birds and dragons flying from system to system, a soft shadow on the clouds under each
     const homes=systems.filter(s=>pos[s.sun]),fliers=[];
-    for(let i=0;i<(LITE?8:PK_FLIERS.length);i++){const id=PK_FLIERS[i],size=R*(0.035+rng()*0.02)*(id===6||id===149||id===142?1.8:1),sp=pkSprite(id,false,size*2.2);
-      const p=homes.length?pos[homes[Math.floor(rng()*homes.length)].sun].clone().add(new THREE.Vector3((rng()-0.5)*R*0.3,(rng()-0.5)*R*0.3,R*0.1)):new THREE.Vector3();
-      sp.position.copy(p);world.add(sp);fliers.push({sp,v:new THREE.Vector3((rng()-0.5),(rng()-0.5),0).setLength(R*0.03),tgt:null,spd:R*(0.035+rng()*0.03),ph:rng()*6,size:size*2.2});}
-    // wild Pokémon on the route, wandering and hopping
-    const walkers2=[];
-    for(let i=0;i<(LITE?8:PK_GROUND.length);i++){const id=PK_GROUND[i],size=R*(0.07+(id===143?0.06:0)),sp=pkSprite(id,false,size);
-      const w={sp,x:(rng()-0.5)*R*2.6,y:-R*0.6+rng()*R*1.05,dir:rng()*6.283,spd:R*(0.03+rng()*0.03),wait:rng()*2,ph:rng()*6,size};sp.position.set(w.x,w.y,z0+size*0.42);world.add(sp);walkers2.push(w);}
-    const _cr=new THREE.Vector3(),own=world;let T=0;
+    for(let i=0;i<(LITE?6:PK_FLIERS.length);i++){const id=PK_FLIERS[i],big=[249,250,384,149,6,130,373].includes(id),size=R*(big?0.11:0.075)*(0.85+rng()*0.3),sp=pkSprite(id,size);
+      const p=homes.length?pos[homes[Math.floor(rng()*homes.length)].sun].clone().add(new THREE.Vector3((rng()-0.5)*R*0.4,(rng()-0.5)*R*0.4,R*0.12)):new THREE.Vector3();
+      sp.position.copy(p);world.add(sp);
+      const sh=new THREE.Sprite(new THREE.SpriteMaterial({map:pkShadowTex(),transparent:true,depthWrite:false}));sh.scale.set(size*0.9,size*0.9,1);world.add(sh);
+      fliers.push({sp,sh,v:new THREE.Vector3((rng()-0.5),(rng()-0.5),0).setLength(R*0.03),tgt:null,spd:R*(0.03+rng()*0.03),ph:rng()*6,size});}
+    // the links: soft white threads, each tinted by its group
+    glows.forEach(g=>{if(g.isSprite){g.material.opacity=0.22;}});
+    const _cr=new THREE.Vector3(),own=dome;let T=0;
     extras.userData.step=(dt)=>{
-      if(!own.parent){extras.userData.step=null;world.traverse(o=>{if(o.isSprite||o.isMesh){if(o.material&&o.material.map&&o.material.map!==mwCloudTex()&&!o.userData.pk)o.material.map.dispose();if(o.material)o.material.dispose();if(o.isMesh&&o.geometry)o.geometry.dispose();}});pokeCtx=null;return;}
-      if(!rm)T+=dt;else dt=0;
+      if(!own.parent){extras.userData.step=null;world.traverse(o=>{if(o.isSprite&&!o.userData.pk&&o.material.map!==mwCloudTex()&&o.material.map!==pkShadowTex()&&o.material.map)o.material.map.dispose();if(o.material&&!Array.isArray(o.material))o.material.dispose();});
+        platGeo.dispose();platTop.dispose();platRim.dispose();pokeCtx=null;return;}
+      if(!rm)T+=dt;else dt=0;CU.uT.value=T;CU.uCam.value.copy(camera.position);
+      const cp=camera.position;dome.position.copy(cp);const hgt=Math.max(1,cp.z-z0),fs=Math.max(hgt*60,R*40);sea.position.set(cp.x,cp.y,z0);sea.scale.set(fs,fs,1);
       clouds.forEach(c=>{c.position.x+=c.userData.v*dt;if(c.position.x>R*2.3)c.position.x=-R*2.3;});
-      _cr.set(1,0,0).applyQuaternion(camera.quaternion);   // screen right, to face the sprites the way they move
-      partners.forEach(({sp})=>{sp.position.z=sp.userData.base.z+Math.sin(T*2+sp.userData.ph)*sp.scale.y*0.04;});
+      _cr.set(1,0,0).applyQuaternion(camera.quaternion);   // screen right, to face the Pokémon the way they move
+      const ppu=pxPer(),grow=(o,size,px)=>{const d=cp.distanceTo(o.position);return Math.min(3,Math.max(1,px*d/ppu/size));};   // far off, a Pokémon keeps at least ~px on screen
+      partners.forEach(p=>{p.g.position.z=p.base.z+Math.sin(T*1.6+p.ph)*p.size*0.05;const k=grow(p.g,p.size,54);p.g.scale.setScalar(k);p.g.visible=cp.distanceTo(p.g.position)>p.size*2.2;});
       for(const f of fliers){
-        if(!f.tgt||f.sp.position.distanceTo(f.tgt)<R*0.08){const s=homes[Math.floor(rng()*homes.length)];f.tgt=s?pos[s.sun].clone().add(new THREE.Vector3((rng()-0.5)*R*0.25,(rng()-0.5)*R*0.25,R*(0.05+rng()*0.12))):new THREE.Vector3();}
-        const want=f.tgt.clone().sub(f.sp.position).setLength(f.spd);f.v.lerp(want,Math.min(1,dt*0.8));f.sp.position.addScaledVector(f.v,dt);f.ph+=dt*3;f.sp.position.z+=Math.sin(f.ph)*f.size*0.08*dt*8;
-        const flip=f.v.dot(_cr)>0?-1:1;f.sp.scale.x=Math.abs(f.sp.scale.x)*flip;f.sp.visible=camera.position.distanceTo(f.sp.position)>f.size*3;}   // one flying past the lens would fill the screen with pixels
-      for(const w of walkers2){
-        if(w.wait>0){w.wait-=dt;}else{w.x+=Math.cos(w.dir)*w.spd*dt;w.y+=Math.sin(w.dir)*w.spd*dt;w.ph+=dt*9;
-          if(Math.abs(w.x)>R*1.4||w.y<-R*0.65||w.y>R*0.5||rng()<dt*0.25){w.dir=Math.atan2(-w.y,-w.x)+(rng()-0.5)*2.4;if(rng()<0.5)w.wait=0.6+rng()*2.2;}}
-        w.sp.position.set(w.x,w.y,z0+w.size*0.42+(w.wait>0?0:Math.abs(Math.sin(w.ph))*w.size*0.18));
-        _v.set(Math.cos(w.dir),Math.sin(w.dir),0);w.sp.scale.x=Math.abs(w.sp.scale.x)*(_v.dot(_cr)>0?-1:1);w.sp.visible=camera.position.distanceTo(w.sp.position)>w.size*2.5;}
-      partners.forEach(({sp})=>{sp.visible=camera.position.distanceTo(sp.position)>sp.scale.y*1.6;});};
-    pokeCtx={partners:()=>partners.map(p=>({id:p.sp.userData.pk,name:PK_NAMES[p.sp.userData.pk],group:p.s.label})),loaded:()=>{let n=0,f=0;world.traverse(o=>{if(o.isSprite&&o.userData.pk){const img=o.material.map&&o.material.map.image;if(img&&img.complete&&img.naturalWidth)n++;if(o.material.map&&o.material.map.__failed)f++;}});return {loaded:n,failed:f};},
+        if(!f.tgt||f.sp.position.distanceTo(f.tgt)<R*0.1){const s=homes[Math.floor(rng()*homes.length)];f.tgt=s?pos[s.sun].clone().add(new THREE.Vector3((rng()-0.5)*R*0.35,(rng()-0.5)*R*0.35,R*(0.08+rng()*0.16))):new THREE.Vector3();}
+        const want=f.tgt.clone().sub(f.sp.position).setLength(f.spd);f.v.lerp(want,Math.min(1,dt*0.7));f.sp.position.addScaledVector(f.v,dt);f.ph+=dt*2.2;
+        f.sp.position.z+=Math.sin(f.ph)*f.size*0.05*dt*6;
+        const k=grow(f.sp,f.size,42);f.sp.scale.set(f.size*k*(f.v.dot(_cr)>0?-1:1),f.size*k,1);f.sh.scale.set(f.size*k*0.9,f.size*k*0.9,1);   // the artwork faces left: flip it when flying right
+        f.sp.visible=cp.distanceTo(f.sp.position)>f.size*2.5;
+        f.sh.position.set(f.sp.position.x,f.sp.position.y,z0+R*0.01);f.sh.material.opacity=0.55;}};
+    pokeCtx={partners:()=>partners.map(p=>({id:p.sp.userData.pk,name:PK_NAMES[p.sp.userData.pk],group:p.s.label})),
+      loaded:()=>{let n=0,f=0;world.traverse(o=>{if(o.isSprite&&o.userData.pk){const img=o.material.map&&o.material.map.image;if(img&&img.complete&&img.naturalWidth)n++;if(o.material.map&&o.material.map.__failed)f++;}});return {loaded:n,failed:f};},
       sprites:()=>{const out=[];world.traverse(o=>{if(o.isSprite&&o.userData.pk&&o.visible)out.push(o);});return out;}};
     extras.userData.step(0,0);
   }
@@ -3246,11 +3259,11 @@ function cityPreview(s){
 function pokePreview(s){
   const W=240,H=135,ball=(x,y,r,top)=>`<g transform="translate(${x} ${y})"><circle r="${r}" fill="#f7f7f2" stroke="#1f2638" stroke-width="${(r*0.12).toFixed(2)}"/><path d="M${-r} 0A${r} ${r} 0 0 1 ${r} 0Z" fill="${top}" stroke="#1f2638" stroke-width="${(r*0.12).toFixed(2)}"/><rect x="${-r}" y="${-r*0.09}" width="${2*r}" height="${r*0.18}" fill="#1f2638"/><circle r="${r*0.3}" fill="#f7f7f2" stroke="#1f2638" stroke-width="${(r*0.12).toFixed(2)}"/></g>`;
   let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><linearGradient id="pk-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb8ee"/><stop offset="1" stop-color="#c6e7fb"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#pk-sky)"/>`
-    +`<rect y="92" width="${W}" height="${H-92}" fill="#8fd16a"/><rect x="0" y="104" width="${W}" height="7" fill="#e8d49a"/><rect x="150" y="113" width="70" height="18" fill="#3f9a3a"/>`;
-  for(let x=152;x<218;x+=6)o+=`<path d="M${x} 131V121M${x+2} 131V118M${x+4} 131V122" stroke="#2e7d2c" stroke-width="1.2"/>`;
+    +`<g fill="#fff">${[[10,120,16],[36,114,20],[66,122,15],[98,112,22],[132,121,17],[164,113,21],[198,120,18],[228,114,19]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}<rect y="118" width="${W}" height="${H-118}"/></g>`
+    +`<g fill="#e6f1fd">${[[24,128,10],[84,130,12],[150,129,11],[214,130,12]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g><ellipse cx="44" cy="112" rx="24" ry="6" fill="#f2efe6"/><ellipse cx="44" cy="110" rx="21" ry="4.6" fill="#7cc85a"/>`;
   o+=`<g stroke="#56607a" stroke-width="1" opacity=".7"><line x1="60" y1="36" x2="150" y2="28"/><line x1="60" y1="36" x2="108" y2="62"/><line x1="150" y1="28" x2="108" y2="62"/></g>`;
   [[60,36,11,'#e3350d'],[150,28,9,'#3b4cca'],[108,62,7,'#ffcb05']].forEach(([x,y,r,c],i)=>{o+=ball(x,y,r,c);for(let k=0;k<5;k++){const a=k/5*6.28+i,rr=r*2.3;o+=ball((x+Math.cos(a)*rr).toFixed(1),(y+Math.sin(a)*rr*0.55).toFixed(1),2.4,['#e3350d','#3b4cca','#7ed957','#c77dff','#ff9f40'][(k+i)%5]);}});
-  o+=`<image href="${PK_CDN_PV}other/official-artwork/25.png" x="18" y="70" width="52" height="52"/><image href="${PK_CDN_PV}16.png" x="176" y="44" width="40" height="40" style="image-rendering:pixelated"/>`;
+  o+=`<image href="${PK_CDN_PV}other/official-artwork/25.png" x="18" y="62" width="52" height="52"/><image href="${PK_CDN_PV}other/official-artwork/249.png" x="170" y="40" width="58" height="58"/>`;
   return o+'</svg>';
 }
 const PK_CDN_PV='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
