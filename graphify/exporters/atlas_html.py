@@ -67,9 +67,9 @@ def _realms(G) -> tuple[str, str]:
     return json.dumps(realms), json.dumps(meta)
 
 
-SKIN_KEYS = ("monarch", "jarvis", "synthwave", "tron")
-# retired skins: "matrix" became TRON; anything else unknown (e.g. the old "blueprint") falls back to monarch
-SKIN_ALIASES = {"matrix": "tron"}
+SKIN_KEYS = ("monarch", "jarvis", "synthwave", "tron", "pacman")
+# retired skins: "matrix" became TRON and "blueprint" Pac-Man; anything else unknown falls back to monarch
+SKIN_ALIASES = {"matrix": "tron", "blueprint": "pacman"}
 
 
 def build_document(*, title: str, stats: str, nodes_json: str, edges_json: str,

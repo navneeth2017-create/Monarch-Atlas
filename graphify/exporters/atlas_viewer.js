@@ -210,6 +210,20 @@ const ATLAS_CSS=`
   body[data-skin="tron"] #idle-hint,body[data-skin="tron"] #ride-hint{color:#dcfbff;text-transform:uppercase;font-size:11.5px;letter-spacing:.1em} body[data-skin="tron"] #ride-hint kbd{border-radius:0;border-color:var(--tron-edge);color:#effeff;box-shadow:0 0 6px rgba(0,229,255,.25)}
   body[data-skin="tron"] #ride-hint button{border-radius:0;border-color:var(--tron-edge)}
   body[data-skin="tron"] .skin.on{box-shadow:0 0 0 1px var(--accent),0 0 16px var(--tron-glow)}
+  body[data-skin="pacman"] .lbl{font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;text-shadow:0 0 2px #000,0 0 4px #000,0 1px 0 #000}
+  body[data-skin="pacman"] .lbl.sun{color:var(--lbl-sun);font-weight:700;letter-spacing:.12em}
+  body[data-skin="pacman"] .lbl:not(.sun):not(.realm){padding:0 4px;background:rgba(0,0,0,.72)}
+  body[data-skin="pacman"] .lbl.realm{background:#000;border:2px solid #2323ff;border-radius:7px;box-shadow:0 0 12px rgba(35,35,255,.45)}
+  body[data-skin="pacman"] #settings,body[data-skin="pacman"] #card,body[data-skin="pacman"] #skins .box{background:#000;border:2px solid #2323ff;border-radius:12px;box-shadow:inset 0 0 0 3px #000,inset 0 0 0 5px rgba(35,35,255,.5),0 0 22px rgba(35,35,255,.3)}
+  body[data-skin="pacman"] .bar b,body[data-skin="pacman"] summary{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-2)}
+  body[data-skin="pacman"] details,body[data-skin="pacman"] .bar{border-color:rgba(35,35,255,.35)} body[data-skin="pacman"] summary::before{border-left-color:var(--accent)}
+  body[data-skin="pacman"] #brand .mark{color:var(--accent);background:#000;border:2px solid #2323ff;box-shadow:0 0 10px rgba(35,35,255,.5)}
+  body[data-skin="pacman"] #brand .name{font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2)} body[data-skin="pacman"] #brand .name small{color:var(--muted)}
+  body[data-skin="pacman"] #stats{font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;font-size:10.5px}
+  body[data-skin="pacman"] #tip,body[data-skin="pacman"] #crumb,body[data-skin="pacman"] #idle-hint,body[data-skin="pacman"] #ride-hint{background:#000;border:2px solid #2323ff;border-radius:9px;box-shadow:0 0 14px rgba(35,35,255,.4);font-family:var(--mono)}
+  body[data-skin="pacman"] #tip b{color:var(--accent-2);text-transform:uppercase;letter-spacing:.1em}
+  body[data-skin="pacman"] .seg button.on{background:var(--accent);color:#000} body[data-skin="pacman"] .tg:checked{background:var(--accent)}
+  body[data-skin="pacman"] .skin.on{box-shadow:0 0 0 1px var(--accent),0 0 16px rgba(255,210,31,.4)}
   #skins{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   #skins.on{display:flex}
   #skins .box{width:min(1040px,calc(100vw - 40px));max-height:calc(100vh - 40px);overflow:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -221,6 +235,69 @@ const ATLAS_CSS=`
   .skin .meta{padding:10px 12px 12px} .skin .meta b{font-size:14px;display:flex;align-items:center;gap:8px} .skin .meta b em{font-style:normal;font-size:10.5px;color:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:0 7px;margin-left:auto}
   .skin .meta p{margin:3px 0 8px;color:var(--muted);font-size:12px} .skin .chips{display:flex;flex-wrap:wrap;gap:5px} .skin .chips i{font-style:normal;font-size:11px;color:var(--text);background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:2px 8px}
   #skin-row{display:flex;align-items:center;gap:8px;padding:6px 0} #skin-row b{font-weight:500} #skin-row button{margin-left:auto;background:var(--bg-3);border:1px solid var(--border-2);color:var(--text);border-radius:6px;padding:3px 10px;font:inherit;font-size:12px;cursor:pointer} #skin-row button:hover{border-color:var(--accent);color:var(--accent-2)}
+  /* TRON, the game: WELCOME TO TRON, a countdown, the rivals left and your time; everything else steps aside while you ride */
+  #tron-game{position:absolute;inset:0;z-index:9;pointer-events:none;display:none;font-family:var(--font);color:#dcfbff;text-transform:uppercase}
+  body.tron-on #tron-game{display:block}
+  body.tron-on #settings,body.tron-on #card,body.tron-on #labels,body.tron-on #stats,body.tron-on #crumb,body.tron-on #tip,body.tron-on #idle-hint,body.tron-on #ride-hint,body.tron-on #jv-hud,body.tron-on #skins{display:none!important}
+  #tron-game .tg-hud{position:absolute;left:50%;top:16px;transform:translateX(-50%);display:none;gap:18px;align-items:center;padding:6px 16px;background:rgba(0,5,8,.82);border:1px solid rgba(0,229,255,.45);box-shadow:0 0 14px rgba(0,229,255,.2);font-size:12px;letter-spacing:.22em;white-space:nowrap}
+  body.tron-play #tron-game .tg-hud{display:flex} #tron-game .tg-riv{display:flex;align-items:center;gap:6px} #tron-game .tg-riv i{display:inline-block;width:14px;height:5px;box-shadow:0 0 6px currentColor}
+  #tron-game .tg-time{font-variant-numeric:tabular-nums;min-width:62px;text-align:right;color:#fff}
+  #tron-game .tg-count{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-size:clamp(72px,17vw,170px);font-weight:700;letter-spacing:.12em;color:rgba(0,229,255,.1);-webkit-text-stroke:2px #eaffff;text-shadow:0 0 18px #00e5ff,0 0 48px rgba(0,229,255,.6)}
+  #tron-game .tg-count.pop{animation:tg-pop .8s ease-out}
+  @keyframes tg-pop{0%{transform:translate(-50%,-50%) scale(1.6);opacity:0}25%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:.85}}
+  #tron-game .tg-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(580px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;box-sizing:border-box;padding:30px 30px 26px;text-align:center;display:none;pointer-events:auto;
+    background:linear-gradient(180deg,rgba(0,14,19,.9),rgba(0,4,7,.9));border:1px solid rgba(0,229,255,.6);box-shadow:0 0 30px rgba(0,229,255,.28),inset 0 0 26px rgba(0,229,255,.08);clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));animation:tg-in .6s ease-out}
+  #tron-game .tg-card.on{display:block}
+  @keyframes tg-in{from{opacity:0;transform:translate(-50%,-46%)}to{opacity:1;transform:translate(-50%,-50%)}}
+  .tg-title small{display:block;font-size:clamp(14px,2.8vw,21px);font-weight:500;letter-spacing:.62em;margin-right:-.62em;color:#8ff4ff;text-shadow:0 0 10px rgba(0,229,255,.6)}
+  .tg-title b{display:block;margin:4px -.32em 6px 0;font-size:clamp(58px,14vw,118px);font-weight:700;letter-spacing:.32em;line-height:1.04;color:rgba(0,229,255,.08);-webkit-text-stroke:2px #c9fbff;text-shadow:0 0 12px rgba(0,229,255,.95),0 0 40px rgba(0,229,255,.55);animation:tg-glow 2.6s ease-in-out infinite}
+  .tg-title.win b,.tg-title.lose b{font-size:clamp(40px,9.5vw,76px);letter-spacing:.18em;margin-right:-.18em}
+  .tg-title.lose b{-webkit-text-stroke-color:#ffd2a8;text-shadow:0 0 12px rgba(255,138,31,.95),0 0 40px rgba(255,138,31,.5)} .tg-title.win small,.tg-title.lose small{margin-top:2px;font-size:13px;letter-spacing:.5em}
+  @keyframes tg-glow{50%{text-shadow:0 0 16px rgba(0,229,255,1),0 0 60px rgba(0,229,255,.75)}}
+  #tron-game .tg-card p{margin:14px auto 16px;max-width:460px;font-size:13.5px;line-height:1.55;letter-spacing:.06em;text-transform:none;color:#bfeff6} #tron-game .tg-card p i{font-style:normal;font-weight:700;text-shadow:0 0 8px currentColor}
+  .tg-keys{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 16px;font-size:11.5px;letter-spacing:.14em;color:#8ff4ff}
+  #tron-game kbd{display:inline-block;min-width:13px;margin-right:3px;padding:1px 5px;border:1px solid rgba(0,229,255,.55);font:inherit;font-size:11px;letter-spacing:0;color:#effeff;box-shadow:0 0 6px rgba(0,229,255,.25)}
+  .tg-touch{display:none;margin-top:10px;font-size:11.5px;letter-spacing:.14em;color:#8ff4ff} @media (pointer:coarse){.tg-touch{display:block}.tg-keys{display:none}}
+  .tg-act{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:22px}
+  .tg-act button{font:inherit;font-size:13px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;padding:11px 22px;cursor:pointer;color:#001216;background:#00e5ff;border:1px solid #00e5ff;box-shadow:0 0 16px rgba(0,229,255,.55)}
+  .tg-act button kbd{margin:0 0 0 8px!important;border-color:rgba(0,18,22,.4)!important;color:#001216!important;box-shadow:none!important}
+  .tg-act button.ghost{color:#bff9ff;background:transparent;box-shadow:none} .tg-act button.ghost kbd{color:#bff9ff!important;border-color:rgba(0,229,255,.55)!important}
+  .tg-act button:hover,.tg-act button:focus-visible{outline:none;box-shadow:0 0 0 1px #eaffff,0 0 22px rgba(0,229,255,.8)}
+  #tron-game .tg-pad{display:none;position:absolute;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));justify-content:space-between;pointer-events:none}
+  @media (pointer:coarse){body.tron-play #tron-game .tg-pad{display:flex}}
+  #tron-game .tg-pad button{pointer-events:auto;width:84px;height:84px;font:300 46px/1 var(--font);color:#dffcff;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.5);box-shadow:0 0 14px rgba(0,229,255,.25);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  #tron-game .tg-pad button:active{background:rgba(0,229,255,.3)}
+  /* PAC-MAN, the game: arcade type, a blue double border, READY! in yellow */
+  #pac-game{position:absolute;inset:0;z-index:9;pointer-events:none;display:none;font-family:var(--mono);color:#fff;text-transform:uppercase}
+  body.pac-on #pac-game{display:block}
+  body.pac-on #settings,body.pac-on #card,body.pac-on #labels,body.pac-on #stats,body.pac-on #crumb,body.pac-on #tip,body.pac-on #idle-hint,body.pac-on #ride-hint,body.pac-on #skins{display:none!important}
+  #pac-game .pg-hud{position:absolute;left:50%;top:14px;transform:translateX(-50%);display:none;gap:22px;align-items:center;font-size:14px;font-weight:700;letter-spacing:.14em;white-space:nowrap;text-shadow:0 0 6px #000}
+  body.pac-play #pac-game .pg-hud{display:flex} #pac-game .pg-score{color:#fff} #pac-game .pg-hi{color:#ff5a5a} #pac-game .pg-lives{color:#ffd21f;letter-spacing:.3em;font-size:17px} #pac-game .pg-lvl{color:#9fa2ff}
+  #pac-game .pg-ready{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;font-size:clamp(26px,5vw,44px);font-weight:800;letter-spacing:.16em;color:#ffd21f;text-shadow:3px 3px 0 #000,0 0 18px rgba(255,210,31,.55);animation:pg-blink 1s steps(2) infinite}
+  #pac-game .pg-ready.on{display:block} @keyframes pg-blink{50%{opacity:.35}}
+  #pac-game .pg-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;box-sizing:border-box;padding:26px 28px 24px;text-align:center;display:none;pointer-events:auto;
+    background:#000;border:4px double #2b2bff;border-radius:16px;box-shadow:0 0 0 2px #000,0 0 30px rgba(43,43,255,.5);animation:pg-in .45s ease-out}
+  #pac-game .pg-card.on{display:block} @keyframes pg-in{from{opacity:0;transform:translate(-50%,-50%) scale(.94)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  #pac-game .pg-art svg{display:block;width:min(280px,70%);margin:0 auto 12px}
+  .pg-title small{display:block;font-size:clamp(13px,2.6vw,18px);font-weight:700;letter-spacing:.5em;margin-right:-.5em;color:#fff}
+  .pg-title b{display:block;margin:6px 0 4px;font-size:clamp(44px,11vw,88px);font-weight:900;letter-spacing:.06em;line-height:1;color:#ffd21f;-webkit-text-stroke:2px #ff9d00;text-shadow:4px 4px 0 #2121ff,8px 8px 0 rgba(33,33,255,.35),0 0 26px rgba(255,210,31,.45)}
+  .pg-title.over b{color:#ff3b3b;-webkit-text-stroke-color:#ffb3b3;font-size:clamp(34px,8vw,60px);text-shadow:4px 4px 0 #2121ff}
+  #pac-game .pg-card p{margin:14px auto 16px;max-width:450px;font-size:13px;line-height:1.6;letter-spacing:.03em;text-transform:none;color:#dfe0ff} #pac-game .pg-card p b{color:#ffd21f}
+  .pg-keys{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;font-size:11.5px;letter-spacing:.12em;color:#9fa2ff}
+  #pac-game kbd{display:inline-block;min-width:13px;margin-right:3px;padding:1px 5px;border:1px solid #2b2bff;border-radius:4px;font:inherit;font-size:11px;color:#fff}
+  .pg-touch{display:none;margin-top:10px;font-size:11.5px;letter-spacing:.12em;color:#9fa2ff} @media (pointer:coarse){.pg-touch{display:block}.pg-keys{display:none}}
+  .pg-act{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:20px}
+  .pg-act button{font:inherit;font-size:14px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;padding:10px 22px;cursor:pointer;color:#000;background:#ffd21f;border:2px solid #ffd21f;border-radius:10px}
+  .pg-act button kbd{margin:0 0 0 8px!important;border-color:rgba(0,0,0,.4)!important;color:#000!important}
+  .pg-act button.ghost{color:#ffd21f;background:#000;border-color:#2b2bff} .pg-act button.ghost kbd{color:#ffd21f!important;border-color:#2b2bff!important}
+  .pg-act button:hover,.pg-act button:focus-visible{outline:none;box-shadow:0 0 0 2px #fff,0 0 18px rgba(255,210,31,.6)}
+  #pac-game .pg-pad{display:none;position:absolute;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:156px;height:156px;pointer-events:none}
+  @media (pointer:coarse){body.pac-play #pac-game .pg-pad{display:block}}
+  #pac-game .pg-pad button{position:absolute;width:52px;height:52px;pointer-events:auto;font-size:20px;color:#ffd21f;background:rgba(0,0,0,.7);border:2px solid #2b2bff;border-radius:12px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  #pac-game .pg-pad button[data-d="1"]{left:52px;top:0} #pac-game .pg-pad button[data-d="2"]{left:0;top:52px} #pac-game .pg-pad button[data-d="0"]{left:104px;top:52px} #pac-game .pg-pad button[data-d="3"]{left:52px;top:104px}
+  #pac-game .pg-pad button:active{background:rgba(43,43,255,.45)}
+  @media (pointer:coarse){.tg-act kbd,.pg-act kbd{display:none}}
+  @media (max-width:720px){#pac-game .pg-hud{top:62px;gap:12px;font-size:11px;letter-spacing:.08em} #pac-game .pg-lives{font-size:13px} #tron-game .tg-hud{top:62px;gap:12px;font-size:10.5px;letter-spacing:.14em}}
   @media (min-width:721px){#idle-hint,#ride-hint{left:calc((100vw - 314px)/2);transition:left .5s cubic-bezier(.2,.7,.2,1)} body.panel-min #idle-hint,body.panel-min #ride-hint{left:50%}}
   @media (max-width:720px){#settings{width:min(300px,calc(100vw - 28px))} #card{width:calc(100vw - 28px)} #ride-hint{left:14px;right:14px;transform:none;max-width:none;bottom:58px}}
 `;
@@ -300,8 +377,39 @@ const ICO={
     +'<rect x="11.35" y="8.3" width="1.3" height="10" rx=".65"/><path d="M11.7 8.5C11.2 6.6 10.2 5.4 9.1 4.9M12.3 8.5C12.8 6.6 13.8 5.4 14.9 4.9" fill="none" stroke="currentColor" stroke-width=".8" stroke-linecap="round"/>'),
   kinesin:ico('<circle cx="8" cy="19" r="2.6"/><circle cx="16" cy="19" r="2.6"/><path d="M8 17L12 12L16 17M12 12V8.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 2.4L15.6 6L12 9.6L8.4 6Z"/>'),
   cycle:ico('<circle cx="6" cy="15.6" r="3.9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18.4" cy="15.6" r="3.9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M1.4 13.4C2 10.6 4.2 9.1 7.2 9.3L10.9 11L14.3 8.9C17.6 8.4 21.4 9.4 22.9 12.9H20.6C18.8 11.4 15.8 11.5 13.9 12.8L9.7 13.8L4.8 11.7C3.5 11.9 2.4 12.5 1.4 13.4Z"/>'),
+  pac:ico('<path d="M12 12L20.9 7.46A10 10 0 1 0 20.9 16.54Z"/>'),
   disc:ico('<circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="5.7" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4.3 1.6"/><circle cx="12" cy="12" r="2.3"/>'),
 };
+// PAC-MAN node bodies: arcade toon shading (two tones, one hard highlight, an inked edge). Suns are Pac-Men: a wedge of the sphere
+// is cut away and opens and shuts (uT — each sun on its own beat, facing its own way), the inside of the mouth dark. The same
+// material draws the Pac-Men on the maze floor and on the links, whose mouths are set per frame instead (uMouth: 0 shut, 1 wide,
+// and on past 1 the arcade's death, the mouth opening until nothing is left).
+function pacBodyMat(emis,col){
+  const mouth=!!(emis||col);
+  return new THREE.ShaderMaterial({uniforms:{uSun:{value:mouth?1:0},uT:{value:0},uMouth:{value:-1},uCol:{value:new THREE.Color(col||0xffffff)},uOne:{value:col?1:0},uFog:{value:0.0002}},side:mouth?THREE.DoubleSide:THREE.FrontSide,
+    vertexShader:`uniform vec3 uCol;uniform float uOne;varying vec3 vN,vV,vC,vL;varying float vD,vH;
+void main(){vec4 p=vec4(position,1.0);vec3 n=normal;vL=position;vH=0.0;
+#ifdef USE_INSTANCING
+p=instanceMatrix*p;n=mat3(instanceMatrix)*n;vH=fract(sin(dot(instanceMatrix[3].xyz,vec3(12.9898,78.233,37.719)))*43758.5453);
+#endif
+vC=uOne>0.5?uCol:vec3(1.0);
+#ifdef USE_INSTANCING_COLOR
+vC=instanceColor;
+#endif
+vec4 mv=modelViewMatrix*p;vN=normalize(normalMatrix*n);vV=normalize(-mv.xyz);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`uniform float uSun,uT,uMouth,uFog;varying vec3 vN,vV,vC,vL;varying float vD,vH;
+void main(){
+  if(uSun>0.5){float ph=vH*6.2831853,cs=cos(ph),sn=sin(ph);vec2 q=vec2(cs*vL.x+sn*vL.y,cs*vL.y-sn*vL.x);
+    float m=uMouth>=0.0?uMouth:abs(sin(uT*3.2+vH*37.0));float h=m<=1.0?m*0.8:0.8+(m-1.0)*2.4;
+    if(length(q)>0.015&&abs(atan(q.y,q.x))<h)discard;}
+  float f=exp(-uFog*uFog*vD*vD);
+  if(!gl_FrontFacing){gl_FragColor=vec4(vC*0.1*f,1.0);return;}
+  vec3 n=normalize(vN),v=normalize(vV),L=normalize(vec3(-0.35,0.55,0.76));float ndl=dot(n,L),ndv=clamp(dot(n,v),0.0,1.0);
+  vec3 c=vC*mix(0.62,1.0,smoothstep(0.0,0.12,ndl));
+  c=mix(c,vec3(1.0),smoothstep(0.93,0.96,dot(reflect(-L,n),v))*0.8);
+  c*=mix(0.22,1.0,smoothstep(0.14,0.3,ndv));
+  gl_FragColor=vec4(c*f,1.0);}`});
+}
 // TRON node bodies: identity discs. A sphere is shaded by its screen-space radius (r = √(1 − (n·v)²)), so from any angle
 // it reads as a disc: dark tinted glass, a white-hot rim, a thin inner ring and a glowing core in the group's neon colour.
 // Suns get a bigger white core and a segmented outer ring that turns (uT, advanced by the tron extras).
@@ -382,10 +490,17 @@ void main(){vec3 n=normalize(vN);float ndv=clamp(dot(n,normalize(vV)),0.0,1.0),f
     body:emis=>tronBodyMat(emis),
     wings:{base:'#00596a',mid:'#00a9c2',tip:'#48ecff',vein:'rgba(0,16,22,.85)',margin:'#063a44',spot:'rgba(225,255,255,.98)',glow:'rgba(200,255,255,.95)',shade:'rgba(0,10,14,.5)',body:0x00202a},kin:{head:0x9ff5fb,headEm:0x0a6b75,stalk:0x5fd6e2},
     pv:{tron:true},
-    features:['Light-grid floor','Light cycles & light walls','Identity-disc nodes','Light-trail links','Ride a light cycle']},
+    features:['Light-grid floor','Light cycles & light walls','Identity-disc nodes','Light-trail links','Ride a light cycle','Play TRON: click a cycle on the floor']},
+  pacman:{name:'Pac-Man',mark:'●',icon:ICO.pac,tag:'Arcade. A neon-blue maze on the floor where Pac-Man clears the dots with four ghosts on his tail, chomping suns, and links laid out in dots.',
+    css:{bg:'#000000','bg-2':'#05051a','bg-3':'#0c0c2c',border:'#1d1d9e','border-2':'#3131dc',text:'#f4f4ff',muted:'#aeb0e6',faint:'#6e70b3',accent:'#ffd21f','accent-2':'#ffe97a',sky:'#000000',lbl:'#dfe0ff','lbl-sun':'#ffe97a',halo:'#000000',font:'var(--mono)'},
+    sky:0x000000,fog:0.0002,rim:0x2323ff,ambient:0.9,stars:[[900,1.2,0xffb8ae,0.22],[110,2.2,0xffe97a,0.4]],nebula:0.03,fade:0x02020c,line:0.5,sunEmissive:0xffd21f,wire:false,monarchs:false,extras:'pac',pac:true,
+    body:emis=>pacBodyMat(emis),
+    wings:{base:'#1a1ab0',mid:'#2d2df0',tip:'#6b6bff',vein:'rgba(0,0,20,.9)',margin:'#05052a',spot:'rgba(255,233,122,.95)',glow:'rgba(255,233,122,.9)',shade:'rgba(0,0,30,.5)',body:0x05052a},kin:{head:0xffd21f,headEm:0x5a4800,stalk:0x2323ff},
+    pv:{pac:true},
+    features:['Neon maze floor','Pac-Man & four ghosts','Power pellets','Chomping suns','Dotted links','Drive a Pac-Man','Play PAC-MAN: click Pac-Man on the maze']},
 };
-// retired skins: a saved or linked "matrix" becomes Tron, its successor; any other unknown name (e.g. the old "blueprint") is the default
-const SKIN_ALIAS={matrix:'tron'};
+// retired skins: a saved or linked "matrix" becomes Tron and "blueprint" Pac-Man, their successors; any other unknown name is the default
+const SKIN_ALIAS={matrix:'tron',blueprint:'pacman'};
 const skinOf=k=>{k=String(k==null?'':k).trim().toLowerCase();k=SKIN_ALIAS[k]||k;return Object.prototype.hasOwnProperty.call(SKINS,k)?k:null;};
 const DEFAULT_SKIN=skinOf(window.__ATLAS_SKIN__)||'monarch';
 let skinKey=DEFAULT_SKIN;try{skinKey=skinOf(new URLSearchParams(location.search).get('skin'))||skinOf(localStorage.getItem('atlas.skin'))||DEFAULT_SKIN;}catch(e){}
@@ -553,14 +668,22 @@ const V3=(()=>{
   const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(-9,-9);let hover=null,pendingPick=false,selected=null;
   function idAt(hit){if(!hit)return null;return hit.object===planets?planetIds[hit.instanceId]:sunIds[hit.instanceId];}
   let hoverM=null,hoverW=null;
-  function pick(){pendingPick=false;ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects([planets,suns].filter(Boolean));
+  function pick(){pendingPick=false;if(tg||pacOn())return;ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects([planets,suns].filter(Boolean));
+    // a light cycle on the floor grid (TRON) under the pointer, unless a node is in front of it: click it to play
+    const fb=floorBikeAt(mouse.x,mouse.y);
+    if(fb>=0&&(!hits[0]||hits[0].distance>camera.position.distanceTo(tronBikes[fb].p))){if(hoverFB!==fb){hoverM=null;hoverW=null;setHover(null);hoverFB=fb;renderer.domElement.style.cursor='pointer';tip.innerHTML=`<b>${ICO.cycle}Light cycle</b><span>click to play TRON</span>`;tip.style.display='block';}return;}
+    if(hoverFB>=0){hoverFB=-1;tip.style.display='none';renderer.domElement.style.cursor='';}
+    // Pac-Man or a ghost on the maze floor (Pac-Man skin): click to play
+    const fp=floorPacAt(mouse.x,mouse.y);
+    if(fp&&(!hits[0]||hits[0].distance>camera.position.distanceTo(fp.o.position))){if(hoverPM!==fp.name){hoverM=null;hoverW=null;setHover(null);hoverPM=fp.name;renderer.domElement.style.cursor='pointer';tip.innerHTML=`<b>${ICO.pac}${esc(fp.name)}</b><span>click to play PAC-MAN</span>`;tip.style.display='block';}return;}
+    if(hoverPM){hoverPM=null;tip.style.display='none';renderer.domElement.style.cursor='';}
     // a monarch under the pointer wins over whatever is behind it (never the one you're riding — it's right in front of the camera)
     let mh=null;if(monarchGroup.visible){const h=ray.intersectObject(monarchGroup,true)[0];if(h&&(!hits[0]||h.distance<hits[0].distance)){let o=h.object;while(o&&o.parent!==monarchGroup)o=o.parent;mh=monarchs.find(m=>m.g===o)||null;if(mh===ride)mh=null;}}
     if(mh!==hoverM){hoverM=mh;if(hoverM){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML=`<b>${ICO.butterfly}Monarch</b><span>click to ride it · steer with the arrow keys or WASD</span>`;tip.style.display='block';}else{tip.style.display='none';renderer.domElement.style.cursor='';}}
     if(hoverM)return;
     // a kinesin under the pointer (only the visible, zoomed-in ones can be hit)
     let wh=null;if(walkerGroup.visible&&!mh){const h=ray.intersectObject(walkerGroup,true)[0];if(h&&(!hits[0]||h.distance<hits[0].distance)){let o=h.object;while(o&&o.parent!==walkerGroup)o=o.parent;wh=walkers.find(w=>w.g===o)||null;if(wh===walk)wh=null;}}
-    if(wh!==hoverW){hoverW=wh;if(hoverW){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML=SKIN.cycles?`<b>${ICO.cycle}Light cycle</b><span>click to ride it · arrows or WASD pick the turns</span>`:`<b>${ICO.kinesin}Kinesin</b><span>click to take it for a walk · arrows or WASD steer</span>`;tip.style.display='block';}else if(!hoverM){tip.style.display='none';renderer.domElement.style.cursor='';}}
+    if(wh!==hoverW){hoverW=wh;if(hoverW){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML=SKIN.pac?`<b>${ICO.pac}Pac-Man</b><span>click to drive it · arrows or WASD pick the turns</span>`:SKIN.cycles?`<b>${ICO.cycle}Light cycle</b><span>click to ride it · arrows or WASD pick the turns</span>`:`<b>${ICO.kinesin}Kinesin</b><span>click to take it for a walk · arrows or WASD steer</span>`;tip.style.display='block';}else if(!hoverM){tip.style.display='none';renderer.domElement.style.cursor='';}}
     if(hoverW)return;
     const id=idAt(hits[0]);if(id!==hover){setHover(id);}}
   function scaleSlot(id,k){const sl=slotOf[id];if(!sl)return;const mesh=sl.mesh==='p'?planets:suns;const r=(sl.mesh==='p'?rPlanet(id):rSun(systems.find(x=>x.sun===id)))*k;_m.makeScale(r,r,r).setPosition(pos[id]);mesh.setMatrixAt(sl.i,_m);mesh.instanceMatrix.needsUpdate=true;}
@@ -574,9 +697,10 @@ const V3=(()=>{
   renderer.domElement.addEventListener('mousemove',ev=>{mouse.set(ev.clientX/window.innerWidth*2-1,-(ev.clientY/window.innerHeight)*2+1);tip.style.left=ev.clientX+'px';tip.style.top=ev.clientY+'px';pendingPick=true;});
   renderer.domElement.addEventListener('mouseleave',()=>{setHover(null);});
   let downAt=null;
-  renderer.domElement.addEventListener('pointerdown',ev=>{downAt=[ev.clientX,ev.clientY];});
-  renderer.domElement.addEventListener('click',ev=>{if(!downAt||Math.hypot(ev.clientX-downAt[0],ev.clientY-downAt[1])>4)return;pick();if(hoverM){beginRide(hoverM);return;}if(hoverW){beginWalk(hoverW);return;}if(hover)select(hover);});
-  renderer.domElement.addEventListener('dblclick',ev=>{if(ride||walk)return;pick();if(hover)flyToSystem(sysOf[hover]);else flyHome();});
+  renderer.domElement.addEventListener('pointerdown',ev=>{downAt=[ev.clientX,ev.clientY];if(tg&&ev.pointerType!=='mouse')tgTurn(ev.clientX<window.innerWidth/2?1:-1);if(pacOn())pacCtx.swipe(ev,'down');});
+  renderer.domElement.addEventListener('pointerup',ev=>{if(pacOn())pacCtx.swipe(ev,'up');});   // PAC-MAN: a swipe steers   // in a TRON game a tap on either half of the screen turns that way
+  renderer.domElement.addEventListener('click',ev=>{if(tg||pacOn()||!downAt||Math.hypot(ev.clientX-downAt[0],ev.clientY-downAt[1])>4)return;pick();if(hoverFB>=0){tronGameStart(hoverFB);return;}if(hoverPM&&pacCtx){hoverPM=null;pacCtx.start();return;}if(hoverM){beginRide(hoverM);return;}if(hoverW){beginWalk(hoverW);return;}if(hover)select(hover);});
+  renderer.domElement.addEventListener('dblclick',ev=>{if(ride||walk||tg||pacOn())return;pick();if(hover)flyToSystem(sysOf[hover]);else flyHome();});
   function select(id){selected=id;showCard(id);}
   // ── camera ──
   let tw=null,focused=null;
@@ -652,7 +776,7 @@ const V3=(()=>{
   function start(){if(running)return;running=true;frame();}
   function stop(){running=false;}
   window.addEventListener('resize',()=>fitView(false));
-  window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName)){if(document.getElementById('skins').classList.contains('on'))return;if(ride)endRide();else if(walk)endWalk();else flyHome();}});
+  window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName)){if(document.getElementById('skins').classList.contains('on'))return;if(tg)tronGameEnd();else if(pacOn())pacCtx.exit();else if(ride)endRide();else if(walk)endWalk();else flyHome();}});
 
   // ── monarchs: a few butterflies drifting through the galaxy ──
   // Built from primitives (no model to load): a body, four wings with a
@@ -897,6 +1021,11 @@ void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(
     if(i<rb.pts.length)rb.pts.length=i;
     rb.pa.needsUpdate=true;rb.da.needsUpdate=true;rb.m.geometry.setDrawRange(0,Math.max(0,k-1)*6);}
   function disposeRibbon(rb){if(rb.m.parent)rb.m.parent.remove(rb.m);rb.m.geometry.dispose();rb.m.material.dispose();}
+  // ── Pac-Man on the links (the Pac-Man skin's riders): a yellow chomper that eats its way along, with the light cycles' controls.
+  // It rides through the same code as a light cycle, so it has the bike's shape of API: roll() works its jaw, the rest is a no-op.
+  const PAC_GEO=new THREE.SphereGeometry(1,28,20);
+  function makePacRider(u){const m=pacBodyMat(null,0xffd21f),mesh=new THREE.Mesh(PAC_GEO,m),g=new THREE.Group();mesh.scale.setScalar(u*0.95);mesh.position.z=u*0.2;g.add(mesh);let ph=0;
+    return {g,roll(d){ph+=d;m.uniforms.uMouth.value=Math.abs(Math.sin(ph*Math.PI*1.5));},near(){},setColor(){},dispose(){m.dispose();}};}
   // ── kinesins: like the motor protein, a two-footed carrier walks hand-over-hand along a connection with a
   // packet of data on its back. Only some links get one, and they only show once you're close enough to see them.
   const walkerGroup=new THREE.Group();scene.add(walkerGroup);const walkers=[];
@@ -918,10 +1047,10 @@ void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(
     for(let k=0;k<count;k++){
       const i=ok.splice(Math.floor(wRng()*ok.length),1)[0];const e=edgeList[i];
       const u=1.5*state.nsize,g=new THREE.Group();
-      if(SKIN.cycles){   // TRON: a light cycle rides the links node to node, laying its light wall behind it
-        const col=skinCol(new THREE.Color(),base[e.from].color),bike=makeCycle(col);bike.g.scale.setScalar(u*2.7);g.add(bike.g);
+      if(SKIN.cycles||SKIN.pac){   // TRON: a light cycle rides the links node to node, laying its light wall behind it (Pac-Man: a Pac-Man, no wall)
+        const col=skinCol(new THREE.Color(),base[e.from].color),bike=SKIN.pac?makePacRider(u):makeCycle(col);if(!SKIN.pac)bike.g.scale.setScalar(u*2.7);g.add(bike.g);
         const rb=makeRibbon(LITE?14:24,col,u*1.1,u*(LITE?16:28),u*1.35);walkerGroup.add(rb.m);
-        const w={g,bike,rb,u,cargo:g,L:0,period:1,lead:0,i:-1,spd:6+wRng()*3};walkerSetEdge(w,i,wRng()<0.5?e.from:e.to);w.s=wRng()*w.len;
+        const w={g,bike,rb,u,cargo:g,L:0,period:1,lead:0,i:-1,spd:6+wRng()*3,pac:!!SKIN.pac};walkerSetEdge(w,i,wRng()<0.5?e.from:e.to);w.s=wRng()*w.len;
         rb.pts.push({p:pos[w.a].clone(),n:w.n.clone()});   // the wall starts where the ride did
         walkerGroup.add(g);walkers.push(w);continue;}
       const heads=[0,1].map(()=>{const h=new THREE.Mesh(HEAD_GEO,HEAD_MAT);h.scale.setScalar(0.2*u);g.add(h);return h;});
@@ -978,12 +1107,12 @@ void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(
       walkerSetEdge(w,next!=null?next:w.i,w.b);w.s=Math.min(over,w.len*0.5);cycleCorner(w,node,_wn);
       w.lk=CYC_RM?0:Math.max(-1,Math.min(1,_wy.crossVectors(_wo,w.dir).dot(w.n)))*0.55;}   // lean into the turn it just took
     _wa.copy(pos[w.a]).addScaledVector(w.dir,w.s);
-    const dist=cam.distanceTo(_wa),px=w.u*2.2*ppu/dist;w.g.visible=px>5||ctl||w===idleW;w.rb.m.visible=w.g.visible;if(!w.g.visible){w.q=null;return;}
+    const dist=cam.distanceTo(_wa),px=w.u*2.2*ppu/dist;w.g.visible=px>5||ctl||w===idleW;w.rb.m.visible=w.g.visible&&!w.pac;if(!w.g.visible){w.q=null;return;}
     w.bike.near(w.u*2.7*ppu/dist);w.g.position.copy(_wa);_wy.crossVectors(w.n,w.dir);_wm.makeBasis(w.dir,_wy,w.n);_wq2.setFromRotationMatrix(_wm);
     if(!w.q)w.q=_wq2.clone();else w.q.slerp(_wq2,1-Math.exp(-dt*12));   // swing round a corner, don't snap
     w.lk=(w.lk||0)*Math.exp(-dt*3.5);w.lean=(w.lean||0)+((w.lk||0)-(w.lean||0))*Math.min(1,dt*10);
     w.g.quaternion.copy(w.q).multiply(_wq.setFromAxisAngle(_XA,-w.lean));
-    ribbonWrite(w.rb,_wa,w.n);}
+    if(!w.pac)ribbonWrite(w.rb,_wa,w.n);}
   // ── ride a monarch: click one and you're flying it — arrows / WASD steer, Shift boosts, Space hovers, Esc hops off ──
   const rideEl=document.getElementById('ride-hint');
   let ride=null,rideHeading=0,ridePitch=0,trick=null;const keys=new Set();
@@ -1036,7 +1165,8 @@ void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(
   // ── walk a kinesin: click one and you're it. ↑/W hurry, ↓/S turn around, ←/→ pick the link at the next node, Shift sprint, Space rest, J jump to another galaxy ──
   let walk=null,idleW=null;const _wc=new THREE.Vector3(),_ws=new THREE.Vector3(),_wt=new THREE.Vector3();
   const RIDE_HTML=document.getElementById('ride-hint').innerHTML.replace('<!--ico-->',ICO.butterfly);setHint(RIDE_HTML);
-  const WALK_HTML=()=>SKIN.cycles?ICO.cycle+'<kbd>↑</kbd><kbd>W</kbd> throttle &nbsp; <kbd>↓</kbd><kbd>S</kbd> U-turn &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next turn &nbsp; <kbd>Shift</kbd> boost &nbsp; <kbd>Space</kbd> brake &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · get off</button>'
+  const WALK_HTML=()=>SKIN.pac?ICO.pac+'<kbd>↑</kbd><kbd>W</kbd> hurry &nbsp; <kbd>↓</kbd><kbd>S</kbd> turn back &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next turn &nbsp; <kbd>Shift</kbd> boost &nbsp; <kbd>Space</kbd> brake &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · let go</button>'
+    :SKIN.cycles?ICO.cycle+'<kbd>↑</kbd><kbd>W</kbd> throttle &nbsp; <kbd>↓</kbd><kbd>S</kbd> U-turn &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next turn &nbsp; <kbd>Shift</kbd> boost &nbsp; <kbd>Space</kbd> brake &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · get off</button>'
     :ICO.kinesin+'<kbd>↑</kbd><kbd>W</kbd> hurry &nbsp; <kbd>↓</kbd><kbd>S</kbd> turn around &nbsp; <kbd>← →</kbd><kbd>A D</kbd> pick the next link &nbsp; <kbd>Shift</kbd> sprint &nbsp; <kbd>Space</kbd> rest &nbsp; <kbd>J</kbd> jump to another galaxy<button id="ride-off">Esc · let go</button>';
   function setHint(html){const el=document.getElementById('ride-hint');el.innerHTML=html;el.querySelector('#ride-off').addEventListener('click',()=>{if(ride)endRide();if(walk)endWalk();});}
   function beginWalk(w){if(!w)return;if(idle)endIdle();if(ride)endRide();walk=w;tw=null;controls.autoRotate=false;controls.enabled=false;keys.clear();
@@ -1347,6 +1477,7 @@ gl_FragColor=vec4(uColor*(0.8+v*0.6),al);}`;
     U.uOp.value=base*gain*k;glow.visible=k>0.01;
     if(lines){lines.visible=k<0.99;lines.material.opacity=base*(1-k*k);}}
   function buildExtras(){
+    if(tg)tronGameEnd(true);   // a rebuild (new skin, filters, spacing) ends a game in progress
     // extras.remove(), not children.pop(): pop() left each object's .parent pointing at extras, so the old skin's per-frame hook
     // ("am I still in the scene?") kept answering yes. TRON's then ran on under every later skin, hid its links and drew its
     // additive light trails in their place — Monarch after TRON was a white blur until a reload.
@@ -1455,6 +1586,7 @@ void main(){float l=dot(vC,vec3(0.3,0.5,0.2));vec3 c=mix(vC,mix(uA,uB,vT)*l*1.7,
     }
     if(SKIN.extras==='monarch')deepSky();
     if(SKIN.extras==='tron')tronBuild();
+    if(SKIN.extras==='pac')pacBuild();
   }
   // ── monarch: the deep-space sky ──
   // A sky dome with a milky band, colour-temperature stars that twinkle, soft dust nebulae around the systems,
@@ -1739,8 +1871,387 @@ void main(){float x=fract(vS+uT*(0.16+vS*0.12));float d=fract(x-vT);float p=exp(
       if(suns&&suns.material.uniforms&&suns.material.uniforms.uT)suns.material.uniforms.uT.value=T.t;
       if(halo)halo.uScale.value=sc();
       const cp=camera.position;dome.position.copy(cp);const h=Math.max(1,cp.z-z0),fs=Math.max(h*80,R*40);floor.position.set(cp.x,cp.y,z0);floor.scale.set(fs,fs,1);
-      bikeStep(dt);};
+      if(tg)tronGameStep(dt);else bikeStep(dt);};
   }
+  // ── PAC-MAN: the arcade ──
+  // Under the galaxy, a maze floor: a symmetric maze (carved from a seed, braided so there are no dead ends, a ghost house in the
+  // middle) drawn once to a canvas as neon-blue tube walls. A dot on every corridor tile, a power pellet in each corner. Pac-Man
+  // clears the dots with Blinky, Pinky, Inky and Clyde on his tail, each hunting its own way and scattering to its corner now
+  // and then, like the arcade; a power pellet turns them blue and edible, an eaten ghost's eyes run home, and a cleared board
+  // flashes and fills up again. Above it the links are laid out in dots that a chomp clears as it runs along them (plain lines
+  // from far off, like TRON's trails). Per frame the CPU moves five sprites-worth of meshes; the dots are one draw.
+  // while you play PAC-MAN the camera looks down through the galaxy onto the board, so the galaxy steps out of the way
+  let galaxyHidden=false;
+  function galaxyVis(v){galaxyHidden=!v;[planets,suns].forEach(o=>{if(o)o.visible=v;});glows.forEach(g=>{g.visible=v;});walkerGroup.visible=v&&document.getElementById('walkers').checked;if(v&&lines)lines.visible=true;}
+  let pacCtx=null;   // the running arcade: its game controls and what can be clicked
+  const GHOST_COLS=[0xff1a1a,0xffb8ff,0x19ffff,0xffb852],GHOST_NAMES=['Blinky','Pinky','Inky','Clyde'];
+  const GHOST_GEO=(()=>{   // a dome on a short skirt with a scalloped hem: unit width, up +z, the hem's points at z=0
+    const pts=[new THREE.Vector2(0.5,0)];for(let i=0;i<=12;i++){const a=i/12*Math.PI/2;pts.push(new THREE.Vector2(Math.max(1e-3,Math.cos(a)*0.5),0.5+Math.sin(a)*0.5));}
+    const g=new THREE.LatheGeometry(pts,42),p=g.attributes.position;
+    for(let i=0;i<p.count;i++)if(p.getY(i)<1e-4){const a=Math.atan2(p.getX(i),p.getZ(i));p.setY(i,-0.13*(0.5+0.5*Math.cos(a*7)));}
+    g.rotateX(Math.PI/2);g.translate(0,0,0.13);g.computeVertexNormals();return g;})();
+  const EYE_GEO=new THREE.SphereGeometry(1,12,10);
+  function makeGhost(col){
+    const g=new THREE.Group(),c=new THREE.Color(col),mat=new THREE.MeshLambertMaterial({color:c.clone(),emissive:c.clone().multiplyScalar(0.5),side:THREE.DoubleSide});
+    const body=new THREE.Mesh(GHOST_GEO,mat);g.add(body);
+    const white=new THREE.MeshLambertMaterial({color:0xffffff,emissive:0x777777}),blue=new THREE.MeshBasicMaterial({color:0x2121ff});
+    const whites=[],pupils=[];
+    for(const sd of [-1,1]){const e=new THREE.Mesh(EYE_GEO,white);e.scale.set(0.12,0.11,0.155);e.position.set(0.36,sd*0.17,0.72);g.add(e);whites.push(e);
+      const q=new THREE.Mesh(EYE_GEO,blue);q.scale.setScalar(0.068);q.position.set(0.47,sd*0.17,0.7);g.add(q);pupils.push(q);}
+    return {g,body,mat,whites,pupils,base:c,dispose(){mat.dispose();white.dispose();blue.dispose();}};}
+  function pacBuild(){
+    const R=Math.max(60,galaxyR),rm=CYC_RM,z0=-R*1.02;
+    // ── the maze: tiles, W×H, a cell on every odd/odd tile; the middle column is a cell column so the mirror joins up ──
+    const W=LITE?27:35,H=15,mid=(W-1)/2,hy=(H-1)/2,tile=R*2.45/W,yc=-R*0.075,rng=seeded(4242);
+    const K=new Uint8Array(W*H),at=(x,y)=>y*W+x;   // 0 wall, 1 open, 2 ghost house, 3 house door
+    const inB=(x,y)=>x>0&&y>0&&x<W-1&&y<H-1;
+    const mirror=()=>{for(let y=0;y<H;y++)for(let x=mid+1;x<W;x++)K[at(x,y)]=K[at(W-1-x,y)];};
+    const seen=new Set(['1,1']),stack=[[1,1]];K[at(1,1)]=1;
+    while(stack.length){const [x,y]=stack[stack.length-1];
+      const nb=[[2,0],[-2,0],[0,2],[0,-2]].map(([dx,dy])=>[x+dx,y+dy,dx,dy]).filter(([a,b])=>a>=1&&a<=mid&&b>=1&&b<=H-2&&!seen.has(a+','+b));
+      if(!nb.length){stack.pop();continue;}const [a,b,dx,dy]=nb[Math.floor(rng()*nb.length)];K[at(x+dx/2,y+dy/2)]=1;K[at(a,b)]=1;seen.add(a+','+b);stack.push([a,b]);}
+    // a few extra openings, so there are loops to run
+    for(let y=1;y<H-1;y++)for(let x=1;x<=mid;x++)if(!K[at(x,y)]&&(x+y)%2===1&&rng()<0.14)K[at(x,y)]=1;
+    // the ghost house: a box in the middle with a door on top, a ring of corridor round it
+    const house=()=>{for(let y=hy-2;y<=hy+2;y++)for(let x=mid-4;x<=mid;x++)K[at(x,y)]=0;
+      for(let x=mid-4;x<=mid;x++){K[at(x,hy-2)]=1;K[at(x,hy+2)]=1;}for(let y=hy-2;y<=hy+2;y++)K[at(mid-4,y)]=1;
+      for(let x=mid-2;x<=mid;x++)K[at(x,hy)]=2;K[at(mid,hy-1)]=3;K[at(mid,hy-3)]=1;K[at(mid,hy+3)]=1;};
+    // braid: no dead ends anywhere (a corridor that stops gets knocked through to a neighbouring cell)
+    const braid=()=>{for(let y=1;y<H-1;y+=2)for(let x=1;x<=mid;x+=2){if(K[at(x,y)]!==1)continue;
+      const n=[[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy])=>{const v=K[at(x+dx,y+dy)];return v===1;}).length;if(n>1)continue;
+      const opts=[[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy])=>inB(x+dx*2,y+dy*2)&&x+dx*2<=mid+1&&K[at(x+dx,y+dy)]===0&&K[at(x+dx*2,y+dy*2)]===1&&!(Math.abs(x+dx-mid)<=4&&Math.abs(y+dy-hy)<=2));
+      if(opts.length){const [dx,dy]=opts[Math.floor(rng()*opts.length)];K[at(x+dx,y+dy)]=1;}}};
+    house();mirror();braid();mirror();house();mirror();
+    const walk=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&K[at(x,y)]===1;
+    const wx=x=>(x-mid)*tile,wy=y=>(hy-y)*tile+yc;
+    // ── the board, drawn once: neon tubes (a blue stroke, a black one inside it) along the wall tiles; the white copy is the flash ──
+    const TP=LITE?28:56;
+    const draw=(glow,edge)=>{const cv=document.createElement('canvas');cv.width=W*TP;cv.height=H*TP;const g=cv.getContext('2d');g.fillStyle='#000';g.fillRect(0,0,cv.width,cv.height);
+      const wall=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&K[at(x,y)]===0,p=new Path2D();
+      for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!wall(x,y))continue;const cx=(x+0.5)*TP,cy=(y+0.5)*TP;let any=false;
+        if(wall(x+1,y)){p.moveTo(cx,cy);p.lineTo(cx+TP,cy);any=true;}if(wall(x,y+1)){p.moveTo(cx,cy);p.lineTo(cx,cy+TP);any=true;}
+        if(!any&&!wall(x-1,y)&&!wall(x,y-1)){p.moveTo(cx-0.01,cy);p.lineTo(cx+0.01,cy);}}
+      g.lineCap='round';g.lineJoin='round';
+      if(!LITE){g.shadowColor=glow;g.shadowBlur=TP*0.45;g.strokeStyle=edge;g.lineWidth=TP*0.42;g.stroke(p);g.shadowBlur=0;}
+      g.strokeStyle=edge;g.lineWidth=TP*0.42;g.stroke(p);g.strokeStyle='#000';g.lineWidth=TP*0.42-TP*0.13;g.stroke(p);
+      g.strokeStyle='#ffb8ff';g.lineWidth=TP*0.11;g.beginPath();g.moveTo((mid+0.02)*TP,(hy-0.5)*TP);g.lineTo((mid+0.98)*TP,(hy-0.5)*TP);g.stroke();   // the house door
+      const t=new THREE.CanvasTexture(cv);t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return t;};
+    const texBlue=draw('#2b2bff','#2929ff'),texWhite=draw('#ffffff','#e8e8ff');
+    const add=o=>{o.frustumCulled=false;extras.add(o);return o;};
+    const boardMat=new THREE.MeshBasicMaterial({map:texBlue,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+    const board=add(new THREE.Mesh(new THREE.PlaneGeometry(W*tile,H*tile),boardMat));board.position.set(0,yc,z0);board.renderOrder=-9;
+    // ── dots and power pellets: one Points draw, eaten ones switched off ──
+    const dots=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(walk(x,y)&&!(Math.abs(x-mid)<=4&&Math.abs(y-hy)<=1))dots.push([x,y]);
+    const corner=(cx,cy)=>{let b=null,bd=1e9;for(const [x,y] of dots){const d=Math.abs(x-cx)+Math.abs(y-cy);if(d<bd){bd=d;b=x+','+y;}}return b;};
+    const power=new Set([corner(1,1),corner(W-2,1),corner(1,H-2),corner(W-2,H-2)]);
+    const DP=new Float32Array(dots.length*3),DOn=new Float32Array(dots.length).fill(1),DBig=new Float32Array(dots.length),dotAt=new Map();
+    dots.forEach(([x,y],i)=>{DP[i*3]=wx(x);DP[i*3+1]=wy(y);DP[i*3+2]=z0+tile*0.2;DBig[i]=power.has(x+','+y)?1:0;dotAt.set(x+','+y,i);});
+    const dg=new THREE.BufferGeometry();dg.setAttribute('position',new THREE.BufferAttribute(DP,3));const onA=new THREE.BufferAttribute(DOn,1);onA.setUsage(THREE.DynamicDrawUsage);dg.setAttribute('aOn',onA);dg.setAttribute('aBig',new THREE.BufferAttribute(DBig,1));
+    const PU={uS:{value:1},uT:{value:0},uFog:{value:SKIN.fog}};
+    add(new THREE.Points(dg,new THREE.ShaderMaterial({uniforms:PU,transparent:true,depthWrite:false,
+      vertexShader:`attribute float aOn,aBig;uniform float uS;varying float vOn,vBig,vD;void main(){vOn=aOn;vBig=aBig;vec4 mv=modelViewMatrix*vec4(position,1.0);vD=-mv.z;gl_PointSize=max(1.6,uS*(aBig>0.5?0.5:0.16)/vD);gl_Position=projectionMatrix*mv;}`,
+      fragmentShader:`uniform float uT,uFog;varying float vOn,vBig,vD;void main(){if(vOn<0.5)discard;float d=length(gl_PointCoord-0.5);if(d>0.5)discard;if(vBig>0.5&&fract(uT*2.2)>0.55)discard;
+ gl_FragColor=vec4(vec3(1.0,0.76,0.7)*exp(-uFog*uFog*vD*vD),1.0-smoothstep(0.38,0.5,d));}`})));
+    let left=dots.length;
+    // ── Pac-Man and the ghosts ──
+    const DIRS=[[1,0],[0,-1],[-1,0],[0,1]];   // maze coords (y runs down the board): right, up, left, down
+    // (inside a group: buildExtras frees its direct children's geometry and maps, and the sphere and the glow texture are shared)
+    const pacG=add(new THREE.Group()),pacMat=pacBodyMat(null,0xffd21f),pacMesh=new THREE.Mesh(PAC_GEO,pacMat);pacMesh.scale.setScalar(tile*0.34);pacMesh.renderOrder=2;pacG.add(pacMesh);
+    const pacGlow=pacG.add(new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffd21f,transparent:true,opacity:0.3,depthWrite:false,blending:THREE.AdditiveBlending})));const glowSp=pacG.children[1];glowSp.scale.set(tile*1.6,tile*1.6,1);
+    const P0=[mid,hy+4<=H-2&&walk(mid,hy+4)?hy+4:hy+3];
+    const pac={x:P0[0],y:P0[1],d:2,u:0,spd:4.2,chomp:0,dead:-1,flash:-1};
+    const ghosts=GHOST_COLS.map((c,k)=>{const m=makeGhost(c);m.g.scale.setScalar(tile*0.64);extras.add(m.g);
+      const home=k===0?[mid,hy-2]:[[mid,hy],[mid-2,hy],[mid-1,hy]][k-1];
+      return Object.assign(m,{k,home,x:home[0],y:home[1],d:2,u:0,fright:0,gone:false,path:null,wait:k===0?0:2+k*2.5,
+        corner:[[W-2,0],[1,0],[W-2,H-1],[1,H-1]][k],yaw:Math.PI,bob:k*1.7});});
+    const reset=()=>{Object.assign(pac,{x:P0[0],y:P0[1],d:2,u:0,dead:-1});ghosts.forEach(G=>{Object.assign(G,{x:G.home[0],y:G.home[1],d:2,u:0,fright:0,gone:false,path:null,wait:G.k===0?0:1.5+G.k*2.2});});};
+    let T=0,mode=0;
+    const opts=(e,rev)=>[0,1,2,3].filter(k=>(rev||k!==(e.d+2)%4)&&walk(e.x+DIRS[k][0],e.y+DIRS[k][1]));
+    // distance to the nearest dot from (x,y), never back through where Pac-Man stands
+    const dotDist=(x,y,bx,by)=>{if(dotAt.has(x+','+y)&&DOn[dotAt.get(x+','+y)])return 0;const q=[[x,y,0]],vis=new Set([x+','+y,bx+','+by]);
+      while(q.length){const [a,b,d]=q.shift();if(d>60)break;for(const [dx,dy] of DIRS){const nx=a+dx,ny=b+dy,k=nx+','+ny;if(vis.has(k)||!walk(nx,ny))continue;vis.add(k);
+        const i=dotAt.get(k);if(i!=null&&DOn[i])return d+1;q.push([nx,ny,d+1]);}}return 80;};
+    let pg=null;   // the game, while you're playing it (see pacGame below)
+    const pacChoose=()=>{if(pg){const w=pg.want;return w!=null&&walk(pac.x+DIRS[w][0],pac.y+DIRS[w][1])?w:pac.d;}
+      let best=pac.d,bs=-1e9;const any=opts(pac,true);
+      for(const k of any){const nx=pac.x+DIRS[k][0],ny=pac.y+DIRS[k][1];let s=-dotDist(nx,ny,pac.x,pac.y)+(k===pac.d?0.8:0)-(k===(pac.d+2)%4?4:0);
+        for(const G of ghosts){if(G.gone||G.path||G.wait>0)continue;const d=Math.abs(G.x-nx)+Math.abs(G.y-ny);s+=G.fright>0?Math.max(0,8-d)*1.5:d<=4?-(5-d)*12:0;}
+        s+=rng()*1.5;if(s>bs){bs=s;best=k;}}return best;};
+    const target=G=>{if(G.gone)return [mid,hy-2];if(mode===0)return G.corner;const px=pac.x,py=pac.y,D=DIRS[pac.d];
+      if(G.k===0)return [px,py];if(G.k===1)return [px+D[0]*4,py+D[1]*4];
+      if(G.k===2){const b=ghosts[0];return [2*(px+D[0]*2)-b.x,2*(py+D[1]*2)-b.y];}
+      return Math.hypot(G.x-px,G.y-py)>8?[px,py]:G.corner;};
+    const ghostChoose=G=>{let o=opts(G,false);if(!o.length)o=opts(G,true);if(G.fright>0&&!G.gone)return o[Math.floor(rng()*o.length)];
+      const [tx,ty]=target(G);let best=o[0],bd=1e9;for(const k of o){const nx=G.x+DIRS[k][0],ny=G.y+DIRS[k][1],d=(nx-tx)*(nx-tx)+(ny-ty)*(ny-ty);if(d<bd){bd=d;best=k;}}return best;};
+    const eat=()=>{const i=dotAt.get(pac.x+','+pac.y);if(i==null||!DOn[i])return;DOn[i]=0;onA.needsUpdate=true;left--;if(pg)pg.score+=DBig[i]?50:10;
+      if(DBig[i]){if(pg)pg.chain=0;ghosts.forEach(G=>{if(!G.gone){G.fright=pg?Math.max(2,7-(pg.level-1)):7;if(!G.path&&G.wait<=0)G.d=(G.d+2)%4;}});}
+      if(!left)pac.flash=0;};
+    // move an entity along the corridors; at each tile centre it picks its next way
+    const stepE=(e,v,choose,arrive)=>{if(e.u===0&&!walk(e.x+DIRS[e.d][0],e.y+DIRS[e.d][1])){e.d=choose();if(!walk(e.x+DIRS[e.d][0],e.y+DIRS[e.d][1]))return;}e.u+=v;
+      for(let g=0;e.u>=1&&g<4;g++){e.u-=1;e.x+=DIRS[e.d][0];e.y+=DIRS[e.d][1];if(arrive)arrive();if(e.path){e.u=0;return;}e.d=choose();if(!walk(e.x+DIRS[e.d][0],e.y+DIRS[e.d][1])){e.u=0;break;}}};
+    // a scripted walk through the house (out of it, or the eyes back in), tile by tile, walls or not
+    const stepPath=(G,v)=>{G.u+=v;while(G.path&&G.u>=1){G.u-=1;G.x=G.path[0][0];G.y=G.path[0][1];G.path.shift();
+        if(!G.path.length){G.path=null;G.u=0;if(G.gone){G.gone=false;G.fright=0;G.wait=1.2;}else{G.d=1;G.d=ghostChoose(G);}break;}}
+      if(G.path){const [nx,ny]=G.path[0];G.d=nx>G.x?0:nx<G.x?2:ny<G.y?1:3;}};
+    const place=(e,obj,zOff)=>{const D=DIRS[e.d],fx=e.x+D[0]*e.u,fy=e.y+D[1]*e.u;obj.position.set(wx(fx),wy(fy),z0+zOff);
+      let dy=Math.atan2(-D[1],D[0])-(e.yaw||0);dy-=Math.round(dy/(Math.PI*2))*Math.PI*2;e.yaw=(e.yaw||0)+dy*0.35;obj.rotation.set(0,0,e.yaw);return [fx,fy];};
+    const own=board,sc=()=>(renderer.domElement.height/2)/Math.tan(camera.fov*Math.PI/360);
+    // links laid out in dots: the same buffers as the real links (hover highlights and focus dimming land), additive, with a chomp
+    // running along each link clearing the dots behind it
+    let pel=null,pelOf=null,few=false;const LU={uOp:{value:0.6},uT:{value:0},uFog:{value:SKIN.fog},uSp:{value:2.4*state.nsize},uV:{value:9*state.nsize}};
+    const attach=()=>{
+      if(pel){extras.remove(pel);pel.geometry.dispose();pel.material.dispose();pel=null;}
+      pelOf=lines;if(!lines||!edgeGeom)return;
+      const pa=edgeGeom.attributes.position,n=pa.count;few=n<800;const A=new Float32Array(n),S=new Float32Array(n),Ln=new Float32Array(n);
+      for(let i=0;i<n;i+=2){A[i+1]=1;S[i]=S[i+1]=((i>>1)*0.6180339)%1;Ln[i]=Ln[i+1]=Math.hypot(pa.getX(i+1)-pa.getX(i),pa.getY(i+1)-pa.getY(i),pa.getZ(i+1)-pa.getZ(i));}
+      const g=new THREE.BufferGeometry();g.setAttribute('position',pa);g.setAttribute('color',edgeColor);g.setAttribute('aT',new THREE.BufferAttribute(A,1));g.setAttribute('aS',new THREE.BufferAttribute(S,1));g.setAttribute('aL',new THREE.BufferAttribute(Ln,1));
+      pel=add(new THREE.LineSegments(g,new THREE.ShaderMaterial({uniforms:LU,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+        vertexShader:`attribute float aT,aS,aL;varying vec3 vC;varying float vT,vS,vL,vD;void main(){vC=color;vT=aT;vS=aS;vL=aL;vec4 mv=modelViewMatrix*vec4(position,1.0);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
+        fragmentShader:`uniform float uOp,uT,uFog,uSp,uV;varying vec3 vC;varying float vT,vS,vL,vD;
+void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
+ float hs=mod(uT*uV+vS*997.0,vL+uV*4.0),bh=hs-s,eaten=step(0.0,bh)*step(bh,vL*0.6+uSp),head=1.0-smoothstep(0.0,uSp*0.9,abs(bh));
+ vec3 c=mix(vC,vec3(1.0,0.74,0.68),0.55)*1.3*dm*(1.0-eaten)+vec3(1.0,0.84,0.12)*head*2.2;
+ gl_FragColor=vec4(c,min(1.0,uOp*max(dm*(1.0-eaten),head)*exp(-uFog*uFog*vD*vD)));}`})));};
+    // ── PAC-MAN, the game: click Pac-Man (or a ghost) on the maze and it's yours — WELCOME TO PAC-MAN. The board fills up, the
+    // camera rises over it, READY!, and you steer with the arrows (or a swipe). Three lives; dots 10, power pellets 50, ghosts
+    // 200-400-800-1600 on one pellet; clear the board and the next level is faster with shorter blue time. Esc leaves.
+    const hiKey='atlas.pac.hi';let hi=0;try{hi=+localStorage.getItem(hiKey)||0;}catch(e){}
+    const pgDom=()=>{let el=document.getElementById('pac-game');if(el)return el;
+      document.body.insertAdjacentHTML('beforeend','<div id="pac-game"><div class="pg-hud"><span class="pg-score"></span><span class="pg-hi"></span><span class="pg-lives"></span><span class="pg-lvl"></span></div><div class="pg-ready">READY!</div><div class="pg-card"></div>'
+        +'<div class="pg-pad"><button data-d="1" aria-label="Up">▲</button><button data-d="2" aria-label="Left">◀</button><button data-d="0" aria-label="Right">▶</button><button data-d="3" aria-label="Down">▼</button></div></div>');
+      el=document.getElementById('pac-game');el.querySelectorAll('.pg-pad button').forEach(b=>b.addEventListener('pointerdown',ev=>{ev.preventDefault();screenSteer(+b.dataset.d);}));return el;};
+    const pgCard=html=>{const el=pgDom().querySelector('.pg-card');el.innerHTML=html;el.classList.toggle('on',!!html);
+      el.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.act==='go')pgGo();else pgEnd();}));const go=el.querySelector('[data-act="go"]');if(go)try{go.focus({preventScroll:true});}catch(e){}};
+    const PAC_SVG='<svg viewBox="0 0 120 20" aria-hidden="true"><path d="M10 10L18.2 5.4A9.4 9.4 0 1 0 18.2 14.6Z" fill="#ffd21f"/><g fill="#ffb8ae"><circle cx="30" cy="10" r="1.8"/><circle cx="42" cy="10" r="1.8"/><circle cx="54" cy="10" r="1.8"/><circle cx="66" cy="10" r="4"/></g>'
+      +[['#ff1a1a',82],['#ffb8ff',96],['#19ffff',110]].map(([c,x])=>`<g transform="translate(${x} 10)"><path d="M-6.5 7V-1A6.5 6.5 0 0 1 6.5 -1V7L4.3 4.8L2.2 7L0 4.8L-2.2 7L-4.3 4.8Z" fill="${c}"/><circle cx="-2.4" cy="-1" r="2" fill="#fff"/><circle cx="2.4" cy="-1" r="2" fill="#fff"/><circle cx="-3.1" cy="-.8" r="1" fill="#2121ff"/><circle cx="1.7" cy="-.8" r="1" fill="#2121ff"/></g>`).join('')+'</svg>';
+    function pacStart(){
+      if(pg)return;if(idle)endIdle();if(ride)endRide();if(walk)endWalk();tw=null;setHover(null);tip.style.display='none';renderer.domElement.style.cursor='';
+      pg={phase:'intro',score:0,lives:3,level:1,want:null,chain:0,ready:0,from:[camera.position.clone(),controls.target.clone()],sw:null};
+      DOn.fill(1);onA.needsUpdate=true;left=dots.length;pac.flash=-1;boardMat.map=texBlue;reset();
+      controls.enabled=false;controls.autoRotate=false;document.body.classList.add('pac-on');pgDom();fitView(false);galaxyVis(false);
+      pgCard(`<div class="pg-art">${PAC_SVG}</div><div class="pg-title"><small>Welcome to</small><b>PAC-MAN</b></div>`
+        +`<p>Clear every dot in the maze. Blinky, Pinky, Inky and Clyde are after you — eat a power pellet and for a few seconds you can eat them back.</p>`
+        +`<div class="pg-keys"><span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> steer</span><span><kbd>Esc</kbd> leave</span></div><div class="pg-touch">On a phone: swipe to steer</div>`
+        +`<div class="pg-act"><button data-act="go">Play <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit</button></div>`);}
+    function pgGo(){if(!pg||(pg.phase!=='intro'&&pg.phase!=='over'))return;
+      if(pg.phase==='over'){Object.assign(pg,{score:0,lives:3,level:1,chain:0});DOn.fill(1);onA.needsUpdate=true;left=dots.length;reset();}
+      pg.phase='play';pg.ready=2.2;pg.want=null;pgCard('');document.body.classList.add('pac-play');}
+    function pgOver(){pg.phase='over';document.body.classList.remove('pac-play');if(pg.score>hi){hi=pg.score;try{localStorage.setItem(hiKey,String(hi));}catch(e){}}
+      pgCard(`<div class="pg-title over"><b>GAME OVER</b></div><p>Score <b>${pg.score}</b> · level ${pg.level}${pg.score>=hi&&pg.score>0?' · a new high score':' · high score '+hi}</p>`
+        +`<div class="pg-act"><button data-act="go">Play again <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit <kbd>Esc</kbd></button></div>`);}
+    function pgEnd(silent){const G=pg;if(!G)return;pg=null;galaxyVis(true);document.body.classList.remove('pac-on','pac-play');pgCard('');controls.enabled=true;controls.autoRotate=false;lastInput=performance.now();fitView(false);
+      if(!silent)flyTo(G.from[0],G.from[1],1300);}
+    function pacSteer(d){if(!pg||pg.phase!=='play')return;pg.want=d;}
+    // the camera over the whole board, tipped a little toward you
+    const _pgP=new THREE.Vector3(),_pgT=new THREE.Vector3();
+    // (on a tall screen the board turns on its side, long way up, so it fills a phone — the arrows and swipes turn with it)
+    function pgCam(dt){const rot=pg.rot=camera.aspect<0.85,th=Math.tan(camera.fov*Math.PI/360),bw=(rot?H:W)*tile/2/(th*camera.aspect),bh=(rot?W:H)*tile/2/th,d=Math.max(bw,bh*1.25)*1.08,tilt=rot?0.22:0.36;
+      if(rot){_pgT.set(tile*0.4,yc,z0);_pgP.set(-d*Math.sin(tilt),yc,z0+d*Math.cos(tilt));}else{_pgT.set(0,yc+tile*0.4,z0);_pgP.set(0,yc-d*Math.sin(tilt),z0+d*Math.cos(tilt));}
+      const k=1-Math.exp(-dt*3);camera.position.lerp(_pgP,k);controls.target.lerp(_pgT,k);}
+    const screenSteer=d=>pacSteer(pg&&pg.rot?(d+3)%4:d);
+    function pgHud(){const el=pgDom(),pad=n=>String(n).padStart(5,'0'),set=(c,v)=>{const e=el.querySelector(c);if(e.textContent!==v)e.textContent=v;};
+      set('.pg-score','1UP '+pad(pg.score));set('.pg-hi','HIGH '+pad(Math.max(hi,pg.score)));set('.pg-lives','ᗧ'.repeat(Math.max(0,pg.lives-1)));set('.pg-lvl','LEVEL '+pg.level);
+      el.querySelector('.pg-ready').classList.toggle('on',pg.phase==='play'&&pg.ready>0);}
+    pacCtx={pac,ghosts,left:()=>left,W,H,tile,start:pacStart,go:()=>pgGo(),steer:pacSteer,exit:()=>pgEnd(),playing:()=>!!pg,
+      state:()=>pg?{phase:pg.phase,score:pg.score,lives:pg.lives,level:pg.level,left,pac:[pac.x,pac.y,pac.d],dead:pac.dead}:null,
+      sim(sec){for(let t=0;t<sec&&pg;t+=0.05)extras.userData.step(0.05);},targets:()=>[pacMesh].concat(ghosts.map(G=>G.g)),
+      swipe(ev,phase){if(!pg||pg.phase!=='play')return;if(phase==='down')pg.sw=[ev.clientX,ev.clientY];else if(pg.sw){const dx=ev.clientX-pg.sw[0],dy=ev.clientY-pg.sw[1];pg.sw=null;if(Math.hypot(dx,dy)>18)screenSteer(Math.abs(dx)>Math.abs(dy)?(dx>0?0:2):(dy>0?3:1));}},
+      key(k){if(!pg)return false;const m={ArrowRight:0,d:0,ArrowUp:1,w:1,ArrowLeft:2,a:2,ArrowDown:3,s:3}[k];if(m!=null){screenSteer(m);return true;}if((k==='Enter'||k===' ')&&pg.phase!=='play'){pgGo();return true;}return false;}};
+    extras.userData.step=(dt)=>{
+      if(!own.parent){if(pg)pgEnd(true);extras.userData.step=null;ghosts.forEach(G=>G.dispose());pacMat.dispose();glowSp.material.dispose();texWhite.dispose();texBlue.dispose();pacCtx=null;return;}   // the skin changed and buildExtras cleared us
+      if(lines!==pelOf)attach();
+      if(pel&&lines)crossFade(pel,LU,few,few?1.15:0.8);
+      if(pg&&lines){lines.visible=false;if(pel)pel.visible=false;}
+      if(!rm)T+=dt;LU.uT.value=T;PU.uT.value=T;PU.uS.value=tile*sc();
+      if(suns&&suns.material.uniforms&&suns.material.uniforms.uT)suns.material.uniforms.uT.value=T;
+      if(rm)dt=0;
+      mode=(T%27)<7?0:1;   // scatter for 7 s, then chase for 20
+      if(pac.flash>=0){   // board cleared: it flashes, then fills up again
+        pac.flash+=dt;boardMat.map=Math.floor(pac.flash*4)%2?texWhite:texBlue;
+        if(pac.flash>2.2){pac.flash=-1;boardMat.map=texBlue;DOn.fill(1);onA.needsUpdate=true;left=dots.length;reset();if(pg){pg.level++;pg.ready=2.2;pg.want=null;}}}
+      else if(pac.dead>=0){pac.dead+=dt;pacMat.uniforms.uMouth.value=Math.min(2,1+pac.dead/1.1);ghosts.forEach(G=>{G.g.visible=pac.dead<0.3;});
+        if(pac.dead>1.9){if(pg){pg.lives--;pg.want=null;if(pg.lives<=0){pac.dead=-1;pgOver();}else{reset();pg.ready=2.2;}}else reset();}}
+      else if(pg&&(pg.phase!=='play'||pg.ready>0)){if(pg.phase==='play')pg.ready-=dt;pacMat.uniforms.uMouth.value=0.35;ghosts.forEach(G=>{G.g.visible=true;});}   // intro, READY! and game over: the board holds still
+      else{
+        const lv=pg?1+0.07*(pg.level-1):1;
+        if(pg&&pg.want===(pac.d+2)%4&&pac.u>0){pac.x+=DIRS[pac.d][0];pac.y+=DIRS[pac.d][1];pac.u=1-pac.u;pac.d=pg.want;}   // turn back on the spot, as in the arcade
+        const bx=pac.x+DIRS[pac.d][0]*pac.u,by=pac.y+DIRS[pac.d][1]*pac.u;stepE(pac,pac.spd*lv*dt,pacChoose,eat);
+        const moved=Math.abs(pac.x+DIRS[pac.d][0]*pac.u-bx)+Math.abs(pac.y+DIRS[pac.d][1]*pac.u-by);pac.chomp+=moved;if(moved>1e-4||!pg)pacMat.uniforms.uMouth.value=Math.abs(Math.sin(pac.chomp*Math.PI*2));
+        for(const G of ghosts){G.g.visible=true;
+          if(G.path){stepPath(G,(G.gone?9:2.4)*dt);continue;}
+          if(G.wait>0){G.wait-=dt;G.fright=Math.max(0,G.fright-dt);if(G.wait<=0){const out=[];for(let x=G.x;x!==mid;x+=Math.sign(mid-x))out.push([x+Math.sign(mid-x),G.y]);for(let y=G.y-1;y>=hy-2;y--)out.push([mid,y]);G.path=out;G.u=0;if(!out.length){G.path=null;}}continue;}
+          G.fright=Math.max(0,G.fright-dt);
+          stepE(G,(G.gone?9:G.fright>0?2.3:3.9*Math.min(1.35,lv))*dt,()=>ghostChoose(G),()=>{if(G.gone&&G.x===mid&&G.y===hy-2)G.path=[[mid,hy-1],[mid,hy]];});}
+        // Pac-Man meets a ghost: a blue one is eaten (its eyes run home), any other catches him
+        const [px,py]=[pac.x+DIRS[pac.d][0]*pac.u,pac.y+DIRS[pac.d][1]*pac.u];
+        for(const G of ghosts){if(G.gone||G.wait>0||G.path)continue;const gx=G.x+DIRS[G.d][0]*G.u,gy=G.y+DIRS[G.d][1]*G.u;
+          if(Math.hypot(gx-px,gy-py)<0.6){if(G.fright>0){G.gone=true;G.fright=0;if(pg){pg.score+=200<<Math.min(3,pg.chain);pg.chain++;}}else{pac.dead=0;break;}}}}
+      place(pac,pacMesh,tile*0.34);glowSp.position.copy(pacMesh.position);pacMesh.visible=pacMat.uniforms.uMouth.value<1.99;
+      for(const G of ghosts){
+        const inHouse=G.wait>0&&!G.path,bob=inHouse?Math.sin(T*5+G.bob)*0.18:0;
+        if(inHouse){G.g.position.set(wx(G.x),wy(G.y)+bob*tile,z0);G.g.rotation.set(0,0,Math.PI/2*(bob>0?1:-1));}else place(G,G.g,0);
+        G.g.position.z=z0+Math.sin(T*6+G.bob)*tile*0.03;
+        const fr=G.fright>0&&!G.gone,blink=fr&&G.fright<2&&Math.floor(T*6)%2;
+        G.body.visible=!G.gone;G.mat.color.set(fr?(blink?0xffffff:0x2424ff):G.base);G.mat.emissive.copy(G.mat.color).multiplyScalar(0.5);
+        G.pupils.forEach(p=>p.visible=!fr);}
+      if(pg){pgCam(dt);pgHud();}
+    };
+    extras.userData.step(0,0);
+  }
+  // ── TRON: the game. Click a light cycle on the floor grid and it's yours — WELCOME TO TRON — three programs ride against you,
+  // last cycle riding wins. It's played on the floor grid's own cells: every bike rides grid lines at a steady pace and can only
+  // turn at an intersection, and each intersection it reaches is part of its light wall from then on. Riding into any wall
+  // (yours or theirs) or the arena's edge derezzes you, and a derezzed program's wall falls away. ←/→ turn relative to your
+  // heading (so they read right from the chase cam), ↑ boosts, ↓ brakes, C swaps the chase cam for the view from above.
+  const TD=[[1,0],[0,1],[-1,0],[0,-1]],TG_NAMES={0x00e5ff:'cyan',0xff8a1f:'orange',0xff2bd6:'magenta',0xffe23a:'yellow',0x39ff9f:'green'};
+  const tgKey=(x,y)=>x+','+y,tgHeld=new Set(),_tgF=new THREE.Vector3(),_tgP=new THREE.Vector3(),_tgT=new THREE.Vector3();
+  let tg=null,hoverFB=-1,tgWins=0;
+  // the floor bike under the pointer (screen distance, at least a thumb's width), or -1
+  function floorBikeAt(nx,ny){
+    if(!SKIN.cycles||tg||ride||walk||!tronBikes.length)return -1;
+    const W=window.innerWidth,H=window.innerHeight,ppu=pxPer();let best=-1,bd=1e9;
+    tronBikes.forEach((b,i)=>{if(!b.bike.g.visible)return;_v.copy(b.p);_v.z+=tronCell*0.25;const dist=camera.position.distanceTo(_v);_v.project(camera);if(_v.z>1)return;
+      const d=Math.hypot((_v.x-nx)*W/2,(_v.y-ny)*H/2),r=Math.max(26,b.bike.g.scale.x*ppu/dist*0.75);if(d<r&&d<bd){bd=d;best=i;}});
+    return best;}
+  let hoverPM=null;
+  const pacOn=()=>!!(pacCtx&&pacCtx.playing());
+  // Pac-Man or a ghost under the pointer on the maze floor: {o, name} or null
+  function floorPacAt(nx,ny){
+    if(!SKIN.pac||!pacCtx||pacOn()||ride||walk)return null;
+    const W=window.innerWidth,H=window.innerHeight,ppu=pxPer(),names=['Pac-Man'].concat(GHOST_NAMES);let best=null,bd=1e9;
+    pacCtx.targets().forEach((o,i)=>{if(!o.visible)return;_v.copy(o.position);const dist=camera.position.distanceTo(_v);_v.project(camera);if(_v.z>1)return;
+      const d=Math.hypot((_v.x-nx)*W/2,(_v.y-ny)*H/2),r=Math.max(22,pacCtx.tile*ppu/dist*0.7);if(d<r&&d<bd){bd=d;best={o,name:names[i]};}});
+    return best;}
+  window.addEventListener('keydown',ev=>{if(!pacOn()||/INPUT|TEXTAREA/.test(ev.target.tagName))return;if(/^Arrow|^ $/.test(ev.key))ev.preventDefault();if(!ev.repeat&&pacCtx.key(keyName(ev)))ev.preventDefault();});
+  function tgDom(){
+    let el=document.getElementById('tron-game');if(el)return el;
+    document.body.insertAdjacentHTML('beforeend','<div id="tron-game"><div class="tg-hud"><span class="tg-riv"></span><span class="tg-time"></span></div><div class="tg-count"></div><div class="tg-card"></div>'
+      +'<div class="tg-pad"><button class="tg-l" aria-label="Turn left">‹</button><button class="tg-r" aria-label="Turn right">›</button></div></div>');
+    el=document.getElementById('tron-game');
+    el.querySelector('.tg-l').addEventListener('pointerdown',ev=>{ev.preventDefault();tgTurn(1);});
+    el.querySelector('.tg-r').addEventListener('pointerdown',ev=>{ev.preventDefault();tgTurn(-1);});
+    return el;}
+  function tgCard(html){const el=tgDom().querySelector('.tg-card');el.innerHTML=html;el.classList.toggle('on',!!html);
+    el.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.act==='go')tgGo();else tronGameEnd();}));
+    const go=el.querySelector('[data-act="go"]');if(go)try{go.focus({preventScroll:true});}catch(e){}}
+  function tgCount(s){const el=tgDom().querySelector('.tg-count');if(el.textContent!==s){el.textContent=s;el.classList.remove('pop');void el.offsetWidth;if(s)el.classList.add('pop');}}
+  const tgClock=t=>{const m=Math.floor(t/60),s=t-m*60;return m+':'+(s<10?'0':'')+s.toFixed(1);};
+  function tronGameStart(i){
+    const src=tronBikes[i];if(!src||tg)return;
+    if(idle)endIdle();if(ride)endRide();if(walk)endWalk();tw=null;setHover(null);hoverFB=-1;tip.style.display='none';renderer.domElement.style.cursor='';
+    // a pinwheel start: four lanes, each program a quarter turn round from the last, so nobody starts nose to nose with anybody
+    const D=TD[src.d],S=[-D[1],D[0]],N=LITE?16:20,off=Math.round(N*0.7),o2=Math.round(off/2),cx=src.gx+D[0]*off-S[0]*o2,cy=src.gy+D[1]*off-S[1]*o2;
+    const pc=TRON_COLS[i%TRON_COLS.length];
+    tg={phase:'intro',t:0,clock:0,N,cx,cy,D,cell:tronCell,z0:tronZ0,Lb:tronCell*1.1,col:pc,others:TRON_COLS.filter(c=>c!==pc),cam:'chase',
+      starts:[0,1,2,3].map(k=>{let a=-off,b=o2;for(let r=0;r<k;r++)[a,b]=[-b,a];return [cx+D[0]*a+S[0]*b,cy+D[1]*a+S[1]*b,(src.d+k)%4];}),
+      group:new THREE.Group(),bikes:[],bursts:[],occ:new Map(),rng:seeded(1+Math.floor(Math.random()*90000)),from:[camera.position.clone(),controls.target.clone()],endAt:0};
+    scene.add(tg.group);
+    // the arena's edge: a low wall of white light round the square
+    const c=tg.cell,x0=(cx-N)*c,x1=(cx+N)*c,y0=(cy-N)*c,y1=(cy+N)*c,z=tg.z0;
+    tg.border=makeRibbon(8,0xbff9ff,tg.Lb*0.7,1e9,1e-3);tg.border.pts=[[x1,y0],[x1,y1],[x0,y1],[x0,y0]].map(([x,y])=>({p:new THREE.Vector3(x,y,z),n:_UPZ}));
+    ribbonWrite(tg.border,new THREE.Vector3(x0,y0,z),_UPZ);tg.group.add(tg.border.m);
+    tronBikes.forEach(b=>{b.bike.g.visible=false;b.rb.m.visible=false;});   // the floor's own riders step aside; they're back when you leave
+    controls.enabled=false;controls.autoRotate=false;tgHeld.clear();document.body.classList.add('tron-on');tgDom();fitView(false);
+    tgSpawn();
+    const name=TG_NAMES[pc]||'lit';
+    tgCard(`<div class="tg-title"><small>Welcome to</small><b>TRON</b></div>`
+      +`<p>You ride the <i style="color:#${new THREE.Color(pc).getHexString()}">${name}</i> light cycle. Three programs ride against you. Touch a light wall — theirs or your own — or the edge of the Grid and you derez. Last cycle riding wins.</p>`
+      +`<div class="tg-keys"><span><kbd>←</kbd><kbd>→</kbd> turn</span><span><kbd>↑</kbd> boost</span><span><kbd>↓</kbd> brake</span><span><kbd>C</kbd> camera</span><span><kbd>Esc</kbd> leave</span></div>`
+      +`<div class="tg-touch">On a phone: tap the left or right side to turn</div>`
+      +`<div class="tg-act"><button data-act="go">Ride <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit the Grid</button></div>`);}
+  function tgSpawn(){
+    const G=tg;
+    G.bikes.forEach(b=>{b.bike.dispose();G.group.remove(b.bike.g);disposeRibbon(b.rb);});G.bursts.forEach(q=>{G.group.remove(q.pts);q.pts.geometry.dispose();q.pts.material.dispose();});
+    G.bikes=[];G.bursts=[];G.occ.clear();G.clock=0;G.endAt=0;
+    G.starts.forEach(([gx,gy,d],k)=>{
+      const col=new THREE.Color(k?G.others[(k-1)%G.others.length]:G.col),bike=makeCycle(col,true);bike.g.rotation.order='ZYX';bike.g.scale.setScalar(G.Lb);G.group.add(bike.g);
+      const rb=makeRibbon(600,col,G.Lb*0.5,1e9,G.Lb*0.45);G.group.add(rb.m);
+      const b={k,me:!k,bike,rb,col,gx,gy,d,u:0,q:[],alive:true,doom:false,cells:[],fall:1,yaw:Math.atan2(TD[d][1],TD[d][0]),lean:0,lk:0,p:new THREE.Vector3(),
+        spd:k?0.92+0.03*k:1,aggr:[0,0.7,0.35,0.15][k]};
+      rb.pts.push({p:new THREE.Vector3(gx*G.cell,gy*G.cell,G.z0),n:_UPZ});tgClaim(b,gx,gy);G.bikes.push(b);});
+    G.bikes.forEach(b=>tgPlace(b,0,pxPer()));}
+  function tgGo(){const G=tg;if(!G||(G.phase!=='intro'&&G.phase!=='over'))return;if(G.phase==='over')tgSpawn();G.phase='count';G.t=0;tgCard('');tgHeld.clear();document.body.classList.add('tron-play');}
+  function tgTurn(t){const G=tg;if(!G||(G.phase!=='play'&&G.phase!=='count'))return;const me=G.bikes[0];if(me.alive&&me.q.length<2)me.q.push(t);}
+  const tgOpen=(x,y)=>{const G=tg;return Math.abs(x-G.cx)<=G.N&&Math.abs(y-G.cy)<=G.N&&!G.occ.has(tgKey(x,y));};
+  function tgClaim(b,x,y){const k=tgKey(x,y);tg.occ.set(k,b);b.cells.push(k);}
+  // how much room there is past (x,y): a flood fill that stops counting at lim
+  function tgRoom(x,y,lim){const seen=new Set([tgKey(x,y)]),st=[[x,y]];let n=0;
+    while(st.length&&n<lim){const [a,c]=st.pop();n++;for(const [dx,dy] of TD){const k=tgKey(a+dx,c+dy);if(!seen.has(k)&&tgOpen(a+dx,c+dy)){seen.add(k);st.push([a+dx,c+dy]);}}}return n;}
+  // a program's choice at an intersection: room to ride first, a liking for straight lines, never the cell another bike is about to
+  // take, and (the hunters among them) a pull toward where you'll be in a few cells
+  function tgAI(b){const G=tg,me=G.bikes[0];let best=b.d,bs=-1e9;
+    for(const nd of [b.d,(b.d+1)%4,(b.d+3)%4]){const x=b.gx+TD[nd][0],y=b.gy+TD[nd][1];if(!tgOpen(x,y))continue;
+      let s=tgRoom(x,y,LITE?80:140)+(nd===b.d?2.5:0);
+      for(let r=2;r<6&&tgOpen(b.gx+TD[nd][0]*r,b.gy+TD[nd][1]*r);r++)s+=0.6;
+      for(const o of G.bikes)if(o!==b&&o.alive&&o.gx+TD[o.d][0]===x&&o.gy+TD[o.d][1]===y)s-=40;
+      if(me.alive&&b.aggr){const tx=me.gx+TD[me.d][0]*3,ty=me.gy+TD[me.d][1]*3;s+=Math.max(0,12-Math.abs(tx-x)-Math.abs(ty-y))*b.aggr;}
+      s+=G.rng()*2.2;if(s>bs){bs=s;best=nd;}}
+    return best;}
+  // standing on an intersection: pick the way out and take the next one — or, if it's taken, ride on into the wall
+  function tgCommit(b){const G=tg,od=b.d;
+    if(b.me&&!G.auto){if(b.q.length)b.d=(b.d+(b.q.shift()>0?1:3))%4;}else b.d=tgAI(b);
+    if(b.d!==od){b.rb.pts.unshift({p:new THREE.Vector3(b.gx*G.cell,b.gy*G.cell,G.z0),n:_UPZ});b.lk=((b.d-od+4)%4===1?1:-1)*0.5;}
+    const x=b.gx+TD[b.d][0],y=b.gy+TD[b.d][1];if(tgOpen(x,y))tgClaim(b,x,y);else b.doom=true;}
+  function tgMove(b,ds){
+    for(let g=0;ds>1e-9&&g<6;g++){const lim=b.doom?0.5:1,take=Math.min(ds,lim-b.u);b.u+=take;ds-=take;
+      if(b.u>=lim-1e-9){if(b.doom){tgDerez(b);return;}b.gx+=TD[b.d][0];b.gy+=TD[b.d][1];b.u=0;tgCommit(b);}}}
+  function tgDerez(b){const G=tg;b.alive=false;b.doom=false;b.q.length=0;b.bike.g.visible=false;tgBurst(b.p,b.col);
+    b.cells.forEach(k=>{if(G.occ.get(k)===b)G.occ.delete(k);});b.cells=[];}
+  // derez: the bike bursts into shards of its own light that fly, fall and fade
+  function tgBurst(p,col){const G=tg,n=LITE?40:90,P=new Float32Array(n*3),V=[];
+    for(let i=0;i<n;i++){P[i*3]=p.x;P[i*3+1]=p.y;P[i*3+2]=p.z+G.Lb*0.2;const a=G.rng()*6.283,e=G.rng()*1.25,s=G.cell*(1.2+G.rng()*3.4);V.push([Math.cos(a)*Math.cos(e)*s,Math.sin(a)*Math.cos(e)*s,Math.sin(e)*s]);}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));
+    const pts=new THREE.Points(g,new THREE.PointsMaterial({map:glowTex,color:cycCol(col),size:G.cell*0.6,sizeAttenuation:true,transparent:true,opacity:1,depthWrite:false,blending:THREE.AdditiveBlending}));
+    pts.frustumCulled=false;G.group.add(pts);G.bursts.push({pts,V,t:0});}
+  function tgPlace(b,dt,ppu){const G=tg,c=G.cell,D=TD[b.d];
+    if(b.alive)b.p.set((b.gx+D[0]*b.u)*c,(b.gy+D[1]*b.u)*c,G.z0);
+    let dy=Math.atan2(D[1],D[0])-b.yaw;dy-=Math.round(dy/(Math.PI*2))*Math.PI*2;b.yaw+=dt?dy*Math.min(1,dt*22):dy;
+    b.lk*=Math.exp(-dt*5);b.lean+=(b.lk-b.lean)*Math.min(1,dt*12);
+    if(!b.alive){b.fall=Math.max(0,b.fall-dt*1.5);b.rb.h=G.Lb*0.5*b.fall*b.fall;b.rb.m.visible=b.fall>0;}
+    if(b.alive){const cd=Math.max(1e-3,camera.position.distanceTo(b.p));b.bike.near(G.Lb*ppu/cd);b.bike.g.position.copy(b.p);b.bike.g.rotation.set(-b.lean,0,b.yaw);}
+    if(b.rb.m.visible)ribbonWrite(b.rb,b.p,_UPZ);}
+  function tgOver(win){const G=tg;G.phase='over';G.t=0;if(win)tgWins++;document.body.classList.remove('tron-play');tgCount('');
+    const down=G.bikes.filter(b=>!b.me&&!b.alive).length;
+    tgCard(`<div class="tg-title ${win?'win':'lose'}"><b>${win?'You win':'Derezzed'}</b><small>End of line</small></div>`
+      +`<p>${win?'Every program derezzed in '+tgClock(G.endAt||G.clock):'You rode for '+tgClock(G.endAt||G.clock)+(down?' and took '+down+' of the 3 programs down with you':'')}${tgWins?` · ${tgWins} win${tgWins===1?'':'s'} this session`:''}</p>`
+      +`<div class="tg-act"><button data-act="go">Ride again <kbd>Enter</kbd></button><button data-act="exit" class="ghost">Exit the Grid <kbd>Esc</kbd></button></div>`);}
+  function tronGameEnd(silent){const G=tg;if(!G)return;tg=null;
+    G.bikes.forEach(b=>{b.bike.dispose();disposeRibbon(b.rb);});G.bursts.forEach(q=>{q.pts.geometry.dispose();q.pts.material.dispose();});disposeRibbon(G.border);scene.remove(G.group);
+    tronBikes.forEach(b=>{b.bike.g.visible=true;b.rb.m.visible=true;});
+    document.body.classList.remove('tron-on','tron-play');tgCard('');tgCount('');tgHeld.clear();
+    controls.enabled=true;controls.autoRotate=false;lastInput=performance.now();fitView(false);
+    if(!silent)flyTo(G.from[0],G.from[1],1300);}
+  function tronGameStep(dt){
+    const G=tg,me=G.bikes[0],c=G.cell,ppu=pxPer();G.t+=dt;controls.autoRotate=false;
+    if(G.phase==='count'){const n=3-Math.floor(G.t/0.8);tgCount(n>0?String(n):'');if(G.t>=2.4){G.phase='play';G.bikes.forEach(tgCommit);}}
+    else if(G.phase==='play'){
+      G.clock+=dt;tgCount(G.clock<0.6?'GO':'');
+      const v=(LITE?6.5:7.5)*(1+Math.min(0.45,G.clock/90)),boost=tgHeld.has('ArrowUp')||tgHeld.has('w')||tgHeld.has('Shift'),brake=tgHeld.has('ArrowDown')||tgHeld.has('s');
+      for(const b of G.bikes){if(!b.alive)continue;const ds=v*b.spd*(b.me?(boost?1.55:brake?0.6:1):1)*dt;tgMove(b,ds);if(b.alive)b.bike.roll(ds/1.1);}
+      const left=G.bikes.filter(b=>!b.me&&b.alive).length;
+      if(!me.alive||!left){if(!G.endAt)G.endAt=G.clock;if(G.clock-G.endAt>(me.alive?0.9:1.6))tgOver(me.alive);}}
+    for(const b of G.bikes)tgPlace(b,dt,ppu);
+    for(let i=G.bursts.length-1;i>=0;i--){const q=G.bursts[i],P=q.pts.geometry.attributes.position.array;q.t+=dt;
+      q.V.forEach((v,j)=>{v[2]-=c*5*dt;const f=Math.exp(-dt*1.6);v[0]*=f;v[1]*=f;P[j*3]+=v[0]*dt;P[j*3+1]+=v[1]*dt;P[j*3+2]=Math.max(G.z0,P[j*3+2]+v[2]*dt);});
+      q.pts.geometry.attributes.position.needsUpdate=true;q.pts.material.opacity=Math.max(0,1-q.t/1.4);
+      if(q.t>1.4){G.group.remove(q.pts);q.pts.geometry.dispose();q.pts.material.dispose();G.bursts.splice(i,1);}}
+    // HUD: the programs still riding, and your time
+    const hud=tgDom(),riv=G.bikes.slice(1).map(b=>`<i style="background:#${b.col.getHexString()};opacity:${b.alive?1:0.18}"></i>`).join('');
+    if(hud.dataset.riv!==riv){hud.dataset.riv=riv;hud.querySelector('.tg-riv').innerHTML='Programs '+riv;}
+    const tm=G.phase==='intro'?'':tgClock(G.endAt||G.clock);if(hud.dataset.tm!==tm){hud.dataset.tm=tm;hud.querySelector('.tg-time').textContent=tm;}
+    // camera: behind your bike and a little above, swinging round the corners with it; the whole arena from above otherwise
+    const k=1-Math.exp(-dt*(G.phase==='play'?6:2.4)),chase=(G.phase==='play'||G.phase==='count')&&G.cam==='chase'&&me.alive,cz=G.z0;
+    if(chase){_tgF.set(Math.cos(me.yaw),Math.sin(me.yaw),0);_tgP.copy(me.p).addScaledVector(_tgF,-c*6.5);_tgP.z=cz+c*3.2;_tgT.copy(me.p).addScaledVector(_tgF,c*5);_tgT.z=cz+c*0.3;}
+    else{const a=Math.min(1,camera.aspect),top=G.cam==='top'&&G.phase==='play',h=G.N*c*(top?2.3:1.05)/a;
+      _tgT.set(G.cx*c,G.cy*c,cz);_tgP.set(G.cx*c-G.D[0]*G.N*c*(top?0.3:1.15)/a,G.cy*c-G.D[1]*G.N*c*(top?0.3:1.15)/a,cz+h);}
+    camera.position.lerp(_tgP,k);controls.target.lerp(_tgT,Math.min(1,k*1.4));}
+  window.addEventListener('keydown',ev=>{if(!tg||/INPUT|TEXTAREA/.test(ev.target.tagName))return;const k=keyName(ev);
+    if(/^Arrow|^ $/.test(ev.key))ev.preventDefault();tgHeld.add(k);if(ev.repeat)return;
+    if(k==='ArrowLeft'||k==='a')tgTurn(1);else if(k==='ArrowRight'||k==='d')tgTurn(-1);
+    else if(k==='c'&&tg.phase==='play')tg.cam=tg.cam==='chase'?'top':'chase';
+    else if((k==='Enter'||k===' ')&&(tg.phase==='intro'||tg.phase==='over')){ev.preventDefault();tgGo();}});
+  window.addEventListener('keyup',ev=>{tgHeld.delete(keyName(ev));});
+  window.addEventListener('blur',()=>tgHeld.clear());
   function extrasStep(dt,now){
     if(extras.userData.step)extras.userData.step(dt,now);
     if(JV)jvStep(dt,now);
@@ -1754,11 +2265,11 @@ void main(){float x=fract(vS+uT*(0.16+vS*0.12));float d=fract(x-vT);float p=exp(
   ['pointerdown','pointermove','wheel','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,touch,{passive:true}));
   function pickFollow(now){const ms=monarchGroup.visible?monarchs.filter(m=>m!==follow):[],ws=walkerGroup.visible?walkers.filter(w=>w!==follow):[];
     const useW=ws.length&&(!ms.length||seedRng()<0.5);const pool=useW?ws:ms;follow=pool.length?pool[Math.floor(seedRng()*pool.length)]:null;idleW=useW?follow:null;
-    followSince=now;followUntil=now+(useW?25000:40000)+seedRng()*25000;idleEl.innerHTML=useW?(SKIN.cycles?ICO.cycle+'Riding along with a light cycle — move the mouse to take over':ICO.kinesin+'Watching a kinesin at work — move the mouse to take over'):ICO.butterfly+'Riding along with a monarch — move the mouse to take over';}
+    followSince=now;followUntil=now+(useW?25000:40000)+seedRng()*25000;idleEl.innerHTML=useW?(SKIN.pac?ICO.pac+'Chasing a Pac-Man along the links — move the mouse to take over':SKIN.cycles?ICO.cycle+'Riding along with a light cycle — move the mouse to take over':ICO.kinesin+'Watching a kinesin at work — move the mouse to take over'):ICO.butterfly+'Riding along with a monarch — move the mouse to take over';}
   function beginIdle(now){if(!((monarchs.length&&monarchGroup.visible)||(walkers.length&&walkerGroup.visible)))return;idle=true;tw=null;controls.autoRotate=false;tip.style.display='none';setHover(null);pickFollow(now);idleEl.classList.add('on');}
   function endIdle(){idle=false;follow=null;idleW=null;controls.autoRotate=state.rotate;idleEl.classList.remove('on');}
   function idleStep(dt,now){
-    if(ride||walk)return;
+    if(ride||walk||tg||pacOn())return;
     if(!state.idle||!(monarchGroup.visible||walkerGroup.visible)){if(idle)endIdle();return;}
     if(!idle){if(!tw&&now-lastInput>idleAfter)beginIdle(now);return;}
     if(!follow||now>followUntil)pickFollow(now);
@@ -1787,6 +2298,11 @@ void main(){float x=fract(vS+uT*(0.16+vS*0.12));float d=fract(x-vT);float p=exp(
       if(ride)endRide();if(walk)endWalk();build();buildMonarchs();monarchGroup.visible=state.monarchs&&SKIN.monarchs!==false;},
     relabel(){if(focused!=null)showSystemLabels(focused);},lite:LITE,
     monarchScreen(i){const m=monarchs[i||0];if(!m)return null;_v.copy(m.g.position).project(camera);return [(_v.x+1)/2*window.innerWidth,(1-_v.y)/2*window.innerHeight];},
+    pacPlay(){if(pacCtx)pacCtx.start();},pacGo(){if(pacCtx)pacCtx.go();},pacSteer(d){if(pacCtx)pacCtx.steer(d);},pacExit(){if(pacCtx)pacCtx.exit();},pacState(){return pacCtx?pacCtx.state():null;},pacSim(s){if(pacCtx)pacCtx.sim(s);},
+    pacScreen(i){if(!pacCtx)return null;const o=pacCtx.targets()[i||0];_v.copy(o.position);_v.project(camera);return _v.z>1?null:[(_v.x+1)/2*window.innerWidth,(1-_v.y)/2*window.innerHeight];},
+    tronPlay(i){tronGameStart(i||0);},tronGo:()=>tgGo(),tronTurn:t=>tgTurn(t),tronExit:()=>tronGameEnd(),tronCam(m){if(tg)tg.cam=m;},tronAuto(on){if(tg)tg.auto=!!on;},tronSim(sec){for(let t=0;t<sec&&tg;t+=0.05)tronGameStep(0.05);},
+    tronState(){return tg?{phase:tg.phase,clock:+tg.clock.toFixed(2),alive:tg.bikes.map(b=>b.alive),me:tg.bikes[0]?[tg.bikes[0].gx,tg.bikes[0].gy,tg.bikes[0].d]:null,walls:tg.occ.size}:null;},
+    floorBikeScreen(i){const b=tronBikes[i||0];if(!b)return null;_v.copy(b.p);_v.z+=tronCell*0.25;_v.project(camera);return _v.z>1?null:[(_v.x+1)/2*window.innerWidth,(1-_v.y)/2*window.innerHeight];},
     bikes(){return tronBikes.map(b=>[b.gx,b.gy,b.d,+b.u.toFixed(2),b.rb.pts.length,b.arc?+b.arc.s.toFixed(2):-1,+b.lean.toFixed(2)]);},
     bikeCam(i,near){const b=tronBikes[i||0];if(!b)return;tw=null;controls.autoRotate=false;const c=tronCell*(near||1),f=new THREE.Vector3(Math.cos(b.yaw),Math.sin(b.yaw),0);
       const sd=c*3.4*Math.min(1,camera.aspect);controls.target.copy(b.p).addScaledVector(f,c*(camera.aspect<1?1:3));camera.position.copy(b.p).addScaledVector(f,-c*6).add(new THREE.Vector3(-f.y*sd,f.x*sd,c*2.6));controls.update();},
@@ -1934,8 +2450,27 @@ function tronPreview(s){
   for(let i=0;i<14;i++)o+=`<circle cx="${f(rng()*W)}" cy="${f(rng()*(HY-22))}" r=".35" fill="${A}" opacity="${(0.15+rng()*0.3).toFixed(2)}"/>`;
   return o+`<path d="M4 12V4h8M236 12V4h-8M4 123v8h8M236 123v8h-8" fill="none" stroke="${A}" stroke-opacity=".7" stroke-width=".8"/></svg>`;
 }
+// Pac-Man picker card: chomping suns joined by dotted links over a neon maze, Pac-Man clearing a row of dots, four ghosts behind him
+function pacPreview(s){
+  const W=240,H=135,f=n=>n.toFixed(1);
+  const pac=(x,y,r,col,dir,m)=>{const a=m*0.8,c=Math.cos(a),n=Math.sin(a);return `<path d="M${x} ${y}L${f(x+dir*r*c)} ${f(y-r*n)}A${r} ${r} 0 1 ${dir>0?0:1} ${f(x+dir*r*c)} ${f(y+r*n)}Z" fill="${col}"/>`;};
+  const ghost=(x,y,col)=>`<g transform="translate(${x} ${y})"><path d="M-6 6V-1A6 6 0 0 1 6 -1V6L4 4L2 6L0 4L-2 6L-4 4Z" fill="${col}"/><ellipse cx="-2.3" cy="-1" rx="1.8" ry="2.1" fill="#fff"/><ellipse cx="2.3" cy="-1" rx="1.8" ry="2.1" fill="#fff"/><circle cx="-3" cy="-0.8" r=".9" fill="#2121ff"/><circle cx="1.6" cy="-0.8" r=".9" fill="#2121ff"/></g>`;
+  let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#000"/>`;
+  // the graph: two systems whose suns chomp, links in dots
+  o+=`<g stroke="#ffb8ae" stroke-width="1.3" stroke-dasharray="1.3 3.2" stroke-linecap="round"><line x1="66" y1="30" x2="176" y2="22"/><line x1="66" y1="30" x2="120" y2="48" /><line x1="176" y1="22" x2="120" y2="48"/></g>`;
+  [[66,30,'#ff5ea8',1],[176,22,'#3df2ff',-1],[120,48,'#7ed957',1]].forEach(([x,y,c,d],i)=>{for(let k=0;k<6;k++){const a=k/6*6.28+i,r=15+(k%2)*5;o+=`<circle cx="${f(x+Math.cos(a)*r)}" cy="${f(y+Math.sin(a)*r*0.55)}" r="1.9" fill="${c}"/>`;}o+=pac(x,y,i===2?4.5:6.5,c,d,0.55);});
+  // the maze: blue tube walls (a blue stroke with a black one inside it)
+  const d='M6 64H234V130H6Z M26 80H62V90H26Z M84 80H106 M134 80H156 M178 80H214V90H178Z M120 72V88 M26 108H50 M190 108H214 M72 104H168V116H72Z';
+  o+=`<path d="${d}" fill="none" stroke="#2323ff" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#000" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  // dots, a power pellet in each corner
+  for(let x=16;x<=224;x+=8){if(x<96)o+=`<circle cx="${x}" cy="97" r="1.1" fill="#ffb8ae"/>`;o+=`<circle cx="${x}" cy="72" r="1.1" fill="#ffb8ae"/>`;}
+  [[14,72],[226,72],[14,122],[226,122]].forEach(([x,y])=>o+=`<circle cx="${x}" cy="${y}" r="3.2" fill="#ffb8ae"/>`);
+  o+=pac(104,97,6.2,'#ffd21f',1,0.6)+ghost(138,97,'#ff1a1a')+ghost(154,97,'#ffb8ff')+ghost(170,97,'#19ffff')+ghost(186,97,'#ffb852');
+  return o+'</svg>';
+}
 function previewSVG(s){
   if(s.pv&&s.pv.holo)return jarvisPreview(s);
+  if(s.pv&&s.pv.pac)return pacPreview(s);
   if(s.pv&&s.pv.tron)return tronPreview(s);
   const W=240,H=135,pv=s.pv||{};let _r=11;const rng=()=>{_r=(_r*9301+49297)%233280;return _r/233280;};let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="sun-${s.name}"><stop offset="0" stop-color="#ffe066"/><stop offset=".55" stop-color="#ff5fa8"/><stop offset="1" stop-color="#a03cff"/></radialGradient><pattern id="scan-${s.name}" width="1" height="3" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="rgba(0,0,0,.35)"/></pattern></defs><rect width="${W}" height="${H}" fill="${s.css.sky}"/>`;
   if(pv.deep){   // monarch: graded sky, milky band, soft nebulae, colour-temperature stars, warm sun glows
@@ -1974,9 +2509,10 @@ function applySkin(key,first){
   const r=document.documentElement.style;Object.entries(SKIN.css).forEach(([k,v])=>r.setProperty('--'+k,v));if(!SKIN.css.font)r.removeProperty('--font');
   document.body.dataset.skin=key;const bm=document.getElementById('brand-mark');if(SKIN.icon)bm.innerHTML=SKIN.icon;else bm.textContent=SKIN.mark;document.getElementById('skin-name').textContent=SKIN.name;
   // the link riders are kinesins everywhere but TRON, where they're light cycles
-  const cyc=!!SKIN.cycles,tx=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  tx('walkers-t',cyc?'Light cycles':'Kinesins');tx('walkers-s',cyc?'Light cycles riding some links, laying light walls — zoom in to watch them, click one to ride it':'Tiny carriers walking data along some links — zoom in to watch them, click one to walk it');
-  tx('idle-s',cyc?'Left alone for 10 s, the camera rides a monarch or chases a light cycle':'Left alone for 10 s, the camera rides a monarch or watches a kinesin work');
+  const cyc=!!SKIN.cycles,pac=!!SKIN.pac,tx=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  tx('walkers-t',pac?'Pac-Men':cyc?'Light cycles':'Kinesins');tx('walkers-s',pac?'Pac-Men eating their way along some links — zoom in to watch them, click one to drive it':cyc?'Light cycles riding some links, laying light walls — zoom in to watch them, click one to ride it':'Tiny carriers walking data along some links — zoom in to watch them, click one to walk it');
+  tx('idle-s',pac?'Left alone for 10 s, the camera chases a Pac-Man along the links':cyc?'Left alone for 10 s, the camera rides a monarch or chases a light cycle':'Left alone for 10 s, the camera rides a monarch or watches a kinesin work');
+  const mr=document.getElementById('monarchs');if(mr&&mr.closest('.row'))mr.closest('.row').style.display=SKIN.monarchs===false?'none':'';   // a skin without butterflies has no switch for them
   document.querySelectorAll('.skin').forEach(el=>el.classList.toggle('on',el.dataset.skin===key));
   try{localStorage.setItem('atlas.skin',key);}catch(e){}
   if(!first&&V3)V3.reskin();
