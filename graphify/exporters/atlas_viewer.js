@@ -1334,11 +1334,27 @@ gl_FragColor=vec4(uColor*(0.8+v*0.6),al);}`;
     // labels keep clear of the readout and the brand block: their boxes go in first when labels are laid out (re-measured at 1 Hz)
     if(now-(D.boxT||0)>1000){D.boxT=now;D.box.length=0;for(const e of [D.ro,D.brand]){if(!e||!e.offsetParent)continue;const r=e.getBoundingClientRect();if(r.width)D.box.push({x:r.left-6,y:r.top-6,w:r.width+12,h:r.height+12});}}
   }
+  // Glow links (TRON's light trails, Synthwave's chromatic links) are additive: where thousands of links overlap in a small patch
+  // of screen they stack to solid white — which is exactly what a zoomed-out galaxy is. So they cross-fade with the plain links:
+  // zoomed out you see plain links (as Monarch draws them), and the glow comes up as you zoom in. 0 = all plain, 1 = all glow.
+  // "Zoomed out" is judged by how many pixels the whole map spans, so a one-project map and the universe behave the same.
+  function glowMix(few){
+    if(few)return 1;   // a small graph never piles up: glow all the way
+    const px=galaxyR*pxPer()/Math.max(1e-3,camera.position.distanceTo(controls.target));
+    const t=Math.min(1,Math.max(0,(px-420)/(1600-420)));return t*t*(3-2*t);}
+  function crossFade(glow,U,few,gain){
+    const base=Math.min(1,SKIN.line*state.lw),k=glowMix(few);
+    U.uOp.value=base*gain*k;glow.visible=k>0.01;
+    if(lines){lines.visible=k<0.99;lines.material.opacity=base*(1-k*k);}}
   function buildExtras(){
-    while(extras.children.length){const o=extras.children.pop();if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}}
+    // extras.remove(), not children.pop(): pop() left each object's .parent pointing at extras, so the old skin's per-frame hook
+    // ("am I still in the scene?") kept answering yes. TRON's then ran on under every later skin, hid its links and drew its
+    // additive light trails in their place — Monarch after TRON was a white blur until a reload.
+    while(extras.children.length){const o=extras.children[extras.children.length-1];extras.remove(o);if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}}
+    // then the old hook runs once more, sees its objects gone and frees what it owns (bikes, buffers) — and is dropped either way
+    if(extras.userData.step){const st=extras.userData.step;extras.userData.step=null;try{st(0,0);}catch(e){}extras.userData.step=null;}
     JV=SKIN.extras==='hud'?jvBuild():null;
     if(SKIN.extras==='synth'){
-      if(extras.userData.step)extras.userData.step(0,0);   // a previous synth build: its hook sees its objects gone and frees them
       // Outrun: a sky dome at infinity (gradient, striped sun, wireframe mountains, grid floor melting into the horizon haze).
       // It follows the camera, so the horizon never runs out. Everything moves in the shaders: per frame the CPU writes
       // one time value, two direction vectors and two positions.
@@ -1422,11 +1438,11 @@ void main(){vec3 d=normalize(vDir);float e=dot(d,uUp);
           vertexShader:`attribute float aT;varying vec3 vC;varying float vT,vD;void main(){vC=color;vT=aT;vec4 mv=modelViewMatrix*vec4(position,1.0);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
           fragmentShader:`uniform vec3 uA,uB;uniform float uOp,uFog,uLift;varying vec3 vC;varying float vT,vD;
 void main(){float l=dot(vC,vec3(0.3,0.5,0.2));vec3 c=mix(vC,mix(uA,uB,vT)*l*1.7,0.62);c=mix(c,vec3(1.0,0.93,1.0),uLift)*(1.0+uLift);gl_FragColor=vec4(c,min(1.0,uOp*exp(-uFog*uFog*vD*vD)));}`}));
-        chroma.frustumCulled=false;extras.add(chroma);lines.visible=false;};
+        chroma.frustumCulled=false;extras.add(chroma);};
       extras.userData.step=(dt)=>{
         if(!own.parent){extras.userData.step=null;return;}   // the skin changed and buildExtras cleared us (and disposed the dome)
         if(lines!==chromaOf)attach();
-        if(chroma&&lines)CU.uOp.value=lines.material.opacity*(few?1.1:0.55);
+        if(chroma&&lines)crossFade(chroma,CU,few,few?1.1:0.55);
         if(!rm)U.uTime.value+=dt;
         const cp=camera.position;dome.position.copy(cp);
         const h=Math.max(1,cp.z-z0);floor.position.set(cp.x,cp.y,z0);floor.scale.set(h*40,h*40,1);
@@ -1660,8 +1676,7 @@ void main(){vec2 P=vW.xy/uCell,fw=fwidth(P);float g1,g2;
         vertexShader:`attribute float aT,aS;varying vec3 vC;varying float vT,vS,vD;void main(){vC=color;vT=aT;vS=aS;vec4 mv=modelViewMatrix*vec4(position,1.0);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
         fragmentShader:`uniform float uOp,uT,uFog;varying vec3 vC;varying float vT,vS,vD;
 void main(){float x=fract(vS+uT*(0.16+vS*0.12));float d=fract(x-vT);float p=exp(-d*7.0)*step(0.0,x-vT+1.0);
- vec3 c=vC*(1.9+2.2*p)+vec3(1.0)*p*p*0.45;gl_FragColor=vec4(c,min(1.0,uOp*(0.62+0.9*p)*exp(-uFog*uFog*vD*vD)));}`})));
-      lines.visible=false;};
+ vec3 c=vC*(1.9+2.2*p)+vec3(1.0)*p*p*0.45;gl_FragColor=vec4(c,min(1.0,uOp*(0.62+0.9*p)*exp(-uFog*uFog*vD*vD)));}`})));};
     // a neon ring round every sun, in its group colour
     const vis=sunIds.filter(id=>sysBySun[id]);
     if(vis.length){const rg=new THREE.RingGeometry(0.9,1,72);const im=new THREE.InstancedMesh(rg,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.8,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}),vis.length);
@@ -1719,7 +1734,7 @@ void main(){float x=fract(vS+uT*(0.16+vS*0.12));float d=fract(x-vT);float p=exp(
     extras.userData.step=(dt)=>{
       if(!own.parent){extras.userData.step=null;tronBikes.forEach(b=>b.bike.dispose());tronBikes=[];return;}   // the skin changed and buildExtras cleared us
       if(lines!==neonOf)attach();
-      if(neon&&lines)LU.uOp.value=lines.material.opacity*(few?1.25:0.7);
+      if(neon&&lines)crossFade(neon,LU,few,few?1.25:0.7);
       if(!RM){T.t+=dt;LU.uT.value=T.t;}
       if(suns&&suns.material.uniforms&&suns.material.uniforms.uT)suns.material.uniforms.uT.value=T.t;
       if(halo)halo.uScale.value=sc();
