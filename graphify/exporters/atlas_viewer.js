@@ -270,6 +270,13 @@ const ATLAS_CSS=`
   #mario-game .mg-pad div{display:flex;gap:12px} #mario-game .mg-pad button{pointer-events:auto;width:66px;height:66px;font:900 22px var(--mono);color:#fff;background:rgba(0,0,0,.55);border:3px solid #fff;border-radius:50%;touch-action:manipulation;-webkit-tap-highlight-color:transparent;text-shadow:1px 1px 0 #000}
   #mario-game .mg-ab button{background:rgba(229,37,33,.8)} #mario-game .mg-pad button:active{background:rgba(251,208,0,.7)}
   @media (max-width:720px){#mario-game .mg-hud{top:62px;font-size:12px;gap:16px} #mario-game .mg-hud small{font-size:11px}}
+  body[data-skin="city"] .lbl{text-shadow:0 0 2px #0c1020,0 1px 3px #0c1020,0 0 8px rgba(12,16,32,.8)}
+  body[data-skin="city"] .lbl.sun{padding:2px 9px;border-radius:4px;background:rgba(18,22,38,.82);border:1px solid rgba(255,179,71,.45);border-bottom:2px solid #ffb347;font-weight:600;font-size:11px;letter-spacing:.04em;text-shadow:none}
+  body[data-skin="city"] .lbl.realm{background:rgba(18,22,38,.85);border:1px solid rgba(255,179,71,.5);border-radius:4px;letter-spacing:.2em}
+  body[data-skin="city"] .lbl:not(.sun):not(.realm){padding:0 5px;border-radius:3px;background:rgba(14,18,32,.62)}
+  body[data-skin="city"] #settings,body[data-skin="city"] #card,body[data-skin="city"] #skins .box{background:rgba(20,24,38,.92);border-color:rgba(255,179,71,.22);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  body[data-skin="city"] #tip,body[data-skin="city"] #crumb,body[data-skin="city"] #idle-hint,body[data-skin="city"] #ride-hint{background:rgba(20,24,38,.94);border-color:rgba(255,179,71,.35)}
+  body[data-skin="city"] #tip b{color:#ffe2b0}
   #skins{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
   #skins.on{display:flex}
   #skins .box{width:min(1040px,calc(100vw - 40px));max-height:calc(100vh - 40px);overflow:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -459,6 +466,8 @@ const ICO={
   kinesin:ico('<circle cx="8" cy="19" r="2.6"/><circle cx="16" cy="19" r="2.6"/><path d="M8 17L12 12L16 17M12 12V8.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 2.4L15.6 6L12 9.6L8.4 6Z"/>'),
   cycle:ico('<circle cx="6" cy="15.6" r="3.9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18.4" cy="15.6" r="3.9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M1.4 13.4C2 10.6 4.2 9.1 7.2 9.3L10.9 11L14.3 8.9C17.6 8.4 21.4 9.4 22.9 12.9H20.6C18.8 11.4 15.8 11.5 13.9 12.8L9.7 13.8L4.8 11.7C3.5 11.9 2.4 12.5 1.4 13.4Z"/>'),
   pac:ico('<path d="M12 12L20.9 7.46A10 10 0 1 0 20.9 16.54Z"/>'),
+  city:ico('<path d="M2 21V11h5V6h4v5h2V3h6v18z"/><path d="M9 13h1M9 16h1M15 6h1.5M15 9h1.5M15 12h1.5M15 15h1.5M4 14h1M4 17h1" stroke="#000" stroke-opacity=".5" stroke-width="1.3"/>'),
+  worker:ico('<circle cx="12" cy="4.6" r="2.6"/><path d="M9 8.5h6l.8 6.5H13.4l-.6 7h-1.6l-.6-7H8.2z"/><rect x="15.2" y="10" width="4.6" height="4.6" rx=".6" opacity=".8"/>'),
   coin:ico('<ellipse cx="12" cy="12" rx="7.2" ry="10"/><rect x="10.6" y="6.5" width="2.8" height="11" rx="1.2" fill="#000" opacity=".35"/>'),
   block:ico('<rect x="2.5" y="2.5" width="19" height="19" rx="2"/><path d="M9.3 9.6C9.3 7.9 10.5 7 12.1 7S14.8 8 14.8 9.4C14.8 11.3 12.3 11.4 12.3 13.4" fill="none" stroke="#000" stroke-width="2.2" opacity=".55"/><rect x="11" y="15.2" width="2.6" height="2.6" fill="#000" opacity=".55"/>'),
   disc:ico('<circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="5.7" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4.3 1.6"/><circle cx="12" cy="12" r="2.3"/>'),
@@ -492,6 +501,33 @@ void main(){
   c=mix(c,vec3(1.0),smoothstep(0.93,0.96,dot(reflect(-L,n),v))*0.8);
   c*=mix(0.22,1.0,smoothstep(0.14,0.3,ndv));
   gl_FragColor=vec4(c*f,1.0);}`});
+}
+// CITY node bodies: each node a room — a box with a pale wall in its group's colour, a grid of 2×2 windows on every side (lit
+// warm or dark by a hash of the room, a few flickering), and the roof a darker slab. The hub on the roof has every light on.
+function cityBodyMat(emis){
+  return new THREE.ShaderMaterial({uniforms:{uSun:{value:emis?1:0},uT:{value:0},uFog:{value:0.00012},uFogC:{value:new THREE.Color(0x1d2b53)}},
+    vertexShader:`varying vec3 vN,vC,vL,vO;varying float vD,vH;
+void main(){vec4 p=vec4(position,1.0);vec3 n=normal;vL=position;vO=normal;vH=0.0;
+#ifdef USE_INSTANCING
+p=instanceMatrix*p;n=mat3(instanceMatrix)*n;vH=fract(sin(dot(instanceMatrix[3].xyz,vec3(12.9898,78.233,37.719)))*43758.5453);
+#endif
+vC=vec3(1.0);
+#ifdef USE_INSTANCING_COLOR
+vC=instanceColor;
+#endif
+vec4 mv=modelViewMatrix*p;vN=normalize(normalMatrix*n);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`uniform float uSun,uT,uFog;uniform vec3 uFogC;varying vec3 vN,vC,vL,vO;varying float vD,vH;
+void main(){vec3 an=abs(vO);vec2 uv;if(an.x>0.5)uv=vL.yz;else if(an.y>0.5)uv=vL.xz;else uv=vL.xy;uv=uv*0.5+0.5;
+  vec3 L=normalize(vec3(-0.3,0.45,0.84));float sh=0.5+0.5*max(0.0,dot(normalize(vN),L));
+  vec3 wall=mix(vC,vec3(0.93,0.9,0.85),0.5)*sh,c=wall;
+  if(an.z<0.5){vec2 g=fract(uv*2.0),id=floor(uv*2.0);
+    float win=step(0.2,g.x)*step(g.x,0.8)*step(0.24,g.y)*step(g.y,0.84);
+    float h=fract(sin(dot(id+vH*17.0+vO.xy*3.1,vec2(12.9898,78.233)))*43758.5453);
+    float lit=uSun>0.5?1.0:step(0.36,h)*(h>0.93?0.55+0.45*step(0.5,fract(uT*0.6+h*9.0)):1.0);
+    vec3 glass=mix(vec3(0.1,0.13,0.24),mix(vec3(1.0,0.8,0.48),vec3(0.75,0.88,1.0),step(0.8,h))*1.25,lit);
+    c=mix(wall*mix(0.8,1.0,smoothstep(0.0,0.07,uv.y)),glass,win);}
+  else if(vO.z>0.5)c=mix(vC*0.5,vec3(0.22,0.24,0.3),0.45)*sh;
+  gl_FragColor=vec4(mix(uFogC,c,exp(-uFog*uFog*vD*vD)),1.0);}`});
 }
 // MARIO WORLD node bodies: bright toon spheres (two tones, one hard highlight, an inked edge), and the suns look back at you with
 // a pair of tall eyes, like the star — drawn from the view-space normal, so they always face the camera.
@@ -610,6 +646,13 @@ void main(){vec3 n=normalize(vN);float ndv=clamp(dot(n,normalize(vV)),0.0,1.0),f
     wings:{base:'#e52521',mid:'#ff6a3d',tip:'#fbd000',vein:'rgba(40,10,0,.9)',margin:'#3a1000',spot:'rgba(255,255,255,.95)',glow:'rgba(255,240,200,.9)',shade:'rgba(60,10,0,.5)',body:0x3a1000},kin:{head:0xffc81e,headEm:0x8a5a00,stalk:0xffffff},
     pv:{mario:true},
     features:['Sky & grass plain','A whole platform level','Mario running it on his own','Goombas, pipes & ? blocks','Suns with eyes','Coins on the links','Play MARIO WORLD: click Mario']},
+  city:{name:'City',mark:'▦',icon:ICO.city,tag:'Your code as a town at dusk: every codebase a district, every group a building, every node a lit room. Little workers carry data along the streets from building to building.',
+    css:{bg:'#141826','bg-2':'#1a1f30','bg-3':'#262c42',border:'#323a55','border-2':'#454f72',text:'#eef1fb',muted:'#aab3d0',faint:'#6f7896',accent:'#ffb347','accent-2':'#ffd9a0',sky:'#1d2b53',lbl:'#eef1fb','lbl-sun':'#ffe2b0',halo:'#0c1020'},
+    sky:0x1d2b53,fog:0.00012,rim:0xffb347,ambient:0.8,stars:[[500,1.2,0xdfe6ff,0.3]],nebula:0,fade:0x1d2b53,line:0.1,sunEmissive:0xffb347,wire:false,monarchs:false,extras:'city',city:true,
+    body:emis=>cityBodyMat(emis),
+    wings:{base:'#e0913c',mid:'#f0b060',tip:'#ffd9a0',vein:'rgba(20,10,0,.9)',margin:'#2a1a08',spot:'rgba(255,250,240,.95)',glow:'rgba(255,220,160,.9)',shade:'rgba(40,20,0,.5)',body:0x2a1a08},kin:{head:0xf1c7a0,headEm:0x3a2a1a,stalk:0x2c3350},
+    pv:{city:true},
+    features:['Districts for codebases','Buildings for groups','Rooms for nodes','Workers carrying data','Lights on at dusk','Walk along with a worker']},
 };
 // retired skins: a saved or linked "matrix" becomes Tron and "blueprint" Pac-Man, their successors; any other unknown name is the default
 const SKIN_ALIAS={matrix:'tron',blueprint:'pacman'};
@@ -689,6 +732,7 @@ const V3=(()=>{
     it.c=c||new THREE.Vector3();placed.push({c:it.c,r:it.r});});}
   const maxN=Math.max(1,...systems.map(s=>s.n));
   function layout(){
+    if(SKIN.city)return cityLayout();
     const sp=state.spacing;
     systems.forEach(s=>{
       const rng=seeded(s.cid+7);const sun=s.ids[0];s.sun=sun;sunOf[s.cid]=sun;
@@ -725,8 +769,9 @@ const V3=(()=>{
   const skinCol=(c,hex)=>{c.set(hex);if(SKIN.tint)c.lerp(_tc.set(SKIN.tint.color),SKIN.tint.k);
     if(SKIN.neon){c.getHSL(_nh);if(_nh.s<0.12)c.setHSL(0.52,0.35,0.74);else c.setHSL(_nh.h,Math.min(1,0.78+_nh.s*0.3),Math.min(0.62,Math.max(0.5,_nh.l)));}   // neon: same hue, full saturation
     return c;};
-  const rPlanet=id=>(1.1+2.4*Math.sqrt(Math.min(1,base[id].w/maxW)))*state.nsize;
-  const rSun=s=>(3.6+3.2*Math.sqrt(s.n/maxN))*state.nsize;
+  const rPlanet=id=>SKIN.city?CITY_ROOM*0.47:(1.1+2.4*Math.sqrt(Math.min(1,base[id].w/maxW)))*state.nsize;   // in the city every room is the same size
+  const rSun=s=>SKIN.city?CITY_ROOM*0.62:(3.6+3.2*Math.sqrt(s.n/maxN))*state.nsize;
+  const CITY_BOX=new THREE.BoxGeometry(2,2,2);
   function clearMeshes(){[planets,suns,lines].forEach(o=>{if(o){scene.remove(o);if(o.geometry&&o!==planets&&o!==suns)o.geometry.dispose();o.material.dispose();}});glows.forEach(g=>{scene.remove(g);g.material.dispose();});glows=[];lblLayer.innerHTML='';sunLbl={};planetLbl={};realmLbl=[];}
   let sunLbl={},planetLbl={},realmLbl=[];
   function build(){
@@ -734,14 +779,14 @@ const V3=(()=>{
     planetIds=[];sunIds=[];slotOf={};
     systems.forEach(s=>{if(nodeVisible(s.sun))sunIds.push(s.sun);s.ids.slice(1).forEach(id=>{if(nodeVisible(id))planetIds.push(id);});});
     const bodyMat=emis=>SKIN.body?SKIN.body(emis):SKIN.wire?new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:0.75}):new THREE.MeshLambertMaterial(emis?{color:0xffffff,emissive:emis}:{color:0xffffff});
-    planets=new THREE.InstancedMesh(geo,bodyMat(null),Math.max(1,planetIds.length));planets.count=planetIds.length;planets.name='planets';
+    planets=new THREE.InstancedMesh(SKIN.city?CITY_BOX:geo,bodyMat(null),Math.max(1,planetIds.length));planets.count=planetIds.length;planets.name='planets';
     planetIds.forEach((id,i)=>{slotOf[id]={mesh:'p',i};_m.makeScale(rPlanet(id),rPlanet(id),rPlanet(id)).setPosition(pos[id]);planets.setMatrixAt(i,_m);planets.setColorAt(i,skinCol(_c,base[id].color));});
     planets.instanceMatrix.needsUpdate=true;if(planets.instanceColor)planets.instanceColor.needsUpdate=true;scene.add(planets);
     if(SKIN.wire){   // a translucent core under the wire so the balls still read as solids from a distance
       const core=new THREE.InstancedMesh(geo,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.28,depthWrite:false}),Math.max(1,planetIds.length));core.count=planetIds.length;
       planetIds.forEach((id,i)=>{_m.makeScale(rPlanet(id)*0.92,rPlanet(id)*0.92,rPlanet(id)*0.92).setPosition(pos[id]);core.setMatrixAt(i,_m);core.setColorAt(i,skinCol(_c,base[id].color));});
       core.instanceMatrix.needsUpdate=true;if(core.instanceColor)core.instanceColor.needsUpdate=true;scene.add(core);glows.push(core);}
-    suns=new THREE.InstancedMesh(geo,bodyMat(SKIN.sunEmissive),Math.max(1,sunIds.length));suns.count=sunIds.length;suns.name='suns';
+    suns=new THREE.InstancedMesh(SKIN.city?CITY_BOX:geo,bodyMat(SKIN.sunEmissive),Math.max(1,sunIds.length));suns.count=sunIds.length;suns.name='suns';
     sunIds.forEach((id,i)=>{const s=systems.find(x=>x.sun===id);slotOf[id]={mesh:'s',i};const r=rSun(s);_m.makeScale(r,r,r).setPosition(pos[id]);suns.setMatrixAt(i,_m);suns.setColorAt(i,skinCol(_c,s.color).lerp(new THREE.Color(0xffffff),0.2));
       const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:skinCol(new THREE.Color(),s.color),transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false}));sp.position.copy(pos[id]);sp.scale.set(r*6,r*6,1);scene.add(sp);glows.push(sp);
       const d=document.createElement('div');d.className='lbl sun';d.textContent=s.label;d.dataset.id=id;d.addEventListener('click',()=>flyToSystem(s.cid));lblLayer.appendChild(d);sunLbl[id]=d;});
@@ -793,6 +838,10 @@ const V3=(()=>{
     const fm=floorMarioAt(mouse.x,mouse.y);
     if(fm&&(!hits[0]||hits[0].distance>camera.position.distanceTo(fm.position))){if(!hoverMW){hoverM=null;hoverW=null;setHover(null);hoverMW=true;renderer.domElement.style.cursor='pointer';tip.innerHTML=`<b>${ICO.block}Mario</b><span>click to play MARIO WORLD</span>`;tip.style.display='block';}return;}
     if(hoverMW){hoverMW=false;tip.style.display='none';renderer.domElement.style.cursor='';}
+    // a worker walking the streets (City skin): click to walk along with it
+    const cw=SKIN.city&&cityCtx&&!ride&&!walk?cityCtx.pick(mouse.x,mouse.y):-1;
+    if(cw>=0){if(hoverCW!==cw){hoverM=null;hoverW=null;setHover(null);hoverCW=cw;renderer.domElement.style.cursor='pointer';tip.innerHTML=cityCtx.tip(cw);tip.style.display='block';}return;}
+    if(hoverCW>=0){hoverCW=-1;tip.style.display='none';renderer.domElement.style.cursor='';}
     // a monarch under the pointer wins over whatever is behind it (never the one you're riding — it's right in front of the camera)
     let mh=null;if(monarchGroup.visible){const h=ray.intersectObject(monarchGroup,true)[0];if(h&&(!hits[0]||h.distance<hits[0].distance)){let o=h.object;while(o&&o.parent!==monarchGroup)o=o.parent;mh=monarchs.find(m=>m.g===o)||null;if(mh===ride)mh=null;}}
     if(mh!==hoverM){hoverM=mh;if(hoverM){setHover(null);renderer.domElement.style.cursor='pointer';tip.innerHTML=`<b>${ICO.butterfly}Monarch</b><span>click to ride it · steer with the arrow keys or WASD</span>`;tip.style.display='block';}else{tip.style.display='none';renderer.domElement.style.cursor='';}}
@@ -813,15 +862,15 @@ const V3=(()=>{
   renderer.domElement.addEventListener('mousemove',ev=>{mouse.set(ev.clientX/window.innerWidth*2-1,-(ev.clientY/window.innerHeight)*2+1);tip.style.left=ev.clientX+'px';tip.style.top=ev.clientY+'px';pendingPick=true;});
   renderer.domElement.addEventListener('mouseleave',()=>{setHover(null);});
   let downAt=null;
-  renderer.domElement.addEventListener('pointerdown',ev=>{downAt=[ev.clientX,ev.clientY];if(tg&&ev.pointerType!=='mouse')tgTurn(ev.clientX<window.innerWidth/2?1:-1);if(pacOn())pacCtx.swipe(ev,'down');});
+  renderer.domElement.addEventListener('pointerdown',ev=>{downAt=[ev.clientX,ev.clientY];if(tg&&ev.pointerType!=='mouse')tgTurn(ev.clientX<window.innerWidth/2?1:-1);if(pacOn())pacCtx.swipe(ev,'down');if(cityCtx&&cityCtx.following())cityCtx.unfollow();});   // (grabbing the view lets go of a worker you were walking with)
   renderer.domElement.addEventListener('pointerup',ev=>{if(pacOn())pacCtx.swipe(ev,'up');});   // PAC-MAN: a swipe steers   // in a TRON game a tap on either half of the screen turns that way
-  renderer.domElement.addEventListener('click',ev=>{if(tg||pacOn()||marioOn()||!downAt||Math.hypot(ev.clientX-downAt[0],ev.clientY-downAt[1])>4)return;pick();if(hoverFB>=0){tronGameStart(hoverFB);return;}if(hoverPM&&pacCtx){hoverPM=null;pacCtx.start();return;}if(hoverMW&&marioCtx){hoverMW=false;marioCtx.start();return;}if(hoverM){beginRide(hoverM);return;}if(hoverW){beginWalk(hoverW);return;}if(hover)select(hover);});
+  renderer.domElement.addEventListener('click',ev=>{if(tg||pacOn()||marioOn()||!downAt||Math.hypot(ev.clientX-downAt[0],ev.clientY-downAt[1])>4)return;pick();if(hoverFB>=0){tronGameStart(hoverFB);return;}if(hoverPM&&pacCtx){hoverPM=null;pacCtx.start();return;}if(hoverMW&&marioCtx){hoverMW=false;marioCtx.start();return;}if(hoverCW>=0&&cityCtx){cityCtx.follow(hoverCW);hoverCW=-1;tip.style.display='none';return;}if(hoverM){beginRide(hoverM);return;}if(hoverW){beginWalk(hoverW);return;}if(hover)select(hover);});
   renderer.domElement.addEventListener('dblclick',ev=>{if(ride||walk||tg||pacOn()||marioOn())return;pick();if(hover)flyToSystem(sysOf[hover]);else flyHome();});
   function select(id){selected=id;showCard(id);}
   // ── camera ──
   let tw=null,focused=null;
   function flyTo(p,t,ms){if(idle)endIdle();if(ride)endRide();if(walk)endWalk();lastInput=performance.now();tw={p0:camera.position.clone(),p1:p.clone(),t0:controls.target.clone(),t1:t.clone(),s:performance.now(),ms:ms||1600};controls.autoRotate=false;}
-  function homeCam(){const R=galaxyR;return new THREE.Vector3(0,-R*1.9,R*1.45);}
+  function homeCam(){const R=galaxyR;return SKIN.city?new THREE.Vector3(0,-R*1.5,R*1.15):new THREE.Vector3(0,-R*1.9,R*1.45);}   // the city is flat: come in closer
   let focusedRealm=null;
   function flyHome(){setFocused(null);focusedRealm=null;updateCrumb();flyTo(homeCam(),new THREE.Vector3(0,0,0),1500);}
   function flyToSystem(cid){const s=systems.find(x=>x.cid===cid);if(!s)return;setFocused(cid);
@@ -892,7 +941,7 @@ const V3=(()=>{
   function start(){if(running)return;running=true;frame();}
   function stop(){running=false;}
   window.addEventListener('resize',()=>fitView(false));
-  window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName)){if(document.getElementById('skins').classList.contains('on'))return;if(tg)tronGameEnd();else if(pacOn())pacCtx.exit();else if(marioOn())marioCtx.exit();else if(ride)endRide();else if(walk)endWalk();else flyHome();}});
+  window.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&view==='3d'&&!/INPUT|TEXTAREA/.test(ev.target.tagName)){if(document.getElementById('skins').classList.contains('on'))return;if(tg)tronGameEnd();else if(pacOn())pacCtx.exit();else if(marioOn())marioCtx.exit();else if(cityCtx&&cityCtx.following())cityCtx.unfollow();else if(ride)endRide();else if(walk)endWalk();else flyHome();}});
 
   // ── monarchs: a few butterflies drifting through the galaxy ──
   // Built from primitives (no model to load): a body, four wings with a
@@ -1163,7 +1212,7 @@ void main(){if(vD<uGap)discard;float t=clamp(1.0-vD/uL,0.0,1.0);float fade=t*t*(
     if(walk)endWalk();if(idleW&&follow===idleW)follow=null;idleW=null;   // the idle tour lets go of a rider that's about to be rebuilt (it was left following a ghost, and threw every frame)
     walkers.forEach(w=>{walkerGroup.remove(w.g);if(w.bike){w.bike.dispose();disposeRibbon(w.rb);}});walkers.length=0;skinKinesins();
     const ok=[];for(let i=0;i<edgeList.length;i++)if(walkerEdgeOK(i))ok.push(i);
-    const count=Math.min(150,Math.max(0,Math.round(edgeList.length/25)),ok.length);
+    const count=SKIN.city?0:Math.min(150,Math.max(0,Math.round(edgeList.length/25)),ok.length);   // (the city has its own workers)
     for(let k=0;k<count;k++){
       const i=ok.splice(Math.floor(wRng()*ok.length),1)[0];const e=edgeList[i];
       const u=1.5*state.nsize,g=new THREE.Group();
@@ -1708,6 +1757,7 @@ void main(){float l=dot(vC,vec3(0.3,0.5,0.2));vec3 c=mix(vC,mix(uA,uB,vT)*l*1.7,
     if(SKIN.extras==='tron')tronBuild();
     if(SKIN.extras==='pac')pacBuild();
     if(SKIN.extras==='mario')marioBuild();
+    if(SKIN.extras==='city')cityBuild();
   }
   // ── monarch: the deep-space sky ──
   // A sky dome with a milky band, colour-temperature stars that twinkle, soft dust nebulae around the systems,
@@ -2004,6 +2054,7 @@ void main(){float x=fract(vS+uT*(0.16+vS*0.12));float d=fract(x-vT);float p=exp(
   // while you play PAC-MAN the camera looks down through the galaxy onto the board, so the galaxy steps out of the way
   let galaxyHidden=false;
   function galaxyVis(v){galaxyHidden=!v;[planets,suns].forEach(o=>{if(o)o.visible=v;});glows.forEach(g=>{g.visible=v&&!(SKIN.mario&&g.isSprite);});walkerGroup.visible=v&&document.getElementById('walkers').checked;if(v&&lines)lines.visible=true;}
+  let layoutKind=SKIN.city?'city':'space';
   let pacCtx=null;   // the running arcade: its game controls and what can be clicked
   const GHOST_COLS=[0xff1a1a,0xffb8ff,0x19ffff,0xffb852],GHOST_NAMES=['Blinky','Pinky','Inky','Clyde'];
   const GHOST_GEO=(()=>{   // a dome on a short skirt with a scalloped hem: unit width, up +z, the hem's points at z=0
@@ -2217,6 +2268,143 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
         G.pupils.forEach(p=>p.visible=!fr);}
       if(pg){pgCam(dt);pgHud();}
     };
+    extras.userData.step(0,0);
+  }
+  // ── CITY layout: the same graph as a town ──
+  // Each codebase is a district, each group a building in it, each node a room: a building is its group's rooms stacked k×k to
+  // a floor (the hub on the roof), so the size of a group reads as the height of a tower. A district's buildings stand in rows
+  // (biggest first), fronts on a street; the districts sit in a grid, and the lines between the grid cells are avenues and
+  // boulevards, so every building can be walked to from every other along streets (see the workers in cityBuild).
+  const CITY_ROOM=7;let cityMeta=null;
+  function cityLayout(){
+    const sp=state.spacing,room=CITY_ROOM,alley=5*sp,street=16*sp,avenue=28*sp;
+    systems.forEach(s=>{const sun=s.ids[0];s.sun=sun;sunOf[s.cid]=sun;sysBySun[sun]=s;s.tilt=new THREE.Euler(0,0,0);
+      const np=s.n-1,k=np<=0?1:Math.max(np>3?2:1,Math.round(Math.cbrt(np)*0.8)),floors=np<=0?0:Math.ceil(np/(k*k));
+      s.bk=k;s.bf=floors;s.bw=k*room;s.bh=floors*room+room*1.25;});
+    const byRealm={};systems.forEach(s=>{(byRealm[s.realm]=byRealm[s.realm]||[]).push(s);});
+    realmList=Object.keys(byRealm).map(k=>({name:k,systems:byRealm[k],meta:REALMS.find(r=>r.name===k)||{}}));
+    // a district: rows of buildings, fronts aligned on the row's street
+    realmList.forEach(R=>{const list=R.systems.slice().sort((a,b)=>b.n-a.n);
+      const area=list.reduce((a,s)=>a+(s.bw+alley)*(s.bw+street),0),maxW=Math.max(...list.map(s=>s.bw));
+      const Dw=Math.max(maxW+alley*2,Math.sqrt(area)*1.3);const rows=[];let row=[],x=alley,rowD=0,wide=0;
+      list.forEach(s=>{if(x+s.bw+alley>Dw&&row.length){rows.push({items:row,d:rowD});row=[];x=alley;rowD=0;}s.lx=x+s.bw/2;row.push(s);x+=s.bw+alley;wide=Math.max(wide,x);rowD=Math.max(rowD,s.bw);});
+      if(row.length)rows.push({items:row,d:rowD});
+      let y=-alley;const streets=[];rows.forEach(r=>{const front=y-r.d;r.items.forEach(s=>{s.ly=front+s.bw/2;s.lstreet=front-street/2;});streets.push(front-street/2);y=front-street;});
+      R.Dw=Math.max(Dw,wide);R.Dh=-y;R.streets=streets;R.systems.sort((a,b)=>b.n-a.n);R.systems.forEach((s,i)=>{sysRank[s.sun]=i;sunRealm[s.sun]=R;});});
+    // the districts in a grid: biggest first, columns as wide as their widest district, rows as deep as their deepest
+    const D=realmList.slice().sort((a,b)=>b.Dw*b.Dh-a.Dw*a.Dh),N=D.length,cols=Math.ceil(Math.sqrt(N)),nrows=Math.ceil(N/cols);
+    const colW=new Array(cols).fill(0),rowH=new Array(nrows).fill(0);
+    D.forEach((R,i)=>{R.gc=i%cols;R.gr=Math.floor(i/cols);colW[R.gc]=Math.max(colW[R.gc],R.Dw+avenue);rowH[R.gr]=Math.max(rowH[R.gr],R.Dh+avenue);});
+    const TW=colW.reduce((a,b)=>a+b,0),TH=rowH.reduce((a,b)=>a+b,0),colX=[-TW/2],rowY=[TH/2];
+    colW.forEach(w=>colX.push(colX[colX.length-1]+w));rowH.forEach(h=>rowY.push(rowY[rowY.length-1]-h));
+    const sysMeta={};
+    D.forEach(R=>{const cl=colX[R.gc],cr=colX[R.gc+1],ct=rowY[R.gr],cb=rowY[R.gr+1];
+      const ox=cl+avenue/2+((cr-cl-avenue)-R.Dw)/2,oy=ct-avenue/2;   // centred in its column, hard against the boulevard above
+      R.ox=ox;R.oy=oy;R.cell={l:cl,r:cr,t:ct,b:cb};R.c=new THREE.Vector3(ox+R.Dw/2,oy-R.Dh/2,0);R.r=Math.hypot(R.Dw,R.Dh)/2+avenue;
+      R.systems.forEach(s=>{const X=ox+s.lx,Y=oy+s.ly,k=s.bk;
+        s.c=new THREE.Vector3(X,Y,s.bh/2);s.r=Math.max(s.bw*0.9,s.bh*0.6)+room;
+        pos[s.sun]=new THREE.Vector3(X,Y,s.bf*room+room*0.62);
+        s.ids.slice(1).forEach((id,j)=>{const fl=Math.floor(j/(k*k)),q=j%(k*k),ix=q%k,iy=Math.floor(q/k);pos[id]=new THREE.Vector3(X+(ix-(k-1)/2)*room,Y+(iy-(k-1)/2)*room,fl*room+room/2);});
+        sysMeta[s.cid]={door:[X,Y-s.bw/2-1.5],street:oy+s.lstreet,R,label:s.label,color:s.color,w:s.bw,h:s.bh,x:X,y:Y};});});
+    galaxyR=Math.hypot(TW,TH)/2;
+    cityMeta={room,street,avenue,alley,colX,rowY,TW,TH,sys:sysMeta,districts:D};
+  }
+  // ── CITY: dusk over the town ──
+  // A sky dome from deep blue to a warm horizon, the ground drawn once to a canvas from the layout (parks, paved blocks, the
+  // streets with their centre lines, a pavement round every building), street lamps, and the workers: little people who walk
+  // the streets carrying a parcel from one building to another along the graph's own cross-group links. A worker comes out of
+  // a building's front door, walks its street to the avenue, along the avenues and boulevards to the other building's street,
+  // goes in, and a moment later sets off again down one of that building's links. Click one and the camera walks with it.
+  let cityCtx=null;
+  const CW_BODY=new THREE.CylinderGeometry(1.05,1.25,3,10).rotateX(Math.PI/2),CW_HEAD=new THREE.SphereGeometry(1,12,10),CW_LEG=new THREE.BoxGeometry(0.75,0.75,2.6),CW_BOX=new THREE.BoxGeometry(1.7,1.7,1.7);
+  function cityBuild(){
+    const M=cityMeta;if(!M)return;
+    const add=o=>{o.frustumCulled=false;extras.add(o);return o;};
+    // sky: deep blue overhead, a warm band on the horizon
+    const dome=add(new THREE.Mesh(new THREE.SphereGeometry(100,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,depthTest:false,
+      vertexShader:`varying vec3 vDir;void main(){vDir=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+      fragmentShader:`varying vec3 vDir;void main(){float e=normalize(vDir).z;vec3 top=vec3(0.09,0.13,0.28),mid=vec3(0.36,0.33,0.55),hor=vec3(0.98,0.62,0.4);
+ vec3 c=e>0.0?mix(mix(hor,mid,smoothstep(0.0,0.12,e)),top,smoothstep(0.1,0.6,e)):mix(hor*0.55,vec3(0.07,0.08,0.13),smoothstep(0.0,0.08,-e));
+ gl_FragColor=vec4(c,1.0);}`})));dome.renderOrder=-10;
+    // the ground, drawn from the layout
+    const pad=M.avenue*2,W=M.TW+pad*2,H=M.TH+pad*2,S=Math.min(4096/W,4096/H,LITE?1:2),cv=document.createElement('canvas');cv.width=Math.ceil(W*S);cv.height=Math.ceil(H*S);
+    const g=cv.getContext('2d'),X=x=>(x+W/2)*S,Y=y=>(H/2-y)*S,rect=(x0,y0,x1,y1,col)=>{g.fillStyle=col;g.fillRect(X(x0),Y(y1),(x1-x0)*S,(y1-y0)*S);};
+    g.fillStyle='#262a38';g.fillRect(0,0,cv.width,cv.height);
+    const dash=(x0,y0,x1,y1,col,w,d)=>{g.strokeStyle=col;g.lineWidth=w*S;g.setLineDash([d*S,d*S]);g.beginPath();g.moveTo(X(x0),Y(y0));g.lineTo(X(x1),Y(y1));g.stroke();g.setLineDash([]);};
+    M.districts.forEach(R=>{const c=R.cell,a=M.avenue/2;
+      rect(c.l+a,c.b+a,c.r-a,c.t-a,'#2f5244');                                   // park round the district
+      rect(R.ox,R.oy-R.Dh,R.ox+R.Dw,R.oy,'#353a4b');                               // the paved block
+      R.streets.forEach(sy=>{const y=R.oy+sy;rect(c.l,y-M.street/2,c.r,y+M.street/2,'#262a38');dash(c.l,y,c.r,y,'rgba(236,236,236,.55)',0.5,5);});
+      R.systems.forEach(s=>{const m=M.sys[s.cid];rect(m.x-m.w/2-2.5,m.y-m.w/2-2.5,m.x+m.w/2+2.5,m.y+m.w/2+2.5,'#4a5064');rect(m.x-2.4,m.y-m.w/2-3.2,m.x+2.4,m.y-m.w/2,'#6b7390');});});
+    M.colX.forEach(x=>dash(x,M.rowY[0],x,M.rowY[M.rowY.length-1],'#e8c35a',0.7,7));
+    M.rowY.forEach(y=>dash(M.colX[0],y,M.colX[M.colX.length-1],y,'#e8c35a',0.7,7));
+    const tex=new THREE.CanvasTexture(cv);tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    const ground=add(new THREE.Mesh(new THREE.PlaneGeometry(W,H),new THREE.MeshLambertMaterial({map:tex})));ground.position.z=-0.05;
+    const outer=add(new THREE.Mesh(new THREE.PlaneGeometry(W*12,H*12),new THREE.MeshLambertMaterial({color:0x1c1f2b})));outer.position.z=-0.4;
+    // street lamps along the avenues and boulevards: a post and a warm glow
+    const LP=[];for(let i=0;i<M.colX.length;i++)for(let y=M.rowY[M.rowY.length-1];y<=M.rowY[0];y+=46)LP.push([M.colX[i]+M.avenue*0.36,y]);
+    for(let j=0;j<M.rowY.length;j++)for(let x=M.colX[0];x<=M.colX[M.colX.length-1];x+=46)LP.push([x,M.rowY[j]-M.avenue*0.36]);
+    if(LP.length){const P=new Float32Array(LP.length*3),Ls=new Float32Array(LP.length*6);LP.forEach(([x,y],i)=>{P.set([x,y,11],i*3);Ls.set([x,y,0,x,y,11],i*6);});
+      const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(P,3));
+      add(new THREE.Points(pg,new THREE.PointsMaterial({map:glowTex,color:0xffc977,size:14,sizeAttenuation:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending})));
+      const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(Ls,3));add(new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x151823})));}
+    glows.forEach(s=>{if(s.isSprite){s.material.opacity=0.35;s.scale.multiplyScalar(0.55);}});
+    // ── workers ──
+    const links={};
+    edgeList.forEach(e=>{const a=sysOf[e.from],b=sysOf[e.to];if(a===b||!M.sys[a]||!M.sys[b])return;(links[a]=links[a]||[]).push(b);(links[b]=links[b]||[]).push(a);});
+    const from=Object.keys(links).map(Number);
+    const rng=seeded(314),N=from.length?Math.min(LITE?45:140,Math.max(12,Math.round(edgeList.length/40))):0;
+    // the way from one building's door to another's, along streets only
+    function route(a,b){const A=M.sys[a],B=M.sys[b],p=[A.door,[A.door[0],A.street]];
+      if(A.R===B.R){if(Math.abs(A.street-B.street)<1)p.push([B.door[0],A.street]);
+        else{const c=A.R.cell,ax=Math.abs(A.door[0]-c.l)+Math.abs(B.door[0]-c.l)<Math.abs(A.door[0]-c.r)+Math.abs(B.door[0]-c.r)?c.l:c.r;p.push([ax,A.street],[ax,B.street],[B.door[0],B.street]);}}
+      else{const ca=A.R.cell,cb=B.R.cell,ax=B.door[0]<A.door[0]?ca.l:ca.r,bx=A.door[0]<B.door[0]?cb.l:cb.r,by=cb.t;
+        p.push([ax,A.street],[ax,by],[bx,by],[bx,B.street],[B.door[0],B.street]);}
+      p.push(B.door);const L=[0];for(let i=1;i<p.length;i++)L.push(L[i-1]+Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]));return {p,L,len:L[L.length-1]};}
+    const workers=[];
+    const mk=(col,cnt)=>{const m=new THREE.InstancedMesh(...col,cnt);m.frustumCulled=false;m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);add(m);return m;};
+    const shirt=mk([CW_BODY,new THREE.MeshLambertMaterial({color:0xffffff})],Math.max(1,N)),head=mk([CW_HEAD,new THREE.MeshLambertMaterial({color:0xf1c7a0})],Math.max(1,N)),
+      legs=mk([CW_LEG,new THREE.MeshLambertMaterial({color:0x2c3350})],Math.max(1,N*2)),parcel=mk([CW_BOX,new THREE.MeshBasicMaterial({color:0xffffff})],Math.max(1,N));
+    // (the shared geometries must survive buildExtras, which frees its direct children's: each mesh gets its own reference-counted copy)
+    [shirt,head,legs,parcel].forEach(m=>{m.geometry=m.geometry.clone();});
+    const setOff=(w,a)=>{const pool=links[a]||[];let b=pool[Math.floor(rng()*pool.length)];if(b===w.last&&pool.length>1)b=pool[Math.floor(rng()*pool.length)];
+      w.last=a;w.a=a;w.b=b;w.r=route(a,b);w.s=0;w.in=0;skinCol(_c,M.sys[a].color);shirt.setColorAt(w.i,_c);skinCol(_c,M.sys[b].color);parcel.setColorAt(w.i,_c);
+      if(shirt.instanceColor)shirt.instanceColor.needsUpdate=true;if(parcel.instanceColor)parcel.instanceColor.needsUpdate=true;};
+    for(let i=0;i<N;i++){const w={i,spd:11+rng()*6,ph:rng()*6.28,yaw:0,p:[0,0]};setOff(w,from[Math.floor(rng()*from.length)]);w.s=rng()*w.r.len;workers.push(w);}
+    const D=new THREE.Object3D();D.rotation.order='ZYX';
+    const at=(w)=>{const r=w.r;let k=1;while(k<r.L.length-1&&r.L[k]<w.s)k++;const a=r.p[k-1],b=r.p[k],seg=Math.max(1e-6,r.L[k]-r.L[k-1]),t=Math.min(1,Math.max(0,(w.s-r.L[k-1])/seg));
+      return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,Math.atan2(b[1]-a[1],b[0]-a[0])];};
+    let follow=null,idleFollow=false,T=0;const _fp=new THREE.Vector3(),_ft=new THREE.Vector3();
+    const own=dome,rm=CYC_RM;
+    extras.userData.step=(dt)=>{
+      if(!own.parent){extras.userData.step=null;[shirt,head,legs,parcel].forEach(m=>{m.geometry.dispose();});cityCtx=null;return;}
+      if(!rm)T+=dt;if(suns&&suns.material.uniforms&&suns.material.uniforms.uT)suns.material.uniforms.uT.value=T;if(planets&&planets.material.uniforms&&planets.material.uniforms.uT)planets.material.uniforms.uT.value=T;
+      const show=document.getElementById('walkers')?document.getElementById('walkers').checked:true;[shirt,head,legs,parcel].forEach(m=>{m.visible=show&&!galaxyHidden;});
+      for(const w of workers){
+        if(w.in>0){w.in-=dt;if(w.in<=0)setOff(w,w.b);}
+        else if(!rm){w.s+=w.spd*dt;w.ph+=w.spd*dt*0.55;if(w.s>=w.r.len){w.in=1+rng()*3;}}
+        const [x,y,yaw]=at(w);let dy=yaw-w.yaw;dy-=Math.round(dy/(Math.PI*2))*Math.PI*2;w.yaw+=dy*Math.min(1,dt*10);w.p[0]=x;w.p[1]=y;
+        const K=0.72,hide=(w.in>0?0:Math.min(1,w.s/2,(w.r.len-w.s)/2))*K,sw=Math.sin(w.ph)*0.55,bob=Math.abs(Math.cos(w.ph))*0.35*K,f=[Math.cos(w.yaw),Math.sin(w.yaw)],sd=[-f[1],f[0]];   // K: a worker is a bit under a storey tall
+        D.scale.setScalar(hide);D.rotation.set(0,0,w.yaw);D.position.set(x,y,4.1*K+bob);D.updateMatrix();shirt.setMatrixAt(w.i,D.matrix);
+        D.position.set(x,y,6.6*K+bob);D.updateMatrix();head.setMatrixAt(w.i,D.matrix);
+        D.position.set(x+f[0]*1.7*K,y+f[1]*1.7*K,4.5*K+bob);D.updateMatrix();parcel.setMatrixAt(w.i,D.matrix);
+        for(let s2=0;s2<2;s2++){const a=s2?sw:-sw,hx=x+sd[0]*(s2?0.6:-0.6)*K,hy=y+sd[1]*(s2?0.6:-0.6)*K;
+          D.rotation.set(0,a,w.yaw);D.position.set(hx-f[0]*1.3*Math.sin(a)*hide,hy-f[1]*1.3*Math.sin(a)*hide,2.6*hide-1.3*Math.cos(a)*hide+bob*hide);D.updateMatrix();legs.setMatrixAt(w.i*2+s2,D.matrix);}}
+      [shirt,head,legs,parcel].forEach(m=>{m.instanceMatrix.needsUpdate=true;});
+      if(follow){const w=follow,f=[Math.cos(w.yaw),Math.sin(w.yaw)];_fp.set(w.p[0]-f[0]*30,w.p[1]-f[1]*30,17);_ft.set(w.p[0]+f[0]*10,w.p[1]+f[1]*10,4);
+        const k=1-Math.exp(-dt*4);camera.position.lerp(_fp,k);controls.target.lerp(_ft,k);controls.autoRotate=false;}};
+    const label=cid=>M.sys[cid]?M.sys[cid].label:'';
+    cityCtx={
+      // the worker under the pointer (screen distance), or -1
+      pick(nx,ny){if(!N||!shirt.visible)return -1;const W2=window.innerWidth,H2=window.innerHeight;let best=-1,bd=1e9;
+        for(const w of workers){if(w.in>0)continue;_v.set(w.p[0],w.p[1],4);const dist=camera.position.distanceTo(_v);_v.project(camera);if(_v.z>1)continue;
+          const d=Math.hypot((_v.x-nx)*W2/2,(_v.y-ny)*H2/2),r=Math.max(14,8*pxPer()/dist);if(d<r&&d<bd){bd=d;best=w.i;}}return best;},
+      tip(i){const w=workers[i];return w?`<b>${ICO.worker}Worker</b><span>carrying from ${esc(label(w.a))} to ${esc(label(w.b))} · click to walk along</span>`:'';},
+      follow(i,auto){follow=workers[i]||null;idleFollow=!!auto;if(follow){tw=null;controls.enabled=false;}},
+      unfollow(){if(!follow)return;follow=null;idleFollow=false;controls.enabled=true;controls.update();},
+      following:()=>!!follow,idle:()=>idleFollow,count:N,
+      randomWorker:()=>{const live=workers.filter(w=>w.in<=0&&w.r.len>60);return live.length?live[Math.floor(rng()*live.length)].i:-1;},
+      where:i=>{const w=workers[i];return w?{x:+w.p[0].toFixed(1),y:+w.p[1].toFixed(1),from:label(w.a),to:label(w.b),s:+w.s.toFixed(1),len:+w.r.len.toFixed(1)}:null;}};
     extras.userData.step(0,0);
   }
   // ── MARIO WORLD ──
@@ -2480,7 +2668,7 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
       const d=Math.hypot((_v.x-nx)*W/2,(_v.y-ny)*H/2),r=Math.max(26,b.bike.g.scale.x*ppu/dist*0.75);if(d<r&&d<bd){bd=d;best=i;}});
     return best;}
   window.addEventListener('pagehide',()=>{if(pacCtx&&pacCtx.playing())pacCtx.record();if(marioCtx&&marioCtx.playing())marioCtx.record();});
-  let hoverPM=null,hoverMW=false;
+  let hoverPM=null,hoverMW=false,hoverCW=-1;
   const marioOn=()=>!!(marioCtx&&marioCtx.playing());
   // Mario under the pointer on his level: the mesh, or null
   function floorMarioAt(nx,ny){
@@ -2637,7 +2825,7 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
   const idleEl=document.getElementById('idle-hint');
   let idle=false,idleAfter=10000,lastInput=performance.now(),follow=null,followSince=0,followUntil=0;
   const _des=new THREE.Vector3(),_side=new THREE.Vector3(),_fwdN=new THREE.Vector3(),_upZ=new THREE.Vector3(0,0,1);
-  function touch(){lastInput=performance.now();if(idle){const toured=!!follow;endIdle();if(toured&&!tw)flyHome();}}
+  function touch(){lastInput=performance.now();if(cityCtx&&cityCtx.idle()){cityCtx.unfollow();idleEl.classList.remove('on');}if(idle){const toured=!!follow;endIdle();if(toured&&!tw)flyHome();}}
   ['pointerdown','pointermove','wheel','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,touch,{passive:true}));
   function pickFollow(now){const ms=monarchGroup.visible?monarchs.filter(m=>m!==follow):[],ws=walkerGroup.visible?walkers.filter(w=>w!==follow):[];
     const useW=ws.length&&(!ms.length||seedRng()<0.5);const pool=useW?ws:ms;follow=pool.length?pool[Math.floor(seedRng()*pool.length)]:null;idleW=useW?follow:null;
@@ -2646,6 +2834,11 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
   function endIdle(){idle=false;follow=null;idleW=null;controls.autoRotate=state.rotate;idleEl.classList.remove('on');}
   function idleStep(dt,now){
     if(ride||walk||tg||pacOn()||marioOn())return;
+    // the city's idle tour walks along with a worker, a new one every 25 s
+    if(SKIN.city&&cityCtx){if(!state.idle){if(cityCtx.idle()){cityCtx.unfollow();idleEl.classList.remove('on');}return;}
+      if(cityCtx.following()){if(cityCtx.idle()&&now>followUntil){const i=cityCtx.randomWorker();if(i>=0)cityCtx.follow(i,true);followUntil=now+25000;}return;}
+      if(!tw&&now-lastInput>idleAfter){const i=cityCtx.randomWorker();if(i>=0){cityCtx.follow(i,true);followUntil=now+25000;idleEl.innerHTML=ICO.worker+'Walking along with a worker — move the mouse to take over';idleEl.classList.add('on');}}
+      return;}
     if(!state.idle||!(monarchGroup.visible||walkerGroup.visible)){if(idle)endIdle();return;}
     if(!idle){if(!tw&&now-lastInput>idleAfter)beginIdle(now);return;}
     if(!follow||now>followUntil)pickFollow(now);
@@ -2671,9 +2864,11 @@ void main(){float s=vT*vL,dm=step(abs(fract(s/uSp)-0.5),0.13);
     setSpeed(v){controls.autoRotateSpeed=v;},setRotate(on){controls.autoRotate=on;},
     setLineOpacity(){if(lines)lines.material.opacity=Math.min(1,SKIN.line*state.lw);},
     reskin(){_fade.set(SKIN.fade);scene.background.set(SKIN.sky);scene.fog.color.set(SKIN.sky);scene.fog.density=SKIN.fog;rim.color.set(SKIN.rim);ambient.intensity=SKIN.ambient;
-      if(ride)endRide();if(walk)endWalk();build();buildMonarchs();monarchGroup.visible=state.monarchs&&SKIN.monarchs!==false;},
+      if(ride)endRide();if(walk)endWalk();const kind=SKIN.city?'city':'space',moved=kind!==layoutKind;layoutKind=kind;build();buildMonarchs();monarchGroup.visible=state.monarchs&&SKIN.monarchs!==false;if(moved){focused=null;focusedRealm=null;flyHome();}},
     relabel(){if(focused!=null)showSystemLabels(focused);},lite:LITE,
     monarchScreen(i){const m=monarchs[i||0];if(!m)return null;_v.copy(m.g.position).project(camera);return [(_v.x+1)/2*window.innerWidth,(1-_v.y)/2*window.innerHeight];},
+    cityWorkers(){return cityCtx?cityCtx.count:0;},cityWhere(i){return cityCtx?cityCtx.where(i||0):null;},cityFollow(i){if(cityCtx)cityCtx.follow(i||0);},cityFollowing(){return !!(cityCtx&&cityCtx.following());},
+    cityMeta(){return cityMeta?{TW:Math.round(cityMeta.TW),TH:Math.round(cityMeta.TH),districts:cityMeta.districts.length,buildings:Object.keys(cityMeta.sys).length}:null;},
     marioPlay(){if(marioCtx)marioCtx.start();},marioGo(){if(marioCtx)marioCtx.go();},marioExit(){if(marioCtx)marioCtx.exit();},marioState(){return marioCtx?marioCtx.state():null;},marioSim(s,k){if(marioCtx)marioCtx.sim(s,k);},
     marioScreen(){if(!marioCtx)return null;const o=marioCtx.target();_v.copy(o.position);_v.z+=marioCtx.tile()*0.5;_v.project(camera);return _v.z>1?null:[(_v.x+1)/2*window.innerWidth,(1-_v.y)/2*window.innerHeight];},
     pacPlay(){if(pacCtx)pacCtx.start();},pacGo(){if(pacCtx)pacCtx.go();},pacSteer(d){if(pacCtx)pacCtx.steer(d);},pacExit(){if(pacCtx)pacCtx.exit();},pacState(){return pacCtx?pacCtx.state():null;},pacSim(s){if(pacCtx)pacCtx.sim(s);},
@@ -2868,8 +3063,25 @@ function marioPreview(s){
   o+=px(MW_HERO_PV,100,62,1.35)+px(MW_GOOMBA_PV,212,104,1.2);
   return o+'</svg>';
 }
+// City picker card: a dusk sky, a street grid in perspective, towers of lit rooms in their group colours, workers on the street
+function cityPreview(s){
+  const W=240,H=135,f=n=>n.toFixed(1);let _r=3;const rng=()=>{_r=(_r*9301+49297)%233280;return _r/233280;};
+  let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ct-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#172249"/><stop offset=".55" stop-color="#5b4f86"/><stop offset=".78" stop-color="#f29d64"/></linearGradient></defs>`
+    +`<rect width="${W}" height="${H}" fill="url(#ct-sky)"/><rect y="84" width="${W}" height="${H-84}" fill="#262a38"/>`;
+  for(let i=0;i<18;i++)o+=`<circle cx="${f(rng()*W)}" cy="${f(rng()*40)}" r=".5" fill="#fff" opacity="${(0.3+rng()*0.5).toFixed(2)}"/>`;
+  o+=`<path d="M0 100H240M0 118H240" stroke="#e8c35a" stroke-width=".7" stroke-dasharray="4 4"/><rect y="86" width="${W}" height="6" fill="#353a4b"/>`;
+  const tower=(x,w,h,col,base)=>{let t=`<rect x="${x}" y="${base-h}" width="${w}" height="${h}" fill="${col}"/><rect x="${x+w}" y="${base-h+3}" width="${w*0.35}" height="${h-3}" fill="${col}" opacity=".62"/><rect x="${x}" y="${base-h-2}" width="${w+w*0.35}" height="2.4" fill="#2a2f40"/>`;
+    for(let yy=base-h+3;yy<base-3;yy+=5)for(let xx=x+2;xx<x+w-2;xx+=4.5)t+=`<rect x="${f(xx)}" y="${yy}" width="2.4" height="3" fill="${rng()<0.62?'#ffd28a':'#1e2540'}"/>`;return t;};
+  [[14,18,40,'#e7a9a0'],[40,14,58,'#9fc3e8'],[62,20,30,'#b6dca5'],[92,22,72,'#f0c98e'],[124,16,46,'#c9b4e8'],[150,24,34,'#9fd8d0'],[184,16,62,'#f2b3c9'],[208,22,40,'#dfe3a6']].forEach(([x,w,h,c])=>{o+=tower(x,w,h,c,86);});
+  o+=`<circle cx="103" cy="12" r="2.2" fill="#ffb347"/><circle cx="103" cy="12" r="6" fill="#ffb347" opacity=".25"/>`;
+  const man=(x,y,c)=>`<g transform="translate(${x} ${y})"><rect x="-1.2" y="-5" width="2.4" height="3.2" rx=".8" fill="${c}"/><circle cy="-6.4" r="1.2" fill="#f1c7a0"/><path d="M-.6 -1.8L-1.2 1M.6 -1.8L1.2 1" stroke="#2c3350" stroke-width=".9"/><rect x="1.4" y="-4.4" width="1.8" height="1.8" fill="#ffd28a"/></g>`;
+  o+=man(40,108,'#e7a9a0')+man(96,110,'#9fc3e8')+man(150,106,'#f0c98e')+man(200,111,'#b6dca5');
+  [30,90,150,210].forEach(x=>o+=`<line x1="${x}" y1="92" x2="${x}" y2="80" stroke="#151823" stroke-width="1"/><circle cx="${x}" cy="80" r="3" fill="#ffc977" opacity=".45"/>`);
+  return o+'</svg>';
+}
 function previewSVG(s){
   if(s.pv&&s.pv.holo)return jarvisPreview(s);
+  if(s.pv&&s.pv.city)return cityPreview(s);
   if(s.pv&&s.pv.mario)return marioPreview(s);
   if(s.pv&&s.pv.pac)return pacPreview(s);
   if(s.pv&&s.pv.tron)return tronPreview(s);
@@ -2910,9 +3122,9 @@ function applySkin(key,first){
   const r=document.documentElement.style;Object.entries(SKIN.css).forEach(([k,v])=>r.setProperty('--'+k,v));if(!SKIN.css.font)r.removeProperty('--font');
   document.body.dataset.skin=key;const bm=document.getElementById('brand-mark');if(SKIN.icon)bm.innerHTML=SKIN.icon;else bm.textContent=SKIN.mark;document.getElementById('skin-name').textContent=SKIN.name;
   // the link riders are kinesins everywhere but TRON, where they're light cycles
-  const cyc=!!SKIN.cycles,pac=!!SKIN.pac,mw=!!SKIN.mario,tx=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  tx('walkers-t',mw?'Coins':pac?'Pac-Men':cyc?'Light cycles':'Kinesins');tx('walkers-s',mw?'Coins rolling along some links — zoom in to watch them, click one to ride it':pac?'Pac-Men eating their way along some links — zoom in to watch them, click one to drive it':cyc?'Light cycles riding some links, laying light walls — zoom in to watch them, click one to ride it':'Tiny carriers walking data along some links — zoom in to watch them, click one to walk it');
-  tx('idle-s',mw?'Left alone for 10 s, the camera chases a coin along the links':pac?'Left alone for 10 s, the camera chases a Pac-Man along the links':cyc?'Left alone for 10 s, the camera rides a monarch or chases a light cycle':'Left alone for 10 s, the camera rides a monarch or watches a kinesin work');
+  const cyc=!!SKIN.cycles,pac=!!SKIN.pac,mw=!!SKIN.mario,ct=!!SKIN.city,tx=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  tx('walkers-t',ct?'Workers':mw?'Coins':pac?'Pac-Men':cyc?'Light cycles':'Kinesins');tx('walkers-s',ct?'Little workers carrying data between buildings along the links — click one to walk along':mw?'Coins rolling along some links — zoom in to watch them, click one to ride it':pac?'Pac-Men eating their way along some links — zoom in to watch them, click one to drive it':cyc?'Light cycles riding some links, laying light walls — zoom in to watch them, click one to ride it':'Tiny carriers walking data along some links — zoom in to watch them, click one to walk it');
+  tx('idle-s',ct?'Left alone for 10 s, the camera walks along with a worker':mw?'Left alone for 10 s, the camera chases a coin along the links':pac?'Left alone for 10 s, the camera chases a Pac-Man along the links':cyc?'Left alone for 10 s, the camera rides a monarch or chases a light cycle':'Left alone for 10 s, the camera rides a monarch or watches a kinesin work');
   const mr=document.getElementById('monarchs');if(mr&&mr.closest('.row'))mr.closest('.row').style.display=SKIN.monarchs===false?'none':'';   // a skin without butterflies has no switch for them
   document.querySelectorAll('.skin').forEach(el=>el.classList.toggle('on',el.dataset.skin===key));
   try{localStorage.setItem('atlas.skin',key);}catch(e){}
