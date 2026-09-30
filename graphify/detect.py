@@ -1266,7 +1266,8 @@ def _load_dir_own_ignore(d: Path, *, gitignore: bool = True) -> list[tuple[Path,
     were read, so e.g. `vendor/sub/.gitignore` was silently ignored (#1206).
     """
     patterns: list[tuple[Path, str]] = []
-    for fname in ((".gitignore", ".graphifyignore") if gitignore else (".graphifyignore",)):
+    # Monarch Atlas: .atlasignore works exactly like .graphifyignore.
+    for fname in ((".gitignore", ".graphifyignore", ".atlasignore") if gitignore else (".graphifyignore", ".atlasignore")):
         ignore_file = d / fname
         if ignore_file.exists():
             for raw in _read_ignore_text(ignore_file).splitlines():

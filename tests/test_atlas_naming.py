@@ -103,3 +103,13 @@ def test_atlas_out_is_never_scanned_as_source():
     from graphify import detect
     src = Path(detect.__file__).read_text(encoding="utf-8")
     assert '"atlas-out"' in src
+
+
+def test_atlasignore_excludes_like_graphifyignore(tmp_path):
+    from graphify.detect import detect
+    (tmp_path / "app.py").write_text("def main():\n    return 1\n")
+    (tmp_path / "vendor").mkdir()
+    (tmp_path / "vendor" / "lib.py").write_text("def lib():\n    return 2\n")
+    (tmp_path / ".atlasignore").write_text("# not our code\nvendor/\n")
+    found = json.dumps(detect(tmp_path), default=str)
+    assert "app.py" in found and "lib.py" not in found
