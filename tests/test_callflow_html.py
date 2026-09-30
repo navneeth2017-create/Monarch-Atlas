@@ -3,11 +3,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-from graphify.callflow_html import derive_sections_from_communities, write_callflow_html
+from monarch_atlas.callflow_html import derive_sections_from_communities, write_callflow_html
 
 
-def _make_graphify_out(tmp_path: Path) -> Path:
-    out = tmp_path / "graphify-out"
+def _make_atlas_out(tmp_path: Path) -> Path:
+    out = tmp_path / "atlas-out"
     out.mkdir()
     graph = {
         "directed": False,
@@ -28,7 +28,7 @@ def _make_graphify_out(tmp_path: Path) -> Path:
         "built_at_commit": "abcdef123456",
     }
     (out / "graph.json").write_text(json.dumps(graph), encoding="utf-8")
-    (out / ".graphify_labels.json").write_text(
+    (out / ".atlas_labels.json").write_text(
         json.dumps({"0": "Runtime", "1": "Export"}),
         encoding="utf-8",
     )
@@ -50,11 +50,11 @@ def _make_graphify_out(tmp_path: Path) -> Path:
 
 
 def test_write_callflow_html_creates_file_and_uses_report(tmp_path):
-    out = _make_graphify_out(tmp_path)
+    out = _make_atlas_out(tmp_path)
 
     html_path = write_callflow_html(
         tmp_path,
-        output="graphify-out/callflow.html",
+        output="atlas-out/callflow.html",
         max_sections=4,
     )
 
@@ -69,17 +69,17 @@ def test_write_callflow_html_creates_file_and_uses_report(tmp_path):
 
 
 def test_export_callflow_html_cli_creates_file(tmp_path):
-    _make_graphify_out(tmp_path)
+    _make_atlas_out(tmp_path)
 
     result = subprocess.run(
         [
             sys.executable,
             "-m",
-            "graphify",
+            "monarch_atlas",
             "export",
             "callflow-html",
             "--output",
-            "graphify-out/from-cli.html",
+            "atlas-out/from-cli.html",
             "--max-sections",
             "4",
         ],
@@ -89,14 +89,14 @@ def test_export_callflow_html_cli_creates_file(tmp_path):
     )
 
     assert result.returncode == 0, result.stderr
-    html_path = tmp_path / "graphify-out" / "from-cli.html"
+    html_path = tmp_path / "atlas-out" / "from-cli.html"
     assert html_path.exists()
     assert "callflow HTML written" in result.stdout
 
 
 def test_export_callflow_html_cli_accepts_positional_graph_path(tmp_path):
-    _make_graphify_out(tmp_path)
-    external_out = tmp_path / "GitNexus" / "graphify-out"
+    _make_atlas_out(tmp_path)
+    external_out = tmp_path / "GitNexus" / "atlas-out"
     external_out.mkdir(parents=True)
     graph = {
         "directed": False,
@@ -112,7 +112,7 @@ def test_export_callflow_html_cli_accepts_positional_graph_path(tmp_path):
         "hyperedges": [],
     }
     (external_out / "graph.json").write_text(json.dumps(graph), encoding="utf-8")
-    (external_out / ".graphify_labels.json").write_text(json.dumps({"0": "External Runtime", "1": "External Export"}), encoding="utf-8")
+    (external_out / ".atlas_labels.json").write_text(json.dumps({"0": "External Runtime", "1": "External Export"}), encoding="utf-8")
     (external_out / "GRAPH_REPORT.md").write_text(
         "\n".join(
             [
@@ -132,7 +132,7 @@ def test_export_callflow_html_cli_accepts_positional_graph_path(tmp_path):
         [
             sys.executable,
             "-m",
-            "graphify",
+            "monarch_atlas",
             "export",
             "callflow-html",
             str(external_out / "graph.json"),
@@ -156,9 +156,9 @@ def test_export_callflow_html_cli_accepts_positional_graph_path(tmp_path):
 
 def test_derive_sections_groups_by_architecture_keywords():
     nodes = [
-        {"id": "extract_py", "label": "extract_python", "source_file": "graphify/extract.py", "community": 0},
-        {"id": "extract_js", "label": "extract_js", "source_file": "graphify/extract.py", "community": 0},
-        {"id": "to_html", "label": "to_html", "source_file": "graphify/export.py", "community": 1},
+        {"id": "extract_py", "label": "extract_python", "source_file": "monarch_atlas/extract.py", "community": 0},
+        {"id": "extract_js", "label": "extract_js", "source_file": "monarch_atlas/extract.py", "community": 0},
+        {"id": "to_html", "label": "to_html", "source_file": "monarch_atlas/export.py", "community": 1},
         {"id": "test_html", "label": "test_export_html", "source_file": "tests/test_export.py", "community": 2},
     ]
 
@@ -174,14 +174,14 @@ def test_load_graph_rejects_oversized_file(monkeypatch, tmp_path):
     """#F4: callflow_html.load_graph must refuse to read a graph.json that
     exceeds the size cap (SystemExit via translated ValueError)."""
     import pytest
-    from graphify.callflow_html import load_graph
+    from monarch_atlas.callflow_html import load_graph
 
     graph_path = tmp_path / "graph.json"
     graph_path.write_text(
         json.dumps({"nodes": [], "links": []}),
         encoding="utf-8",
     )
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 8)
+    monkeypatch.setattr("monarch_atlas.security._MAX_GRAPH_FILE_BYTES", 8)
     with pytest.raises(SystemExit) as excinfo:
         load_graph(graph_path)
     assert "exceeds" in str(excinfo.value)
@@ -209,7 +209,7 @@ def test_load_graph_preserves_edge_direction(tmp_path):
     """#1174/#2487: graph.json is written with "directed": false, so the
     node-link parser must be told otherwise or networkx returns an undirected
     Graph and caller->callee orientation becomes arbitrary."""
-    from graphify.callflow_html import generate_call_table_rows, load_graph
+    from monarch_atlas.callflow_html import generate_call_table_rows, load_graph
 
     # Callee node inserted first: an undirected round-trip deterministically
     # yields the flipped (api, run) arc, so this fails without the forced
@@ -240,7 +240,7 @@ def test_load_graph_preserves_edge_direction(tmp_path):
 def test_load_graph_legacy_markers_override_arc_order(tmp_path):
     """Legacy graph.json files carry _src/_tgt markers on each link; they must
     override the stored arc even under the forced-directed load."""
-    from graphify.callflow_html import generate_call_table_rows, load_graph
+    from monarch_atlas.callflow_html import generate_call_table_rows, load_graph
 
     graph_path = _write_graph(
         tmp_path,
@@ -266,7 +266,7 @@ def test_load_graph_legacy_markers_override_arc_order(tmp_path):
 def test_call_table_counts_indirect_call_relation():
     """indirect_call edges are real callers (affected.py's relation set); a
     node reached only via indirect_call must not be an "External entry"."""
-    from graphify.callflow_html import generate_call_table_rows
+    from monarch_atlas.callflow_html import generate_call_table_rows
 
     nodes = [
         {"id": "A", "label": "alpha()", "source_file": "src/a.py", "file_type": "code"},
@@ -282,7 +282,7 @@ def test_call_table_counts_indirect_call_relation():
 def test_load_graph_preserves_parallel_edges(tmp_path):
     """Forcing multigraph keeps parallel edges between the same endpoints, and
     the caller set still dedupes so the table does not double-count."""
-    from graphify.callflow_html import generate_call_table_rows, load_graph
+    from monarch_atlas.callflow_html import generate_call_table_rows, load_graph
 
     graph_path = _write_graph(
         tmp_path,
@@ -313,9 +313,9 @@ def test_call_table_caller_column_sees_other_sections(tmp_path):
     the Caller column from section-local edges alone mislabels it an entry
     point -- a whole-graph claim made from partial data.
     """
-    from graphify.callflow_html import generate_call_table_rows, load_graph
+    from monarch_atlas.callflow_html import generate_call_table_rows, load_graph
 
-    out = _make_graphify_out(tmp_path)
+    out = _make_atlas_out(tmp_path)
     nodes, edges, _hyper, _meta = load_graph(out / "graph.json")
     export_node = [n for n in nodes if n["id"] == "export"]
 
@@ -327,9 +327,9 @@ def test_call_table_caller_column_sees_other_sections(tmp_path):
 def test_call_table_rows_without_whole_graph_params_unchanged(tmp_path):
     """The new all_edges/all_nodes params default to None, so existing
     three-argument callers keep the previous section-local behaviour."""
-    from graphify.callflow_html import generate_call_table_rows, load_graph
+    from monarch_atlas.callflow_html import generate_call_table_rows, load_graph
 
-    out = _make_graphify_out(tmp_path)
+    out = _make_atlas_out(tmp_path)
     nodes, edges, _hyper, _meta = load_graph(out / "graph.json")
     section_nodes = [n for n in nodes if n["community"] == 0]
     section_ids = {n["id"] for n in section_nodes}

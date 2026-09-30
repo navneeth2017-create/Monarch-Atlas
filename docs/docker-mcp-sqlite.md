@@ -6,9 +6,9 @@ connected MCP client (Claude Code, Claude Desktop, Cursor, VS Code, etc.) gains
 six SQLite tools: `read_query`, `write_query`, `create_table`, `list_tables`,
 `describe_table`, and `append_insight`.
 
-This document is *not* required to use graphify — it lives here as a known-good
+This document is *not* required to use atlas — it lives here as a known-good
 recipe for users who want a lightweight, persistent SQL workspace exposed to
-their AI clients alongside graphify's knowledge-graph tools.
+their AI clients alongside atlas's knowledge-graph tools.
 
 ## Why SQLite (and not `sqlite-mcp-server`)
 At time of writing the catalog ships two SQLite MCP images:

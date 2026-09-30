@@ -3,10 +3,10 @@ import json
 import networkx as nx
 import pytest
 from pathlib import Path
-from graphify.build import build_from_json
-from graphify.cluster import cluster
-from graphify.analyze import god_nodes, surprising_connections, _is_concept_node, graph_diff, _surprise_score, _file_category, _is_json_key_node, find_import_cycles, suggest_questions
-from graphify.extract import _make_id
+from monarch_atlas.build import build_from_json
+from monarch_atlas.cluster import cluster
+from monarch_atlas.analyze import god_nodes, surprising_connections, _is_concept_node, graph_diff, _surprise_score, _file_category, _is_json_key_node, find_import_cycles, suggest_questions
+from monarch_atlas.extract import _make_id
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -620,7 +620,7 @@ def test_suggest_questions_excludes_rationale_nodes_from_isolated_count():
 
 
 def _make_file_node(path: str) -> tuple[str, dict]:
-    """Create a graph node resembling real graphify schema."""
+    """Create a graph node resembling real atlas schema."""
     nid = _make_id(path)
     return nid, {"label": Path(path).name, "source_file": path, "file_type": "code"}
 

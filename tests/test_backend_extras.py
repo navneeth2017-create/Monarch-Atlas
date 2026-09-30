@@ -1,14 +1,14 @@
 """The claude backend must be installable via an extra, and the missing-package
 message must point uv-tool users at the right command.
 
-Friction this guards: `uv tool install graphifyy` puts graphify in an isolated
+Friction this guards: `uv tool install monarch-atlas` puts atlas in an isolated
 venv. A user with ANTHROPIC_API_KEY set then hit "anthropic package required"
 with no extra to satisfy it (claude was the only backend with no `[extra]`), and
 the message said `pip install anthropic`, which does not reach a uv tool venv.
 """
 from pathlib import Path
 
-from graphify.llm import _backend_pkg_hint
+from monarch_atlas.llm import _backend_pkg_hint
 
 try:
     import tomllib
@@ -52,7 +52,7 @@ def test_version_gated_optional_backends_are_packaged():
 def test_backend_pkg_hint_points_at_uv_tool_and_extra():
     msg = _backend_pkg_hint("anthropic", "anthropic")
     assert "uv tool install" in msg
-    # Monarch Atlas: the hint installs our fork from its git URL; "graphifyy[...]" would pull upstream from PyPI.
+    # The hint installs Monarch Atlas from its git URL.
     assert 'monarch-atlas' in msg
     assert "pip install anthropic" in msg  # pip/venv fallback still mentioned
 
@@ -60,7 +60,7 @@ def test_backend_pkg_hint_points_at_uv_tool_and_extra():
 def test_all_extra_is_the_union_of_every_other_extra():
     """README documents `[all]` as "Everything above": every dependency of every
     other extra must be in it. `psycopg[binary]` from `[postgres]` was missing, so
-    an `[all]` install still failed on `graphify extract --postgres` (#3482)."""
+    an `[all]` install still failed on `atlas extract --postgres` (#3482)."""
     extras = _extras()
     union = {dep for name, deps in extras.items() if name != "all" for dep in deps}
     missing = sorted(union - set(extras["all"]))

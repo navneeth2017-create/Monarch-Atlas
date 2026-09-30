@@ -5,7 +5,7 @@ DESTINATION PATH length, not only the per-component NAME_MAX.
 255-byte NAME_MAX. That is the correct constraint on POSIX and the wrong one on
 Windows, where the limit applies to the WHOLE path (MAX_PATH = 260 chars
 including the terminating NUL). A 200-byte stem under an ordinary vault
-directory therefore overruns MAX_PATH, and `graphify export obsidian` /
+directory therefore overruns MAX_PATH, and `atlas export obsidian` /
 `export wiki` die mid-write with FileNotFoundError, leaving a half-written
 vault behind.
 
@@ -20,11 +20,11 @@ import re
 import networkx as nx
 import pytest
 
-from graphify import export as export_mod
-from graphify import wiki as wiki_mod
-from graphify.export import _obsidian_safe_stem, to_canvas, to_obsidian
-from graphify.paths import _MIN_STEM_BUDGET, _WINDOWS_MAX_PATH, stem_filename_budget
-from graphify.wiki import _safe_filename, to_wiki
+from monarch_atlas import export as export_mod
+from monarch_atlas import wiki as wiki_mod
+from monarch_atlas.export import _obsidian_safe_stem, to_canvas, to_obsidian
+from monarch_atlas.paths import _MIN_STEM_BUDGET, _WINDOWS_MAX_PATH, stem_filename_budget
+from monarch_atlas.wiki import _safe_filename, to_wiki
 
 
 def _graph(labels: list[str]) -> tuple[nx.Graph, dict[int, list[str]]]:
@@ -62,7 +62,7 @@ def test_budget_is_untouched_on_posix(monkeypatch):
 
 def test_budget_shrinks_so_the_whole_path_fits_max_path(monkeypatch):
     _fake_windows(monkeypatch)
-    vault = r"C:\Users\dev\projects\payments-api\graphify-out\obsidian"
+    vault = r"C:\Users\dev\projects\payments-api\atlas-out\obsidian"
     budget = stem_filename_budget(vault, reserve=4)
 
     assert budget < 200, "an ordinary vault path must shrink the 200-byte default"
@@ -73,7 +73,7 @@ def test_budget_shrinks_so_the_whole_path_fits_max_path(monkeypatch):
 
 def test_budget_accounts_for_the_caller_reserve(monkeypatch):
     _fake_windows(monkeypatch)
-    vault = r"C:\Users\dev\projects\payments-api\graphify-out\obsidian"
+    vault = r"C:\Users\dev\projects\payments-api\atlas-out\obsidian"
     assert stem_filename_budget(vault, reserve=4) - stem_filename_budget(vault, reserve=15) == 11
 
 

@@ -1,4 +1,4 @@
-"""`graphify query` must render every edge between visited nodes (#2323).
+"""`atlas query` must render every edge between visited nodes (#2323).
 
 `_bfs`/`_dfs` recorded an edge only when it discovered an *unvisited* neighbour,
 so the result was a traversal tree rather than the induced subgraph over the
@@ -12,8 +12,8 @@ import json
 import networkx as nx
 from networkx.readwrite import json_graph
 
-import graphify.__main__ as mainmod
-from graphify.serve import _bfs, _dfs, _filter_graph_by_context, _query_graph_text
+import monarch_atlas.__main__ as mainmod
+from monarch_atlas.serve import _bfs, _dfs, _filter_graph_by_context, _query_graph_text
 
 # Hub suppression only kicks in at degree >= 50 (serve.py `hub_threshold`).
 _HUB_PADDING = 60
@@ -237,7 +237,7 @@ def test_query_cli_renders_the_edge_between_two_seeds(monkeypatch, tmp_path, cap
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "query", "checkout discounted_total", "--graph", str(graph_path)],
+        ["atlas", "query", "checkout discounted_total", "--graph", str(graph_path)],
     )
 
     mainmod.main()

@@ -12,7 +12,7 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
-from graphify.extract import extract_python
+from monarch_atlas.extract import extract_python
 
 
 def _write_py(tmp_path: Path, code: str) -> Path:

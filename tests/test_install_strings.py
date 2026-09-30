@@ -1,9 +1,9 @@
 """Regression tests for install-time instruction strings.
 
-These strings live in graphify/__main__.py and are written into project-local
+These strings live in monarch_atlas/__main__.py and are written into project-local
 files (CLAUDE.md, AGENTS.md, GEMINI.md, .cursor/rules/, .kiro/steering/, etc.)
-or into in-process hook payloads. Earlier versions of graphify told every
-assistant to "ALWAYS read graphify-out/GRAPH_REPORT.md before answering" —
+or into in-process hook payloads. Earlier versions of atlas told every
+assistant to "ALWAYS read atlas-out/GRAPH_REPORT.md before answering" —
 which silently increased per-question token usage in Claude Code sessions
 (issue #580). This file locks in the query-first policy so a future revert
 or partial change is caught by CI.
@@ -11,7 +11,7 @@ or partial change is caught by CI.
 from __future__ import annotations
 import json
 
-from graphify.__main__ import (
+from monarch_atlas.__main__ import (
     _SEARCH_NUDGE,
     _READ_NUDGE,
     _skill_registration,
@@ -47,18 +47,18 @@ _INSTALL_TEXTS: dict[str, str] = {
 }
 
 
-def test_every_install_surface_recommends_graphify_query():
-    """All ten install surfaces must point the assistant at `graphify query`
+def test_every_install_surface_recommends_atlas_query():
+    """All ten install surfaces must point the assistant at `atlas query`
     as the first action for codebase questions. This is the load-bearing
     fix for issue #580 — the alternative (reading GRAPH_REPORT.md) costs
     ~10x more tokens per question and made the project worse-than-baseline
     in real Claude Code sessions."""
     missing: list[str] = []
     for name, text in _INSTALL_TEXTS.items():
-        if "graphify query" not in text:
+        if "atlas query" not in text:
             missing.append(name)
     assert not missing, (
-        f"these install surfaces no longer mention `graphify query`: {missing}. "
+        f"these install surfaces no longer mention `atlas query`: {missing}. "
         f"If you removed it intentionally, consider whether issue #580 is back."
     )
 
@@ -124,21 +124,21 @@ def test_report_is_still_referenced_as_fallback():
 
 
 def test_agents_section_does_not_skip_dirty_graph_output():
-    assert "Dirty graphify-out/ files are expected" in _AGENTS_MD_SECTION
-    assert "not a reason to skip graphify" in _AGENTS_MD_SECTION
+    assert "Dirty atlas-out/ files are expected" in _AGENTS_MD_SECTION
+    assert "not a reason to skip atlas" in _AGENTS_MD_SECTION
 
 
-def test_agents_section_uses_generic_graphify_instruction():
+def test_agents_section_uses_generic_atlas_instruction():
     assert "`skill` tool" not in _AGENTS_MD_SECTION
-    assert 'skill: "graphify"' not in _AGENTS_MD_SECTION
-    assert "use the installed graphify skill" in _AGENTS_MD_SECTION
+    assert 'skill: "atlas"' not in _AGENTS_MD_SECTION
+    assert "use the installed atlas skill" in _AGENTS_MD_SECTION
 
 
 def test_skill_registration_uses_host_generic_instruction():
     reg = _skill_registration()
-    assert 'skill: "graphify"' not in reg
+    assert 'skill: "atlas"' not in reg
     assert "Skill tool" not in reg
-    assert "use the installed graphify skill or instructions" in reg
+    assert "use the installed atlas skill or instructions" in reg
 
 
 def test_how_it_works_clarifies_code_only_semantic_extraction():

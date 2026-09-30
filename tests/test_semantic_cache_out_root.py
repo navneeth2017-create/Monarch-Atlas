@@ -1,6 +1,6 @@
 """Regression tests for #1990 and #1991.
 
-#1990 — `graphify extract --out` saves recovery checkpoints in the wrong directory.
+#1990 — `atlas extract --out` saves recovery checkpoints in the wrong directory.
          save_semantic_cache must write to cache_root (the --out dir), not root
          (the corpus dir), when they differ.
 
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify.cache import (
+from monarch_atlas.cache import (
     check_semantic_cache,
     file_hash,
     load_cached,
@@ -30,7 +30,7 @@ from graphify.cache import (
 
 def _semantic_dir(root: Path, mode: str | None = None) -> Path:
     kind = "semantic" if mode is None else f"semantic-{mode}"
-    return root / "graphify-out" / "cache" / kind
+    return root / "atlas-out" / "cache" / kind
 
 
 def _count_cache_files(base: Path) -> int:
@@ -68,8 +68,8 @@ def test_save_semantic_cache_writes_to_cache_root_not_corpus(tmp_path):
     assert _count_cache_files(_semantic_dir(corpus)) == 0
 
 
-def test_save_semantic_cache_no_corpus_graphify_out_created(tmp_path):
-    """With cache_root set, no graphify-out/ dir should be created inside corpus."""
+def test_save_semantic_cache_no_corpus_atlas_out_created(tmp_path):
+    """With cache_root set, no atlas-out/ dir should be created inside corpus."""
     corpus = tmp_path / "corpus"
     out = tmp_path / "out"
     corpus.mkdir()
@@ -85,8 +85,8 @@ def test_save_semantic_cache_no_corpus_graphify_out_created(tmp_path):
         cache_root=out,
     )
 
-    assert not (corpus / "graphify-out").exists(), (
-        "graphify-out/ must not be created inside the corpus when cache_root is set"
+    assert not (corpus / "atlas-out").exists(), (
+        "atlas-out/ must not be created inside the corpus when cache_root is set"
     )
 
 
@@ -212,7 +212,7 @@ def test_extract_corpus_parallel_accepts_cache_root_kwarg():
     """extract_corpus_parallel must accept a cache_root kwarg without raising
     (import + signature check — no actual LLM call)."""
     import inspect
-    from graphify.llm import extract_corpus_parallel
+    from monarch_atlas.llm import extract_corpus_parallel
 
     sig = inspect.signature(extract_corpus_parallel)
     assert "cache_root" in sig.parameters, (

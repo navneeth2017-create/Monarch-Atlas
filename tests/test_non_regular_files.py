@@ -6,7 +6,7 @@ survive whatever a repository happens to contain.
 
 The decisive case is a FIFO carrying a source suffix: ``open()`` on a named
 pipe with no writer blocks forever and never raises, so the ``try``/``except``
-around every reader cannot help — ``graphify update`` simply never returns and
+around every reader cannot help — ``atlas update`` simply never returns and
 prints nothing. A unix socket fails differently (``ENXIO``) but for the same
 reason: it is not a regular file.
 """
@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify.detect import _is_regular_file
+from monarch_atlas.detect import _is_regular_file
 
 
 @pytest.fixture()

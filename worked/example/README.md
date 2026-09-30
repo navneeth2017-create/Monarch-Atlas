@@ -2,7 +2,7 @@
 
 A small document pipeline — parser, validator, processor, storage, API — with architecture notes and research notes. Seven files, two languages, clear call relationships between modules.
 
-Run graphify on it and you get a knowledge graph showing how the modules connect, which functions call which, and how the architecture notes relate to the code.
+Run atlas on it and you get a knowledge graph showing how the modules connect, which functions call which, and how the architecture notes relate to the code.
 
 ## Input files
 
@@ -20,18 +20,18 @@ raw/
 ## How to run
 
 ```bash
-pip install graphifyy
+pip install monarch-atlas
 
-graphify install                        # Claude Code
-graphify install --platform codex       # Codex
-graphify install --platform opencode    # OpenCode
-graphify install --platform claw        # OpenClaw
+atlas install                        # Claude Code
+atlas install --platform codex       # Codex
+atlas install --platform opencode    # OpenCode
+atlas install --platform claw        # OpenClaw
 ```
 
 Then open your AI coding assistant in this directory and type:
 
 ```
-/graphify ./raw
+/atlas ./raw
 ```
 
 No PDF or image extraction — runs entirely on AST and markdown with no token cost for semantic extraction.
@@ -53,4 +53,4 @@ Ask questions from your AI coding assistant:
 - "which module has the most connections?"
 - "what does the architecture doc say about the storage design?"
 
-The graph lives in `graphify-out/` and persists across sessions.
+The graph lives in `atlas-out/` and persists across sessions.

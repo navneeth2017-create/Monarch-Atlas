@@ -13,11 +13,11 @@ import json
 import networkx as nx
 from networkx.readwrite import json_graph
 
-from graphify.serve import _load_graph, _query_graph_text
+from monarch_atlas.serve import _load_graph, _query_graph_text
 
 
 def _write_calls_graph(tmp_path):
-    """One `calls` edge, on-disk undirected — the `graphify extract` shape."""
+    """One `calls` edge, on-disk undirected — the `atlas extract` shape."""
     G = nx.Graph()
     G.add_node("caller", label="caller_fn", source_file="a.py", source_location="L1", community=0)
     G.add_node("callee", label="callee_fn", source_file="b.py", source_location="L1", community=1)
@@ -56,7 +56,7 @@ def test_mcp_query_explicit_context_filter_still_applies(tmp_path):
 
 
 def test_traversal_view_keeps_multigraph_parallel_and_mutual_edges():
-    from graphify.serve import _traversal_view
+    from monarch_atlas.serve import _traversal_view
     G = nx.MultiDiGraph()
     G.add_node("a", label="a"); G.add_node("b", label="b")
     G.add_edge("a", "b", relation="calls"); G.add_edge("a", "b", relation="imports")
@@ -71,7 +71,7 @@ def test_traversal_view_keeps_multigraph_parallel_and_mutual_edges():
 
 
 def test_traversal_view_leaves_undirected_graph_alone():
-    from graphify.serve import _traversal_view
+    from monarch_atlas.serve import _traversal_view
     G = nx.Graph()
     G.add_edge("a", "b", relation="calls")
     assert _traversal_view(G) is G
@@ -81,7 +81,7 @@ def test_traversal_view_folds_mutual_arcs_like_the_cli_loader(tmp_path):
     """On a plain DiGraph, u->v and v->u become one undirected edge — the same
     fold the CLI's undirected load of graph.json performs, so the two read
     surfaces keep returning the same subgraph."""
-    from graphify.serve import _traversal_view
+    from monarch_atlas.serve import _traversal_view
     G = nx.Graph()
     G.add_node("a", label="a_fn", source_file="a.py", source_location="L1", community=0)
     G.add_node("b", label="b_fn", source_file="b.py", source_location="L1", community=0)

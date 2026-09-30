@@ -17,7 +17,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _extract(tmp_path, files: dict[str, str]):
@@ -163,7 +163,7 @@ def test_case_only_member_difference_is_not_a_match(tmp_path):
 def test_an_unrelated_edge_between_the_members_does_not_suppress_the_link(tmp_path):
     # The dedup is scoped to dispatches_to. Another relation between the two
     # member nodes says nothing about whether the dispatch link is present.
-    from graphify.csharp_dispatch import resolve_csharp_interface_dispatch
+    from monarch_atlas.csharp_dispatch import resolve_csharp_interface_dispatch
 
     nodes = [
         {"id": "iface", "label": "IR", "source_file": "a.cs", "_callable_class": True},
@@ -184,7 +184,7 @@ def test_an_unrelated_edge_between_the_members_does_not_suppress_the_link(tmp_pa
 
 
 def test_an_existing_dispatch_edge_is_not_duplicated(tmp_path):
-    from graphify.csharp_dispatch import resolve_csharp_interface_dispatch
+    from monarch_atlas.csharp_dispatch import resolve_csharp_interface_dispatch
 
     nodes = [
         {"id": "iface", "label": "IR", "source_file": "a.cs", "_callable_class": True},
@@ -226,7 +226,7 @@ def test_mixed_corpus_links_only_the_csharp_pair(tmp_path):
 def test_member_name_is_read_up_to_the_first_parenthesis(tmp_path):
     # The pair match is keyed on this string. C# labels are `.Name()` today, so
     # this pins the reduction itself rather than a shape the extractor emits.
-    from graphify.csharp_dispatch import _method_label
+    from monarch_atlas.csharp_dispatch import _method_label
 
     assert _method_label({"label": ".Build()"}) == "Build"
     assert _method_label({"label": "Build"}) == "Build"

@@ -9,9 +9,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from graphify.extract import _make_id, extract
-from graphify.extractors.resolution import _resolve_js_module_path, _resolve_js_import_target
-from graphify.extract import _resolve_rescued_specifier
+from monarch_atlas.extract import _make_id, extract
+from monarch_atlas.extractors.resolution import _resolve_js_module_path, _resolve_js_import_target
+from monarch_atlas.extract import _resolve_rescued_specifier
 
 
 def _write(path: Path, text: str) -> Path:
@@ -29,7 +29,7 @@ def test_3357_minimal_reproduction_no_config_emits_calls_edge(tmp_path: Path, mo
     - emits imports_from, imports, and calls edges to the actual adapter/function nodes.
     """
     # Prevent host machine VCS roots (e.g. C:\Users\HP\.git) from anchoring temp test paths
-    monkeypatch.setattr("graphify.detect._find_vcs_root", lambda start: None)
+    monkeypatch.setattr("monarch_atlas.detect._find_vcs_root", lambda start: None)
     adapter = _write(
         tmp_path / "adapter.js",
         "export function enableBackgroundBle() { return 1; }\n",
@@ -261,7 +261,7 @@ def test_unresolved_at_alias_does_not_infer_call_to_unrelated_definition(tmp_pat
     """#1659 protection: an unresolved @/ alias must not infer calls to unrelated definitions.
 
     If caller.js imports { missingFn } from "@/does-not-exist.js" and unrelated.js
-    happens to export a lone matching function missingFn(), Graphify must NOT emit
+    happens to export a lone matching function missingFn(), Atlas must NOT emit
     a phantom INFERRED or EXTRACTED calls edge from caller.js to unrelated.js.
     """
     caller = _write(

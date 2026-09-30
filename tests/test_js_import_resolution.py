@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify.extract import _file_node_id, _file_stem, _make_id, extract
+from monarch_atlas.extract import _file_node_id, _file_stem, _make_id, extract
 
 
 def _write(path: Path, text: str) -> Path:
@@ -464,7 +464,7 @@ def test_ts_dynamic_import_does_not_create_phantom_cycle(tmp_path: Path):
     # Regression test for #1241.
     import networkx as nx
 
-    from graphify.analyze import find_import_cycles
+    from monarch_atlas.analyze import find_import_cycles
 
     actions = _write(
         tmp_path / "actions.ts",

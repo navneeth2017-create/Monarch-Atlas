@@ -18,19 +18,19 @@ def _edges_with_relation(r, *relations):
 
 
 def test_pascal_no_error():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     assert "error" not in r
 
 
 def test_pascal_finds_unit():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     assert any("SampleUnit" in l for l in _labels(r))
 
 
 def test_pascal_finds_classes():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     labels = _labels(r)
     assert any("TBaseProcessor" in l for l in labels)
@@ -38,13 +38,13 @@ def test_pascal_finds_classes():
 
 
 def test_pascal_finds_interface():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     assert any("IProcessor" in l for l in _labels(r))
 
 
 def test_pascal_finds_methods():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     labels = _labels(r)
     assert any("Process" in l for l in labels)
@@ -54,13 +54,13 @@ def test_pascal_finds_methods():
 
 
 def test_pascal_finds_imports():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     assert "imports" in _relations(r)
 
 
 def test_pascal_import_edges_have_import_context():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     import_edges = _edges_with_relation(r, "imports")
     assert import_edges
@@ -68,13 +68,13 @@ def test_pascal_import_edges_have_import_context():
 
 
 def test_pascal_finds_inherits():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     assert "inherits" in _relations(r)
 
 
 def test_pascal_inherits_from_base():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     node_by_id = {n["id"]: n["label"] for n in r["nodes"]}
     inherits = [e for e in r["edges"] if e["relation"] == "inherits"]
@@ -86,13 +86,13 @@ def test_pascal_inherits_from_base():
 
 
 def test_pascal_finds_calls():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     assert "calls" in _relations(r)
 
 
 def test_pascal_call_edges_have_call_context():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     call_edges = _edges_with_relation(r, "calls")
     assert call_edges
@@ -100,7 +100,7 @@ def test_pascal_call_edges_have_call_context():
 
 
 def test_pascal_all_edges_extracted():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     structural = {"contains", "method", "inherits", "imports"}
     for e in r["edges"]:
@@ -109,7 +109,7 @@ def test_pascal_all_edges_extracted():
 
 
 def test_pascal_no_dangling_edges():
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     node_ids = {n["id"] for n in r["nodes"]}
     # imports edges are cross-file by design; only check within-file edge targets
@@ -121,7 +121,7 @@ def test_pascal_no_dangling_edges():
 
 
 def test_pascal_dispatch_registered():
-    from graphify.extract import _DISPATCH
+    from monarch_atlas.extract import _DISPATCH
     assert ".pas" in _DISPATCH
     assert ".pp" in _DISPATCH
     assert ".dpr" in _DISPATCH
@@ -133,7 +133,7 @@ def test_pascal_dispatch_registered():
 
 
 def test_pascal_detect_extensions_registered():
-    from graphify.detect import CODE_EXTENSIONS
+    from monarch_atlas.detect import CODE_EXTENSIONS
     assert ".pas" in CODE_EXTENSIONS
     assert ".pp" in CODE_EXTENSIONS
     assert ".dpr" in CODE_EXTENSIONS
@@ -145,19 +145,19 @@ def test_pascal_detect_extensions_registered():
 # ── Lazarus Form (.lfm) ───────────────────────────────────────────────────────
 
 def test_lfm_no_error():
-    from graphify.extract import extract_lazarus_form
+    from monarch_atlas.extract import extract_lazarus_form
     r = extract_lazarus_form(FIXTURES / "sample.lfm")
     assert "error" not in r
 
 
 def test_lfm_finds_root_form_class():
-    from graphify.extract import extract_lazarus_form
+    from monarch_atlas.extract import extract_lazarus_form
     r = extract_lazarus_form(FIXTURES / "sample.lfm")
     assert any("TSampleForm" in l for l in _labels(r))
 
 
 def test_lfm_finds_component_classes():
-    from graphify.extract import extract_lazarus_form
+    from monarch_atlas.extract import extract_lazarus_form
     r = extract_lazarus_form(FIXTURES / "sample.lfm")
     labels = _labels(r)
     assert any("TPanel" in l for l in labels)
@@ -167,7 +167,7 @@ def test_lfm_finds_component_classes():
 
 
 def test_lfm_finds_event_handlers():
-    from graphify.extract import extract_lazarus_form
+    from monarch_atlas.extract import extract_lazarus_form
     r = extract_lazarus_form(FIXTURES / "sample.lfm")
     labels = _labels(r)
     assert any("ButtonOKClick" in l for l in labels)
@@ -175,7 +175,7 @@ def test_lfm_finds_event_handlers():
 
 
 def test_lfm_event_edges_have_event_context():
-    from graphify.extract import extract_lazarus_form
+    from monarch_atlas.extract import extract_lazarus_form
     r = extract_lazarus_form(FIXTURES / "sample.lfm")
     ref_edges = [e for e in r["edges"] if e["relation"] == "references"]
     assert ref_edges
@@ -183,13 +183,13 @@ def test_lfm_event_edges_have_event_context():
 
 
 def test_lfm_contains_edges_form_hierarchy():
-    from graphify.extract import extract_lazarus_form
+    from monarch_atlas.extract import extract_lazarus_form
     r = extract_lazarus_form(FIXTURES / "sample.lfm")
     assert "contains" in _relations(r)
 
 
 def test_lfm_no_dangling_edges():
-    from graphify.extract import extract_lazarus_form
+    from monarch_atlas.extract import extract_lazarus_form
     r = extract_lazarus_form(FIXTURES / "sample.lfm")
     node_ids = {n["id"] for n in r["nodes"]}
     for e in r["edges"]:
@@ -199,19 +199,19 @@ def test_lfm_no_dangling_edges():
 # ── Lazarus Package (.lpk) ───────────────────────────────────────────────────
 
 def test_lpk_no_error():
-    from graphify.extract import extract_lazarus_package
+    from monarch_atlas.extract import extract_lazarus_package
     r = extract_lazarus_package(FIXTURES / "sample.lpk")
     assert "error" not in r
 
 
 def test_lpk_finds_package_name():
-    from graphify.extract import extract_lazarus_package
+    from monarch_atlas.extract import extract_lazarus_package
     r = extract_lazarus_package(FIXTURES / "sample.lpk")
     assert any("SamplePackage" in l for l in _labels(r))
 
 
 def test_lpk_finds_required_packages():
-    from graphify.extract import extract_lazarus_package
+    from monarch_atlas.extract import extract_lazarus_package
     r = extract_lazarus_package(FIXTURES / "sample.lpk")
     labels = _labels(r)
     assert any("FCL" in l for l in labels)
@@ -219,7 +219,7 @@ def test_lpk_finds_required_packages():
 
 
 def test_lpk_imports_edges_have_import_context():
-    from graphify.extract import extract_lazarus_package
+    from monarch_atlas.extract import extract_lazarus_package
     r = extract_lazarus_package(FIXTURES / "sample.lpk")
     import_edges = _edges_with_relation(r, "imports")
     assert import_edges
@@ -227,7 +227,7 @@ def test_lpk_imports_edges_have_import_context():
 
 
 def test_lpk_contains_listed_units():
-    from graphify.extract import extract_lazarus_package
+    from monarch_atlas.extract import extract_lazarus_package
     r = extract_lazarus_package(FIXTURES / "sample.lpk")
     labels = _labels(r)
     assert any("sample" in l.lower() for l in labels)
@@ -235,7 +235,7 @@ def test_lpk_contains_listed_units():
 
 
 def test_lpk_no_dangling_edges():
-    from graphify.extract import extract_lazarus_package
+    from monarch_atlas.extract import extract_lazarus_package
     r = extract_lazarus_package(FIXTURES / "sample.lpk")
     node_ids = {n["id"] for n in r["nodes"]}
     for e in r["edges"]:
@@ -245,19 +245,19 @@ def test_lpk_no_dangling_edges():
 # ── Delphi Form (.dfm) ───────────────────────────────────────────────────────
 
 def test_dfm_no_error():
-    from graphify.extract import extract_delphi_form
+    from monarch_atlas.extract import extract_delphi_form
     r = extract_delphi_form(FIXTURES / "sample.dfm")
     assert "error" not in r
 
 
 def test_dfm_finds_root_form_class():
-    from graphify.extract import extract_delphi_form
+    from monarch_atlas.extract import extract_delphi_form
     r = extract_delphi_form(FIXTURES / "sample.dfm")
     assert any("TMainForm" in l for l in _labels(r))
 
 
 def test_dfm_finds_component_classes():
-    from graphify.extract import extract_delphi_form
+    from monarch_atlas.extract import extract_delphi_form
     r = extract_delphi_form(FIXTURES / "sample.dfm")
     labels = _labels(r)
     assert any("TPanel" in l for l in labels)
@@ -267,7 +267,7 @@ def test_dfm_finds_component_classes():
 
 
 def test_dfm_finds_event_handlers():
-    from graphify.extract import extract_delphi_form
+    from monarch_atlas.extract import extract_delphi_form
     r = extract_delphi_form(FIXTURES / "sample.dfm")
     labels = _labels(r)
     assert any("FormCreate" in l for l in labels)
@@ -275,7 +275,7 @@ def test_dfm_finds_event_handlers():
 
 
 def test_dfm_event_edges_have_event_context():
-    from graphify.extract import extract_delphi_form
+    from monarch_atlas.extract import extract_delphi_form
     r = extract_delphi_form(FIXTURES / "sample.dfm")
     ref_edges = [e for e in r["edges"] if e["relation"] == "references"]
     assert ref_edges
@@ -283,13 +283,13 @@ def test_dfm_event_edges_have_event_context():
 
 
 def test_dfm_contains_edges_form_hierarchy():
-    from graphify.extract import extract_delphi_form
+    from monarch_atlas.extract import extract_delphi_form
     r = extract_delphi_form(FIXTURES / "sample.dfm")
     assert "contains" in _relations(r)
 
 
 def test_dfm_no_dangling_edges():
-    from graphify.extract import extract_delphi_form
+    from monarch_atlas.extract import extract_delphi_form
     r = extract_delphi_form(FIXTURES / "sample.dfm")
     node_ids = {n["id"] for n in r["nodes"]}
     for e in r["edges"]:
@@ -297,7 +297,7 @@ def test_dfm_no_dangling_edges():
 
 
 def test_dfm_binary_returns_empty_not_crash():
-    from graphify.extract import extract_delphi_form
+    from monarch_atlas.extract import extract_delphi_form
     import tempfile, pathlib
     # Write a fake binary DFM (FF 0A magic header)
     with tempfile.NamedTemporaryFile(suffix=".dfm", delete=False) as f:
@@ -313,12 +313,12 @@ def test_dfm_binary_returns_empty_not_crash():
 
 
 def test_dfm_dispatch_registered():
-    from graphify.extract import _DISPATCH
+    from monarch_atlas.extract import _DISPATCH
     assert ".dfm" in _DISPATCH
 
 
 def test_dfm_detect_extension_registered():
-    from graphify.detect import CODE_EXTENSIONS
+    from monarch_atlas.detect import CODE_EXTENSIONS
     assert ".dfm" in CODE_EXTENSIONS
 
 
@@ -334,12 +334,12 @@ def test_pascal_no_duplicate_method_edges_tree_sitter():
     graph carried doubled method/contains/inherits edges (skewing degree and
     breaking the cross-file inherited-call resolver's god-node guard). Edges are
     now deduped on (source, target, relation)."""
-    from graphify.extract import extract_pascal
+    from monarch_atlas.extract import extract_pascal
     r = extract_pascal(FIXTURES / "sample.pas")
     assert _dup_edges(r) == {}, f"duplicate edges: {_dup_edges(r)}"
 
 
 def test_pascal_no_duplicate_method_edges_regex():
-    from graphify.extract import _extract_pascal_regex
+    from monarch_atlas.extract import _extract_pascal_regex
     r = _extract_pascal_regex(FIXTURES / "sample.pas")
     assert _dup_edges(r) == {}, f"duplicate edges: {_dup_edges(r)}"

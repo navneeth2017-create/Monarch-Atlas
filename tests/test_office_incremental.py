@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify import detect
+from monarch_atlas import detect
 
 docx = pytest.importorskip("docx")
 

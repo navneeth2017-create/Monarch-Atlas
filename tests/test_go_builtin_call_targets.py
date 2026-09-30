@@ -1,7 +1,7 @@
 """Go predeclared functions must not bind to same-named user symbols.
 
 `_LANGUAGE_BUILTIN_GLOBALS` covered JS/TS, Python and Swift (#726, #2147) but
-not Go, while `graphify/extractors/go.py` already consults it when resolving a
+not Go, while `monarch_atlas/extractors/go.py` already consults it when resolving a
 callee. Because the Go resolver looks the callee up by bare name, an unexported
 method that happens to share a builtin's name absorbed every builtin call in
 the repository — the same phantom-edge shape those issues fixed for other
@@ -20,7 +20,7 @@ to the same token) and drop genuine Go `h.append(v)` selector calls.
 """
 import pytest
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _nodes_by_file(result, suffix):

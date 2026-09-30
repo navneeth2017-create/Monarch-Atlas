@@ -1,7 +1,7 @@
 """CLI must not crash when a downstream reader closes the pipe early (#1807).
 
 Truncating a command's output (`head`, PowerShell `Select-Object -First N`,
-`sed q`) is routine. graphify used to keep writing after the reader disconnected,
+`sed q`) is routine. atlas used to keep writing after the reader disconnected,
 hit an unhandled BrokenPipeError, and exit 255 — so CI wrappers and agent
 harnesses that both trim output and check the exit code read a successful query
 as a failure. An early-closing reader is now treated as success (exit 0).
@@ -15,9 +15,9 @@ PYTHON = sys.executable
 
 
 def test_help_survives_reader_closing_pipe_early():
-    """`graphify --help | head -n1` must leave graphify exiting 0, not 255."""
+    """`atlas --help | head -n1` must leave atlas exiting 0, not 255."""
     producer = subprocess.Popen(
-        [PYTHON, "-m", "graphify", "--help"], stdout=subprocess.PIPE
+        [PYTHON, "-m", "monarch_atlas", "--help"], stdout=subprocess.PIPE
     )
     reader = subprocess.Popen(
         [PYTHON, "-c", "import sys; sys.stdin.readline()"],
@@ -36,7 +36,7 @@ def test_small_buffered_output_survives_reader_that_reads_nothing():
     at exit. If the reader closed the pipe without reading, that flush must be
     handled inside the CLI's guard and exit 0, not escape as a shutdown error."""
     producer = subprocess.Popen(
-        [PYTHON, "-m", "graphify", "--version"], stdout=subprocess.PIPE
+        [PYTHON, "-m", "monarch_atlas", "--version"], stdout=subprocess.PIPE
     )
     reader = subprocess.Popen(
         [PYTHON, "-c", "pass"],  # exits immediately, reads nothing

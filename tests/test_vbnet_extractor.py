@@ -16,7 +16,7 @@ from pathlib import Path
 
 
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 

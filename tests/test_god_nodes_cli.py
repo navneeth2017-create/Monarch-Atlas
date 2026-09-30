@@ -1,7 +1,7 @@
-"""`graphify god-nodes` CLI subcommand (#2004 part 2).
+"""`atlas god-nodes` CLI subcommand (#2004 part 2).
 
 god_nodes has long been an analyzer + MCP tool + README-advertised capability
-but was never wired as a CLI subcommand, so `graphify god_nodes` errored with
+but was never wired as a CLI subcommand, so `atlas god_nodes` errored with
 "unknown command". These tests pin the subcommand (both spellings), its flags,
 and that file nodes are excluded from the ranking.
 """
@@ -13,7 +13,7 @@ import networkx as nx
 import pytest
 from networkx.readwrite import json_graph
 
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 
 
 def _write_graph(tmp_path):
@@ -38,7 +38,7 @@ def _run(monkeypatch, argv):
 
 def test_god_nodes_cli_text_output(monkeypatch, tmp_path, capsys):
     gp = _write_graph(tmp_path)
-    _run(monkeypatch, ["graphify", "god-nodes", "--graph", str(gp)])
+    _run(monkeypatch, ["atlas", "god-nodes", "--graph", str(gp)])
     out = capsys.readouterr().out
     assert "God nodes (most connected):" in out
     assert "Auth" in out
@@ -49,20 +49,20 @@ def test_god_nodes_cli_text_output(monkeypatch, tmp_path, capsys):
 def test_god_nodes_cli_underscore_alias(monkeypatch, tmp_path, capsys):
     # The exact spelling from the issue title.
     gp = _write_graph(tmp_path)
-    _run(monkeypatch, ["graphify", "god_nodes", "--graph", str(gp)])
+    _run(monkeypatch, ["atlas", "god_nodes", "--graph", str(gp)])
     assert "Auth" in capsys.readouterr().out
 
 
 def test_god_nodes_cli_top_limits(monkeypatch, tmp_path, capsys):
     gp = _write_graph(tmp_path)
-    _run(monkeypatch, ["graphify", "god-nodes", "--graph", str(gp), "--top", "1"])
+    _run(monkeypatch, ["atlas", "god-nodes", "--graph", str(gp), "--top", "1"])
     body = capsys.readouterr().out
     assert body.count(" edges") == 1
 
 
 def test_god_nodes_cli_json(monkeypatch, tmp_path, capsys):
     gp = _write_graph(tmp_path)
-    _run(monkeypatch, ["graphify", "god-nodes", "--graph", str(gp), "--json"])
+    _run(monkeypatch, ["atlas", "god-nodes", "--graph", str(gp), "--json"])
     data = json.loads(capsys.readouterr().out)
     assert isinstance(data, list) and data
     assert {"id", "label", "degree"} <= set(data[0])
@@ -71,6 +71,6 @@ def test_god_nodes_cli_json(monkeypatch, tmp_path, capsys):
 
 def test_god_nodes_cli_missing_graph_errors(monkeypatch, tmp_path, capsys):
     with pytest.raises(SystemExit) as exc:
-        _run(monkeypatch, ["graphify", "god-nodes", "--graph", str(tmp_path / "nope.json")])
+        _run(monkeypatch, ["atlas", "god-nodes", "--graph", str(tmp_path / "nope.json")])
     assert exc.value.code == 1
     assert "graph file not found" in capsys.readouterr().err

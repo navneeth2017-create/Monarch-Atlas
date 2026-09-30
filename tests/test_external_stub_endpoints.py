@@ -17,7 +17,7 @@ from pathlib import Path
 
 import networkx as nx
 
-from graphify.build import (
+from monarch_atlas.build import (
     build_from_json,
     mint_external_stubs_in_data,
     prefix_graph_for_global,
@@ -97,10 +97,10 @@ def test_external_stub_unifies_across_repos_in_merge():
 
 
 def test_no_cluster_update_leaves_no_undeclared_endpoint(tmp_path: Path):
-    """End-to-end: `graphify update --no-cluster` writes the raw merged
+    """End-to-end: `atlas update --no-cluster` writes the raw merged
     extraction, not a build_from_json graph, so it must stub external endpoints
     on that path too. Routes through the real watch rebuild."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     (corpus / "pkg").mkdir(parents=True)
@@ -115,7 +115,7 @@ def test_no_cluster_update_leaves_no_undeclared_endpoint(tmp_path: Path):
     (corpus / "pkg" / "__init__.py").write_text("from .a import go\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    data = json.loads((corpus / "graphify-out" / "graph.json").read_text(encoding="utf-8"))
+    data = json.loads((corpus / "atlas-out" / "graph.json").read_text(encoding="utf-8"))
     declared = {n["id"] for n in data["nodes"]}
     dangling = [
         (e.get("source"), e.get("target"))

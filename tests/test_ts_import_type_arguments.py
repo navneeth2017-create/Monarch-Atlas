@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from graphify.extract import _normalize_ts_import_types, extract
+from monarch_atlas.extract import _normalize_ts_import_types, extract
 
 
 def _extract(tmp_path: Path, files: dict[str, str]):

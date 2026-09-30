@@ -4,7 +4,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-from graphify.extract import extract_dart, _make_id, _file_stem
+from monarch_atlas.extract import extract_dart, _make_id, _file_stem
 
 
 class TestDart(unittest.TestCase):

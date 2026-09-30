@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from graphify import llm
+from monarch_atlas import llm
 
 ROOT = Path(__file__).resolve().parent.parent
 

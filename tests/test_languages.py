@@ -2,7 +2,7 @@
 from __future__ import annotations
 from pathlib import Path
 import pytest
-from graphify.extract import (
+from monarch_atlas.extract import (
     extract_java, extract_c, extract_cpp, extract_ruby,
     extract_csharp, extract_kotlin, extract_scala, extract_php,
     extract_swift, extract_go, extract_julia, extract_js, extract_fortran,
@@ -237,7 +237,7 @@ def test_cpp_string_tests_punctuation_only_names_stay_distinct(tmp_path):
         encoding="utf-8",
     )
     r = extract_cpp(f)
-    from graphify.extract import _make_id, _file_stem
+    from monarch_atlas.extract import _make_id, _file_stem
     stem_collapse = _make_id(_file_stem(f))
     tests = [n for n in r["nodes"] if n["label"].startswith('"')]
     ids = [n["id"] for n in tests]
@@ -340,7 +340,7 @@ def test_cuda_host_call_edges():
 # through the C++ extractor just like CUDA does.
 
 def test_metal_is_code_extension():
-    from graphify.detect import CODE_EXTENSIONS
+    from monarch_atlas.detect import CODE_EXTENSIONS
     assert ".metal" in CODE_EXTENSIONS
 
 
@@ -661,7 +661,7 @@ def test_java_annotation_class_literal_arguments(tmp_path):
 
 
 def test_java_annotation_references_are_not_duplicated(tmp_path):
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
 
     annotation = tmp_path / "pkg" / "Uses.java"
     annotation.parent.mkdir()
@@ -716,7 +716,7 @@ def test_java_annotation_string_and_enum_args_are_not_type_refs(tmp_path):
 
 
 def test_java_annotation_class_literal_keeps_qualified_type_identity(tmp_path):
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
 
     internal = tmp_path / "internal" / "Rule.java"
     internal.parent.mkdir()
@@ -765,7 +765,7 @@ def test_java_annotation_class_literal_keeps_qualified_type_identity(tmp_path):
 
 
 def test_java_repeatable_annotation_references_container_and_element_type(tmp_path):
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
 
     annotation = tmp_path / "RubricFor.java"
     annotation.write_text(
@@ -799,7 +799,7 @@ def test_java_repeatable_annotation_references_container_and_element_type(tmp_pa
 
 
 def test_java_annotation_member_keeps_qualified_type_identity(tmp_path):
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
 
     internal = tmp_path / "internal" / "Rule.java"
     internal.parent.mkdir()
@@ -1001,7 +1001,7 @@ def test_kotlin_enum_entries_have_case_of_edge():
 
 def test_kotlin_emits_in_file_calls():
     """Regression test for the call-walker `simple_identifier` /
-    `identifier` rename — see graphify-kmp's PythonParityTest."""
+    `identifier` rename — see atlas-kmp's PythonParityTest."""
     r = extract_kotlin(FIXTURES / "sample.kt")
     calls = _calls(r)
     # In sample.kt: get() and post() both call buildRequest(), and
@@ -1472,7 +1472,7 @@ def test_swift_no_dangling_edges():
 def test_swift_imports_survive_build():
     # #1327: `import Foundation` / `import UIKit` previously emitted edges to bare
     # module ids with no backing node, so build.py dropped 100% of Swift imports.
-    from graphify.build import build_from_json
+    from monarch_atlas.build import build_from_json
     r = extract_swift(FIXTURES / "sample.swift")
     import_edges = [e for e in r["edges"] if e["relation"] == "imports"]
     assert import_edges, "extractor should emit Swift import edges"
@@ -1584,9 +1584,9 @@ def test_swift_extension_across_files_merges_into_canonical_type():
     single Foo node. tree-sitter-swift parses both as `class_declaration` and
     node ids carry the file stem, so without a corpus-level merge each file
     would emit its own Foo."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     paths = sorted((FIXTURES / "swift_cross_file").glob("*.swift"))
-    r = extract(paths, cache_root=Path("/tmp/graphify-test-no-cache"))
+    r = extract(paths, cache_root=Path("/tmp/atlas-test-no-cache"))
     foo_nodes = [n for n in r["nodes"] if n["label"] == "Foo"]
     assert len(foo_nodes) == 1, f"Foo should appear once, got {len(foo_nodes)}: {[n['id'] for n in foo_nodes]}"
     foo_id = foo_nodes[0]["id"]
@@ -1601,7 +1601,7 @@ def test_swift_extension_across_files_merges_into_canonical_type():
 
 # ── Elixir ────────────────────────────────────────────────────────────────────
 
-from graphify.extract import extract_elixir
+from monarch_atlas.extract import extract_elixir
 
 def test_elixir_finds_module():
     r = extract_elixir(FIXTURES / "sample.ex")
@@ -1706,7 +1706,7 @@ def test_elixir_guarded_single_clause_is_extracted(tmp_path):
 
 
 # ── Objective-C ──────────────────────────────────────────────────────────────
-from graphify.extract import extract_objc
+from monarch_atlas.extract import extract_objc
 
 
 def test_objc_finds_interface():
@@ -1820,7 +1820,7 @@ def test_objc_generic_property_type_extracted(tmp_path):
 
 def test_objc_module_import_edge(tmp_path):
     """`@import Foundation;` / `@import UIKit.UIView;` produce imports edges (#1475)."""
-    from graphify.extract import _make_id
+    from monarch_atlas.extract import _make_id
     p = tmp_path / "X.m"
     p.write_text("@import Foundation;\n@import UIKit.UIView;\n@implementation X\n@end\n")
     targets = {e["target"] for e in extract_objc(p)["edges"] if e["relation"] == "imports"}
@@ -1830,7 +1830,7 @@ def test_objc_module_import_edge(tmp_path):
 def test_objc_header_dispatch_routes_objc_not_c(tmp_path):
     """An ObjC `.h` (has @interface) routes to extract_objc; a plain C `.h` stays
     on extract_c, so C/C++ headers are never hijacked by the sniff (#1475)."""
-    from graphify.extract import _get_extractor, extract_objc as _eo, extract_c as _ec
+    from monarch_atlas.extract import _get_extractor, extract_objc as _eo, extract_c as _ec
     objc_h = tmp_path / "AppDelegate.h"
     objc_h.write_text("@interface AppDelegate : NSObject <UIApplicationDelegate>\n@end\n")
     c_h = tmp_path / "util.h"
@@ -1879,7 +1879,7 @@ def test_objc_quoted_import_edges_resolve_to_real_nodes(tmp_path):
     """Quoted `#import "X.h"` edges must target the real (disambiguated) file node id,
     not the bare stem, which gets salted away when a `.h`/`.m` pair exists and left
     the import edge dangling (#1475)."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     (tmp_path / "Product.h").write_text("@interface Product : NSObject\n@end\n")
     (tmp_path / "Product.m").write_text("#import \"Product.h\"\n@implementation Product\n@end\n")
     (tmp_path / "Order.h").write_text("@interface Order : NSObject\n@end\n")
@@ -1917,7 +1917,7 @@ def test_objc_quoted_import_edges_resolve_to_real_nodes(tmp_path):
 
 def test_objc_alloc_init_emits_type_reference(tmp_path):
     """`[[Foo alloc] init]` must emit a `references` edge to the project class Foo (#1475)."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     (tmp_path / "Foo.h").write_text("@interface Foo : NSObject\n@end\n")
     (tmp_path / "Foo.m").write_text("#import \"Foo.h\"\n@implementation Foo\n@end\n")
     user = tmp_path / "User.m"
@@ -2370,7 +2370,7 @@ def test_powershell_no_error():
 
 def test_powershell_psm1_dispatched_and_extracted(tmp_path):
     # #1315: .psm1 modules were never indexed — no dispatch entry, no CODE_EXTENSIONS.
-    from graphify.extract import _get_extractor
+    from monarch_atlas.extract import _get_extractor
     mod = tmp_path / "Utils.psm1"
     mod.write_text(
         "function Get-Greeting { param([string]$Name) return \"Hi $Name\" }\n",
@@ -2502,7 +2502,7 @@ def test_powershell_dot_source_inside_function_emits_edge():
 
 def test_powershell_psd1_dispatched():
     """_get_extractor should route .psd1 to extract_powershell_manifest."""
-    from graphify.extract import _get_extractor
+    from monarch_atlas.extract import _get_extractor
     import tempfile, os
     with tempfile.NamedTemporaryFile(suffix=".psd1", delete=False) as f:
         f.write(b"@{ RootModule = 'X.psm1' }")
@@ -2714,7 +2714,7 @@ def test_ts_local_const_does_not_emit_phantom_node(tmp_path):
 def test_ts_constructor_injection_calls_edge(tmp_path):
     """this.repo.findById() in a class with constructor(private repo: IUserRepository)
     must produce a calls edge from getUser() to findById() (#1316)."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     repo_ts = tmp_path / "repo.ts"
     repo_ts.write_text(
         "export interface IUserRepository {\n"
@@ -2796,7 +2796,7 @@ def test_ts_injected_field_resolves_to_typed_class_not_same_named_collision(tmp_
     """The decisive #1316 guardrail: two classes each define `query`, but the
     injected field is typed `Database`, so `this.db.query()` must resolve to
     Database.query ONLY — never HttpClient.query (no global name-match fan-out)."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     (tmp_path / "database.ts").write_text(
         "export class Database {\n  query(sql: string) { return sql; }\n}\n"
     )
@@ -2837,7 +2837,7 @@ def test_ts_injected_field_resolves_to_typed_class_not_same_named_collision(tmp_
 def test_ts_injected_field_ambiguous_type_emits_no_edge(tmp_path):
     """If the injected field's type name is ambiguous (two classes named Database),
     the god-node guard bails — no calls edge rather than a guess (#1316)."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     (tmp_path / "a" ).mkdir()
     (tmp_path / "b").mkdir()
     (tmp_path / "a" / "database.ts").write_text(
@@ -2861,7 +2861,7 @@ def test_ts_injected_field_ambiguous_type_emits_no_edge(tmp_path):
 
 # ── Markdown ─────────────────────────────────────────────────────────────────
 
-from graphify.extract import extract_markdown
+from monarch_atlas.extract import extract_markdown
 
 def test_markdown_no_error():
     r = extract_markdown(FIXTURES / "deploy_guide.md")
@@ -2989,7 +2989,7 @@ def test_markdown_link_skips_external_and_images(tmp_path):
 def test_markdown_link_edges_resolve_to_real_nodes(tmp_path):
     """End-to-end: after extract()'s ID remap, link targets are real doc nodes,
     so the hub doc gains edges into existing nodes instead of ghost nodes (#1376)."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     pkg = _md_link_fixture(tmp_path)
     paths = sorted(pkg.glob("*.md"))
     res = extract(paths, cache_root=tmp_path, parallel=False)
@@ -3007,7 +3007,7 @@ def test_markdown_link_edges_resolve_to_real_nodes(tmp_path):
 def _vault_extract(vault, paths):
     """Serial extract() anchored at *vault*, returning (node_ids, ref_edges,
     page-id lookup keyed by vault-relative posix path)."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     res = extract(sorted(paths), cache_root=vault, root=vault, parallel=False)
     node_ids = {n["id"] for n in res["nodes"]}
     refs = [e for e in res["edges"] if e["relation"] == "references"]
@@ -3649,7 +3649,7 @@ def test_systemverilog_no_dangling_edges():
 
 
 # ── Header/impl class merge + .h routing (#1547 C++, #1556 ObjC/Swift) ─────────
-from graphify.extract import (
+from monarch_atlas.extract import (
     extract as _extract_corpus,
     _get_extractor,
     _is_cpp_header,
@@ -4240,7 +4240,7 @@ def test_markdown_malformed_frontmatter_does_not_raise():
 def test_markdown_frontmatter_fallback_parses_flat_keys():
     """The PyYAML-absent fallback must still parse flat `key: value` frontmatter
     (it is used verbatim when PyYAML is missing or the YAML is malformed)."""
-    from graphify.extractors.markdown import _parse_frontmatter_fallback
+    from monarch_atlas.extractors.markdown import _parse_frontmatter_fallback
     out = _parse_frontmatter_fallback(
         ["title: Hello World", 'status: "draft"', "  indented: skip", "empty:"]
     )
@@ -4250,7 +4250,7 @@ def test_markdown_frontmatter_fallback_parses_flat_keys():
 def test_markdown_heading_id_is_stable_regardless_of_frontmatter():
     """node_kind/frontmatter are additive: a heading's id stays _make_id(stem, title),
     so existing markdown graphs and incremental caches are not re-keyed."""
-    from graphify.extractors.base import _make_id, _file_stem
+    from monarch_atlas.extractors.base import _make_id, _file_stem
     r = _md_extract("---\ntitle: Doc\ntags: [a, b]\n---\n\n# Overview\n\n## Details\n")
     heading_ids = {n["id"] for n in r["nodes"] if n.get("node_kind") == "heading"}
     # recompute against the file the fixture wrote (single .md temp file)
@@ -4261,7 +4261,7 @@ def test_markdown_heading_id_is_stable_regardless_of_frontmatter():
 
 
 # ── Zig ───────────────────────────────────────────────────────────────────────
-from graphify.extract import extract_zig
+from monarch_atlas.extract import extract_zig
 
 _needs_zig = pytest.mark.skipif(
     _ilu.find_spec("tree_sitter_zig") is None,
@@ -4324,7 +4324,7 @@ def test_cl_ids_are_path_qualified_across_directories(tmp_path):
     """Two same-named .lisp files in DIFFERENT directories must mint distinct
     ids (#1504). The prefix was derived from the bare `path.stem`, so both
     `a/sample.lisp` and `b/sample.lisp` minted `sample` / `sample_init`; when
-    they land in separate extract batches (what `graphify update` does) build()
+    they land in separate extract batches (what `atlas update` does) build()
     merges them and one file's nodes are dropped."""
     a = tmp_path / "a" / "sample.lisp"
     b = tmp_path / "b" / "sample.lisp"
@@ -4359,7 +4359,7 @@ def test_robot_suite_tests_and_keywords_become_nodes():
 
 @_needs_robot
 def test_robot_keyword_call_edges_incl_fixtures_and_loops():
-    from graphify.extractors.robot import _kw_id
+    from monarch_atlas.extractors.robot import _kw_id
     r = extract_robot(FIXTURES / "sample.robot")
     call_targets = {e["target"] for e in r["edges"] if e["relation"] == "calls"}
     # body call, [Setup]/[Teardown], [Template], suite fixtures - all keyed by
@@ -4377,7 +4377,7 @@ def test_robot_keyword_call_edges_incl_fixtures_and_loops():
 
 @_needs_robot
 def test_robot_imports_resource_library_and_stdlib_filter():
-    from graphify.extract import _make_id
+    from monarch_atlas.extract import _make_id
     r = extract_robot(FIXTURES / "sample.robot")
     labels = set(_labels(r))
     import_targets = {e["target"] for e in r["edges"] if e["relation"] == "imports"}
@@ -4414,7 +4414,7 @@ def test_robot_resource_keywords_and_cross_file_ids():
 
 @_needs_robot
 def test_robot_suite_level_test_template(tmp_path):
-    from graphify.extractors.robot import _kw_id
+    from monarch_atlas.extractors.robot import _kw_id
     suite = tmp_path / "templated.robot"
     suite.write_text(
         "*** Settings ***\n"
@@ -4438,7 +4438,7 @@ def test_robot_curdir_and_execdir_imports_resolve_without_double_prefix():
     # would double it for relative scan paths (bot finding on PR #3211).
     # Pure path logic - needs no robotframework install.
     from pathlib import Path as P
-    from graphify.extractors.robot import _resolve_robot_import
+    from monarch_atlas.extractors.robot import _resolve_robot_import
 
     rel_src = P("Tests/Sub/suite.robot")
     resolved = _resolve_robot_import("${CURDIR}/../Library/lib.py", rel_src)
@@ -4492,7 +4492,7 @@ def test_robot_keyword_matching_is_case_space_underscore_insensitive(tmp_path):
 
 def test_robot_extractor_degrades_gracefully_without_robotframework():
     # The robot.api import is lazy inside extract_robot(): importing
-    # graphify.extract must work and the extractor must return the
+    # monarch_atlas.extract must work and the extractor must return the
     # install-hint error dict when robotframework is absent (answers the
     # 'optional robot extra is imported unconditionally' review finding).
     import subprocess
@@ -4507,7 +4507,7 @@ def test_robot_extractor_degrades_gracefully_without_robotframework():
         "        return None\n"
         "sys.meta_path.insert(0, BlockRobot())\n"
         "from pathlib import Path\n"
-        "from graphify.extract import extract_robot\n"
+        "from monarch_atlas.extract import extract_robot\n"
         "r = extract_robot(Path('x.robot'))\n"
         "assert r['nodes'] == [] and r['edges'] == [], r\n"
         "assert 'not installed' in r.get('error', ''), r\n"
@@ -4557,7 +4557,7 @@ def test_robot_path_variables_match_case_space_underscore_insensitively():
     # Robot matches variable names case-, space-, and underscore-insensitively:
     # ${curdir} / ${Cur_Dir} / ${EXEC DIR} all resolve like their canonical forms.
     from pathlib import Path as P
-    from graphify.extractors.robot import _resolve_robot_import
+    from monarch_atlas.extractors.robot import _resolve_robot_import
 
     rel_src = P("Tests/Sub/suite.robot")
     expected = P("Tests/Library/lib.py")

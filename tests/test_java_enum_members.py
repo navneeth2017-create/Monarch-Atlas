@@ -13,13 +13,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _extract(tmp_path: Path, src: str) -> dict:
     path = tmp_path / "Planet.java"
     path.write_text(src, encoding="utf-8")
-    return extract([path], cache_root=tmp_path / "graphify-out", root=tmp_path)
+    return extract([path], cache_root=tmp_path / "atlas-out", root=tmp_path)
 
 
 def _methods_of(result: dict, type_label: str) -> set[str]:

@@ -16,8 +16,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.extract import extract, extract_ruby
-from graphify.ruby_resolution import resolve_ruby_member_calls
+from monarch_atlas.extract import extract, extract_ruby
+from monarch_atlas.ruby_resolution import resolve_ruby_member_calls
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────

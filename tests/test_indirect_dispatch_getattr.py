@@ -13,8 +13,8 @@ pins that — reusing the identifier shadow guard here would be a false NEGATIVE
 """
 import networkx as nx
 
-from graphify.affected import affected_nodes
-from graphify.extract import extract_python
+from monarch_atlas.affected import affected_nodes
+from monarch_atlas.extract import extract_python
 
 
 def _extract(tmp_path, src):

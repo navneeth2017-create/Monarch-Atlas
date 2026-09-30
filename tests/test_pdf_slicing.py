@@ -8,7 +8,7 @@ through `extract_pdf_text`. Slicing a PDF would therefore have indexed the
 container's bytes rather than its text, so PDFs were excluded from slicing
 altogether and simply lost everything past 20,000 characters.
 
-Papers are the longest documents anyone points graphify at, and a compressed
+Papers are the longest documents anyone points atlas at, and a compressed
 PDF gives no hint of its text length: the fixture here is 3,094 bytes on disk
 and 55,690 characters of text (#2906).
 
@@ -21,17 +21,17 @@ from pathlib import Path
 
 import pytest
 
-from graphify.file_slice import (
+from monarch_atlas.file_slice import (
     FileSlice,
     bisect_slice,
     expand_oversized_files,
     is_splittable_text,
     read_slice_text,
 )
-from graphify.llm import _FILE_CHAR_CAP, _file_to_text, _read_files
+from monarch_atlas.llm import _FILE_CHAR_CAP, _file_to_text, _read_files
 
 try:  # the reader this fix introduces
-    from graphify.file_slice import unit_source_text
+    from monarch_atlas.file_slice import unit_source_text
 except ImportError:  # pre-fix tree — describe the expected text the same way
     unit_source_text = _file_to_text  # type: ignore[assignment]
 

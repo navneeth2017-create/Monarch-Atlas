@@ -1,9 +1,9 @@
-# Graphify Evaluation - httpx Corpus (2026-04-03)
+# Atlas Evaluation - httpx Corpus (2026-04-03)
 
 **Evaluator:** Claude Sonnet 4.6 (analytical simulation - Bash execution unavailable)
 **Corpus:** 6-file synthetic httpx-like Python codebase (~2,800 words)
-**Pipeline:** graphify AST extractor + graph_builder + Leiden clusterer + analyzer + reporter
-**Method:** Full deterministic code tracing of every graphify source module against
+**Pipeline:** atlas AST extractor + graph_builder + Leiden clusterer + analyzer + reporter
+**Method:** Full deterministic code tracing of every atlas source module against
 the corpus. Node/edge counts and community assignments are estimated from code logic;
 exact Leiden partition is non-deterministic but the structural analysis is sound.
 
@@ -12,7 +12,7 @@ exact Leiden partition is non-deterministic but the structural analysis is sound
 ## Full GRAPH_REPORT.md Content
 
 ```markdown
-# Graph Report - /home/safi/graphify_test/httpx  (2026-04-03)
+# Graph Report - /home/safi/atlas_test/httpx  (2026-04-03)
 
 ## Corpus Check
 - 6 files · ~2,800 words
@@ -379,7 +379,7 @@ with ~45 methods across all classes, this saves approximately 35-40 edges that w
 otherwise be dropped. The fix is confirmed working.
 
 ### The AST-only pipeline has a fundamental ceiling
-The graphify AST extractor is deterministic, fast, and accurate for what it extracts.
+The atlas AST extractor is deterministic, fast, and accurate for what it extracts.
 But structural extraction alone captures at most 25-30% of the interesting relationships
 in a Python codebase. The skill.md design correctly envisions the Claude LLM doing a
 richer extraction pass (Step 3) for document/paper corpora - but for code, the pipeline

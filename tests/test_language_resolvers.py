@@ -1,4 +1,4 @@
-"""Tests for the language resolver registry (graphify.resolver_registry).
+"""Tests for the language resolver registry (monarch_atlas.resolver_registry).
 
 The registry formalizes the previously hand-wired, suffix-gated cross-file
 resolution passes. These tests pin its contract so future languages can be
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.resolver_registry import (
+from monarch_atlas.resolver_registry import (
     LanguageResolver,
     registered_resolvers,
     run_language_resolvers,
@@ -27,7 +27,7 @@ def _make_resolver(name: str, suffix: str, log: list[str]) -> LanguageResolver:
 def test_default_registry_contains_swift_then_python() -> None:
     # Importing extract registers its resolvers into the shared registry. Order
     # matters: it preserves the prior inlined wiring (Swift before Python).
-    import graphify.extract  # noqa: F401  (registers resolvers on import)
+    import monarch_atlas.extract  # noqa: F401  (registers resolvers on import)
 
     names = [r.name for r in registered_resolvers()]
     assert "swift_member_calls" in names

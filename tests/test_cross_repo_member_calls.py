@@ -23,7 +23,7 @@ from pathlib import Path
 import networkx as nx
 import pytest
 
-from graphify.cross_repo_calls import (
+from monarch_atlas.cross_repo_calls import (
     CROSS_REPO_CALL_MARKER,
     link_cross_repo_member_calls,
 )
@@ -257,7 +257,7 @@ def _write_graph(path: Path, nodes: list[dict], links: list[dict]) -> None:
 
 def _merge(tmp_path: Path, a: Path, b: Path) -> dict:
     out = tmp_path / "merged.json"
-    result = subprocess.run([PYTHON, "-m", "graphify", "merge-graphs", str(a), str(b),
+    result = subprocess.run([PYTHON, "-m", "monarch_atlas", "merge-graphs", str(a), str(b),
                              "--out", str(out)],
                             cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode == 0, f"merge failed: {result.stderr}"
@@ -266,13 +266,13 @@ def _merge(tmp_path: Path, a: Path, b: Path) -> dict:
 
 def _build(tmp_path: Path, repo: str, name: str, body: str) -> Path:
     """Extract one repo the way a real build does and write its `graph.json`."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
 
     path = tmp_path / repo / name
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(body, encoding="utf-8")
-    result = extract([path], cache_root=tmp_path / repo / "graphify-out")
-    graph = tmp_path / repo / "graphify-out" / "graph.json"
+    result = extract([path], cache_root=tmp_path / repo / "atlas-out")
+    graph = tmp_path / repo / "atlas-out" / "graph.json"
     _write_graph(graph, result["nodes"], result["edges"])
     return graph
 
@@ -293,8 +293,8 @@ def _cross_repo_calls(merged: dict) -> list[dict]:
 def test_merge_graphs_cli_finishes_the_parked_call(tmp_path: Path):
     # The pass has to be reached through the real command, not just called
     # directly, and it has to survive the repo prefixing the merge applies.
-    a = tmp_path / "app" / "graphify-out" / "graph.json"
-    b = tmp_path / "lib" / "graphify-out" / "graph.json"
+    a = tmp_path / "app" / "atlas-out" / "graph.json"
+    b = tmp_path / "lib" / "atlas-out" / "graph.json"
     _write_graph(a, [{"id": "app_run", "label": ".run()", "source_file": "src/App.java",
                       "metadata": {"unresolved_calls": PARKED_GREET}}], [])
     _write_graph(

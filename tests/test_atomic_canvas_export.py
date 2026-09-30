@@ -8,7 +8,7 @@ from pathlib import Path
 import networkx as nx
 import pytest
 
-from graphify.export import to_canvas, to_obsidian
+from monarch_atlas.export import to_canvas, to_obsidian
 
 
 def _tiny_graph():

@@ -10,7 +10,7 @@
 The AST extractor honoured neither half. Some sites emitted no
 `confidence_score` at all, which fell through to `_CONFIDENCE_SCORE_DEFAULTS`
 and landed on exactly the 0.5 the rubric rules out; others hardcoded 0.8, which
-is not in the discrete set. On graphify's own package that was 128 of 128
+is not in the discrete set. On atlas's own package that was 128 of 128
 INFERRED edges — 54 missing a score and 74 at 0.8 (#2813).
 
 The tiers are deliberately NOT changed here. The reporter's other option was to
@@ -22,16 +22,16 @@ from pathlib import Path
 
 import pytest
 
-from graphify.export import _CONFIDENCE_SCORE_DEFAULTS
+from monarch_atlas.export import _CONFIDENCE_SCORE_DEFAULTS
 
 # The discrete INFERRED set from references/extraction-spec.md.
 RUBRIC = {0.55, 0.65, 0.75, 0.85, 0.95}
 
-SRC = Path(__file__).resolve().parent.parent / "graphify"
+SRC = Path(__file__).resolve().parent.parent / "monarch_atlas"
 
 
 def _extract(tmp_path, name, body):
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     f = tmp_path / name
     f.write_text(body, encoding="utf-8")
     return extract([f], root=tmp_path)

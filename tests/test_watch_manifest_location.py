@@ -1,7 +1,7 @@
-"""#2316: `graphify update <target>` must write manifest.json into the TARGET's
-graphify-out/, not the process CWD's.
+"""#2316: `atlas update <target>` must write manifest.json into the TARGET's
+atlas-out/, not the process CWD's.
 
-`_rebuild_code` computes ``out = watch_path / _GRAPHIFY_OUT`` and routes every
+`_rebuild_code` computes ``out = watch_path / _ATLAS_OUT`` and routes every
 other artifact through it, but the three ``save_manifest`` calls omitted
 ``manifest_path=`` and so fell through to ``detect._MANIFEST_PATH`` — a
 module-import-time constant resolved against the CWD. Running `update` on
@@ -42,19 +42,19 @@ def two_projects(tmp_path):
 @pytest.mark.parametrize("no_cluster", [False, True], ids=["clustered", "no-cluster"])
 def test_manifest_lands_in_the_target_not_the_cwd(two_projects, monkeypatch, no_cluster):
     """Covers the clustered write site and the --no-cluster write site."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     proj_a, proj_b = two_projects
     monkeypatch.chdir(proj_a)
 
     assert _rebuild_code(proj_b, acquire_lock=False, no_cluster=no_cluster) is True
 
-    target_manifest = proj_b / "graphify-out" / "manifest.json"
-    cwd_manifest = proj_a / "graphify-out" / "manifest.json"
+    target_manifest = proj_b / "atlas-out" / "manifest.json"
+    cwd_manifest = proj_a / "atlas-out" / "manifest.json"
 
     assert target_manifest.exists(), (
         "manifest.json must land next to the graph it describes, in the target's "
-        f"graphify-out/ (#2316); {target_manifest} is missing"
+        f"atlas-out/ (#2316); {target_manifest} is missing"
     )
     assert not cwd_manifest.exists(), (
         "an update targeting another project must not create a manifest in the "
@@ -74,13 +74,13 @@ def test_second_run_reaches_the_same_topology_early_return(two_projects, monkeyp
     Running twice with no edits takes it, so the manifest must still land in the
     target on that path.
     """
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     proj_a, proj_b = two_projects
     monkeypatch.chdir(proj_a)
 
     assert _rebuild_code(proj_b, acquire_lock=False) is True
-    target_manifest = proj_b / "graphify-out" / "manifest.json"
+    target_manifest = proj_b / "atlas-out" / "manifest.json"
     # Remove it so a second write is the only thing that can recreate it, which
     # keeps this test honest about which run produced the file.
     target_manifest.unlink(missing_ok=True)
@@ -98,9 +98,9 @@ def test_second_run_reaches_the_same_topology_early_return(two_projects, monkeyp
 
     assert target_manifest.exists(), (
         "the unchanged-topology early-return path must also write the manifest "
-        "into the target's graphify-out/ (#2316)"
+        "into the target's atlas-out/ (#2316)"
     )
-    assert not (proj_a / "graphify-out" / "manifest.json").exists(), (
+    assert not (proj_a / "atlas-out" / "manifest.json").exists(), (
         "the unchanged-topology path wrote the manifest into the CWD project"
     )
 
@@ -112,14 +112,14 @@ def test_update_does_not_destroy_the_cwd_projects_own_manifest(two_projects, mon
     scan_corpus, so the CWD project's rows were pruned as out-of-corpus and
     overwritten with the target's. Both projects then need a full rescan.
     """
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     proj_a, proj_b = two_projects
     monkeypatch.chdir(proj_a)
 
     # Give proj_a a legitimate manifest of its own, the way `update .` would.
     assert _rebuild_code(Path("."), acquire_lock=False) is True
-    own_manifest = proj_a / "graphify-out" / "manifest.json"
+    own_manifest = proj_a / "atlas-out" / "manifest.json"
     before = own_manifest.read_text(encoding="utf-8")
     assert "proja_file.py" in before, "precondition: proj_a must have its own rows"
 
@@ -139,7 +139,7 @@ def test_relative_target_manifest_keys_stay_portable(two_projects, monkeypatch):
     files were out-of-root and ``_to_relative_for_storage`` kept them absolute.
     A manifest with absolute keys does not survive a move or a second clone.
     """
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     proj_a, proj_b = two_projects
     monkeypatch.chdir(proj_a)
@@ -148,7 +148,7 @@ def test_relative_target_manifest_keys_stay_portable(two_projects, monkeypatch):
     assert not relative_target.is_absolute(), "precondition: target must be relative"
     assert _rebuild_code(relative_target, acquire_lock=False) is True
 
-    target_manifest = proj_b / "graphify-out" / "manifest.json"
+    target_manifest = proj_b / "atlas-out" / "manifest.json"
     assert target_manifest.exists(), "manifest missing from the target (#2316)"
 
     rows = json.loads(target_manifest.read_text(encoding="utf-8"))
@@ -171,7 +171,7 @@ def test_built_at_commit_comes_from_the_target_repo(two_projects, monkeypatch):
     """
     import subprocess
 
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     proj_a, proj_b = two_projects
 
@@ -196,7 +196,7 @@ def test_built_at_commit_comes_from_the_target_repo(two_projects, monkeypatch):
     monkeypatch.chdir(proj_a)
     assert _rebuild_code(proj_b, acquire_lock=False) is True
 
-    graph = json.loads((proj_b / "graphify-out" / "graph.json").read_text(encoding="utf-8"))
+    graph = json.loads((proj_b / "atlas-out" / "graph.json").read_text(encoding="utf-8"))
     assert graph.get("built_at_commit") == head_b, (
         "graph.json must record the commit of the repo it describes; got "
         f"{graph.get('built_at_commit')!r}, expected {head_b!r} "
@@ -212,8 +212,8 @@ def test_relative_target_manifest_is_consumable_by_detect_incremental(
     A manifest anchored to the wrong root makes every file look new, which is
     the user-visible cost of #2316 even once the file is in the right place.
     """
-    from graphify.detect import detect_incremental
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.detect import detect_incremental
+    from monarch_atlas.watch import _rebuild_code
 
     proj_a, proj_b = two_projects
     monkeypatch.chdir(proj_a)
@@ -221,7 +221,7 @@ def test_relative_target_manifest_is_consumable_by_detect_incremental(
     relative_target = Path(os.path.relpath(proj_b, proj_a))
     assert _rebuild_code(relative_target, acquire_lock=False) is True
 
-    manifest_path = proj_b / "graphify-out" / "manifest.json"
+    manifest_path = proj_b / "atlas-out" / "manifest.json"
     assert manifest_path.exists(), "manifest missing from the target (#2316)"
 
     # Simulate the next run from a *different* CWD, as a driver script would.

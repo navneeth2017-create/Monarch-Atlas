@@ -1,4 +1,4 @@
-"""Rigorous edge-case coverage for the `graphify hook-guard` subcommand (#522).
+"""Rigorous edge-case coverage for the `atlas hook-guard` subcommand (#522).
 
 Covers the shell-agnostic PreToolUse/BeforeTool guard that replaced the inline
 bash hooks: the search/read detection matrix, the gemini BeforeTool contract,
@@ -14,15 +14,15 @@ import sys
 
 import pytest
 
-from graphify import __main__ as m
+from monarch_atlas import __main__ as m
 
 
 # --------------------------------------------------------------------------- #
-# Direct-call harness: hermetic w.r.t. the ambient GRAPHIFY_OUT env.
+# Direct-call harness: hermetic w.r.t. the ambient ATLAS_OUT env.
 # --------------------------------------------------------------------------- #
-def _invoke(kind, payload, tmp_path, monkeypatch, *, graph=True, out_name="graphify-out"):
-    monkeypatch.setattr("graphify.paths.GRAPHIFY_OUT", out_name)
-    monkeypatch.setattr("graphify.paths.GRAPHIFY_OUT_NAME", out_name)
+def _invoke(kind, payload, tmp_path, monkeypatch, *, graph=True, out_name="atlas-out"):
+    monkeypatch.setattr("monarch_atlas.paths.ATLAS_OUT", out_name)
+    monkeypatch.setattr("monarch_atlas.paths.ATLAS_OUT_NAME", out_name)
     monkeypatch.chdir(tmp_path)
     if graph:
         (tmp_path / out_name).mkdir(parents=True, exist_ok=True)
@@ -63,7 +63,7 @@ def _invoke(kind, payload, tmp_path, monkeypatch, *, graph=True, out_name="graph
 ])
 def test_search_nudges(command, tmp_path, monkeypatch):
     out = _invoke("search", {"tool_input": {"command": command}}, tmp_path, monkeypatch)
-    assert "graphify query" in out, f"{command!r} should nudge"
+    assert "atlas query" in out, f"{command!r} should nudge"
     assert json.loads(out)["hookSpecificOutput"]["hookEventName"] == "PreToolUse"
 
 
@@ -107,7 +107,7 @@ def test_search_non_string_command_is_silent(tmp_path, monkeypatch):
 def test_search_top_level_command_without_tool_input(tmp_path, monkeypatch):
     # Some hosts pass the tool payload flat (no "tool_input" wrapper).
     out = _invoke("search", {"command": "grep x"}, tmp_path, monkeypatch)
-    assert "graphify query" in out
+    assert "atlas query" in out
 
 
 def test_search_non_dict_tool_input_is_silent(tmp_path, monkeypatch):
@@ -133,7 +133,7 @@ def test_search_non_dict_tool_input_is_silent(tmp_path, monkeypatch):
 ])
 def test_read_nudges(tool_input, tmp_path, monkeypatch):
     out = _invoke("read", {"tool_input": tool_input}, tmp_path, monkeypatch)
-    assert "graphify query" in out, f"{tool_input!r} should nudge"
+    assert "atlas query" in out, f"{tool_input!r} should nudge"
 
 
 # --------------------------------------------------------------------------- #
@@ -149,7 +149,7 @@ def test_read_nudges(tool_input, tmp_path, monkeypatch):
     {"file_path": ".gitignore"},
     {"file_path": "Makefile"},                   # no extension
     {"file_path": "my.ts/file"},                 # extension on a directory segment
-    {"file_path": "graphify-out/GRAPH_REPORT.md"},  # the graph's own output
+    {"file_path": "atlas-out/GRAPH_REPORT.md"},  # the graph's own output
     {"file_path": ""},
     {},                                          # nothing at all
 ])
@@ -170,7 +170,7 @@ def test_read_non_dict_tool_input_is_silent(tmp_path, monkeypatch):
 
 def test_read_respects_custom_output_dir_name(tmp_path, monkeypatch):
     # A source file living under a CUSTOM output dir name must be suppressed too,
-    # not just the literal 'graphify-out/'.
+    # not just the literal 'atlas-out/'.
     out = _invoke("read", {"tool_input": {"file_path": "build-out/report.py"}},
                   tmp_path, monkeypatch, graph=True, out_name="build-out")
     assert out.strip() == ""
@@ -179,7 +179,7 @@ def test_read_respects_custom_output_dir_name(tmp_path, monkeypatch):
 def test_read_nudges_source_outside_custom_output_dir(tmp_path, monkeypatch):
     out = _invoke("read", {"tool_input": {"file_path": "src/app.py"}},
                   tmp_path, monkeypatch, graph=True, out_name="build-out")
-    assert "graphify query" in out
+    assert "atlas query" in out
 
 
 # --------------------------------------------------------------------------- #
@@ -197,7 +197,7 @@ def test_search_out_path_error_is_swallowed(tmp_path, monkeypatch):
     # blocks the tool).
     def _boom(*a, **k):
         raise OSError("boom")
-    monkeypatch.setattr("graphify.paths.out_path", _boom)
+    monkeypatch.setattr("monarch_atlas.paths.out_path", _boom)
     out = _invoke("search", {"tool_input": {"command": "grep x"}}, tmp_path, monkeypatch)
     assert out.strip() == ""
 
@@ -209,7 +209,7 @@ def test_gemini_allow_with_nudge(tmp_path, monkeypatch):
     out = _invoke("gemini", None, tmp_path, monkeypatch, graph=True)
     payload = json.loads(out)
     assert payload["decision"] == "allow"
-    assert "graphify query" in payload["additionalContext"]
+    assert "atlas query" in payload["additionalContext"]
 
 
 def test_gemini_allow_without_graph(tmp_path, monkeypatch):
@@ -221,7 +221,7 @@ def test_gemini_allow_without_graph(tmp_path, monkeypatch):
 def test_gemini_always_allows_even_when_check_throws(tmp_path, monkeypatch):
     def _boom(*a, **k):
         raise OSError("boom")
-    monkeypatch.setattr("graphify.paths.out_path", _boom)
+    monkeypatch.setattr("monarch_atlas.paths.out_path", _boom)
     out = _invoke("gemini", None, tmp_path, monkeypatch, graph=True)
     assert json.loads(out) == {"decision": "allow"}
 
@@ -231,13 +231,13 @@ def test_gemini_always_allows_even_when_check_throws(tmp_path, monkeypatch):
 # --------------------------------------------------------------------------- #
 def _env():
     e = dict(os.environ)
-    e.pop("GRAPHIFY_OUT", None)
+    e.pop("ATLAS_OUT", None)
     return e
 
 
 def _cli(args, tmp_path, stdin=""):
     return subprocess.run(
-        [sys.executable, "-m", "graphify", *args],
+        [sys.executable, "-m", "monarch_atlas", *args],
         input=stdin, capture_output=True, text=True, cwd=tmp_path, env=_env(),
     )
 
@@ -261,8 +261,8 @@ def test_dispatch_unknown_mode_exits_zero_silent(tmp_path):
 ])
 def test_dispatch_always_exits_zero(args, stdin, tmp_path):
     # even with a graph present (nudge path), exit code must be 0 (never blocks)
-    (tmp_path / "graphify-out").mkdir()
-    (tmp_path / "graphify-out" / "graph.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "atlas-out").mkdir()
+    (tmp_path / "atlas-out" / "graph.json").write_text("{}", encoding="utf-8")
     r = _cli(args, tmp_path, stdin=stdin)
     assert r.returncode == 0
 
@@ -270,10 +270,10 @@ def test_dispatch_always_exits_zero(args, stdin, tmp_path):
 def test_read_nudge_em_dash_survives_utf8(tmp_path):
     # The read nudge contains an em dash; the emitted bytes must be valid UTF-8
     # and parse back cleanly (guards the ensure_ascii=False + stdout reconfigure).
-    (tmp_path / "graphify-out").mkdir()
-    (tmp_path / "graphify-out" / "graph.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "atlas-out").mkdir()
+    (tmp_path / "atlas-out" / "graph.json").write_text("{}", encoding="utf-8")
     r = subprocess.run(
-        [sys.executable, "-m", "graphify", "hook-guard", "read"],
+        [sys.executable, "-m", "monarch_atlas", "hook-guard", "read"],
         input=b'{"tool_input":{"file_path":"src/app.py"}}',
         capture_output=True, cwd=tmp_path, env=_env(),
     )

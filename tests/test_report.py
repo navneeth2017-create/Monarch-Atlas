@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
-from graphify.build import build_from_json
-from graphify.cluster import cluster, score_all
-from graphify.analyze import god_nodes, surprising_connections
-from graphify.report import generate
+from monarch_atlas.build import build_from_json
+from monarch_atlas.cluster import cluster, score_all
+from monarch_atlas.analyze import god_nodes, surprising_connections
+from monarch_atlas.report import generate
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -99,7 +99,7 @@ def test_report_header_does_not_embed_host_absolute_path():
 
 
 def test_portable_root_label():
-    from graphify.report import _portable_root_label
+    from monarch_atlas.report import _portable_root_label
     # Absolute paths collapse to the basename on both POSIX and Windows.
     assert _portable_root_label("/Users/mike/dev/apps/proj") == "proj"
     assert _portable_root_label(r"C:\Users\mike\dev\proj") == "proj"

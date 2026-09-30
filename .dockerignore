@@ -10,11 +10,11 @@ __pycache__
 dist
 build
 *.egg-info
-graphify-out
 atlas-out
-graphify-benchmark
-graphify_eval
-graphify_test
+atlas-out
+atlas-benchmark
+atlas_eval
+atlas_test
 worked
 llm-stack-corpus
 llm-stack-demo

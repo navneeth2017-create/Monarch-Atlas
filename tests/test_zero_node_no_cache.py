@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import graphify.extract as ex
+import monarch_atlas.extract as ex
 
 
 def test_zero_node_result_not_cached_then_self_heals(tmp_path, capsys, monkeypatch):
@@ -42,7 +42,7 @@ def test_normal_file_still_cached(tmp_path):
     f.write_text("class Bar\n  def baz; end\nend\n")
     r1 = ex.extract([f], cache_root=tmp_path / "out", parallel=False)
     assert r1["nodes"]
-    from graphify.cache import load_cached
+    from monarch_atlas.cache import load_cached
     assert load_cached(f, tmp_path / "out") is not None, "non-empty result should be cached"
 
 

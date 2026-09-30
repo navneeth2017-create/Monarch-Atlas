@@ -1,6 +1,6 @@
 """Tests for the progressive-disclosure references/ sidecar install path.
 
-The real claude bundle now ships in the package (graphify/skills/claude/), so
+The real claude bundle now ships in the package (monarch_atlas/skills/claude/), so
 claude and its reuse twins (antigravity, kimi) install progressively: a lean
 SKILL.md plus a references/ sidecar. Every other host whose bundle has not
 shipped yet still installs today's byte-identical monolith.
@@ -21,11 +21,11 @@ from unittest.mock import patch
 
 import pytest
 
-import graphify
-import graphify.__main__ as mainmod
+import monarch_atlas
+import monarch_atlas.__main__ as mainmod
 
 
-PKG_DIR = Path(graphify.__file__).parent
+PKG_DIR = Path(monarch_atlas.__file__).parent
 
 
 @pytest.fixture()
@@ -68,7 +68,7 @@ def _install(tmp_path, platform):
     old_cwd = Path.cwd()
     try:
         os.chdir(tmp_path)
-        with patch("graphify.__main__.Path.home", return_value=tmp_path):
+        with patch("monarch_atlas.__main__.Path.home", return_value=tmp_path):
             mainmod.install(platform=platform)
     finally:
         os.chdir(old_cwd)
@@ -78,7 +78,7 @@ def test_install_stages_references_sidecar(tmp_path, fake_bundle):
     """A progressive platform install drops references/ alongside SKILL.md."""
     platform = fake_bundle
     _install(tmp_path, platform)
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
     assert (skill_dir / "SKILL.md").exists()
     refs = skill_dir / "references"
     assert refs.is_dir()
@@ -89,13 +89,13 @@ def test_install_stages_references_sidecar(tmp_path, fake_bundle):
 
 
 def test_single_version_stamp_covers_skill_and_references(tmp_path, fake_bundle):
-    """One .graphify_version stamp versions SKILL.md + references/ together."""
+    """One .atlas_version stamp versions SKILL.md + references/ together."""
     platform = fake_bundle
     _install(tmp_path, platform)
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
-    stamps = list(skill_dir.rglob(".graphify_version"))
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
+    stamps = list(skill_dir.rglob(".atlas_version"))
     assert len(stamps) == 1
-    assert stamps[0] == skill_dir / ".graphify_version"
+    assert stamps[0] == skill_dir / ".atlas_version"
     assert stamps[0].read_text() == mainmod.__version__
 
 
@@ -103,7 +103,7 @@ def test_reinstall_replaces_references_atomically(tmp_path, fake_bundle):
     """Reinstall swaps references/ in place, dropping a stale fragment."""
     platform = fake_bundle
     _install(tmp_path, platform)
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
     refs = skill_dir / "references"
     # Simulate a stale fragment left from an older install.
     (refs / "stale-old.md").write_text("stale\n", encoding="utf-8")
@@ -122,10 +122,10 @@ def test_uninstall_removes_references_then_walks_dirs(tmp_path, fake_bundle):
     """Uninstall rmtrees references/ before the dir walk so the tree is cleared."""
     platform = fake_bundle
     _install(tmp_path, platform)
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
     assert (skill_dir / "references").is_dir()
 
-    with patch("graphify.__main__.Path.home", return_value=tmp_path):
+    with patch("monarch_atlas.__main__.Path.home", return_value=tmp_path):
         removed = mainmod._remove_skill_file(platform)
 
     assert removed
@@ -138,7 +138,7 @@ def test_check_skill_version_warns_on_missing_references(tmp_path, fake_bundle, 
     """If SKILL.md links references/ but the dir is gone, warn to repair."""
     platform = fake_bundle
     _install(tmp_path, platform)
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
     skill = skill_dir / "SKILL.md"
     # Force the body to reference the sidecar, then delete the sidecar.
     skill.write_text("See references/extraction-spec.md for the schema.\n", encoding="utf-8")
@@ -154,7 +154,7 @@ def test_check_skill_version_ignores_permission_error(tmp_path, fake_bundle, mon
     """Unreadable version probes should not crash startup."""
     platform = fake_bundle
     _install(tmp_path, platform)
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
     skill = skill_dir / "SKILL.md"
 
     # Drain install output so the no-warning assertions below see only what
@@ -164,7 +164,7 @@ def test_check_skill_version_ignores_permission_error(tmp_path, fake_bundle, mon
     original_exists = Path.exists
 
     def guarded_exists(self):
-        if self.name == ".graphify_version":
+        if self.name == ".atlas_version":
             raise PermissionError("denied")
         return original_exists(self)
 
@@ -200,7 +200,7 @@ def test_hard_fail_when_bundle_dir_present_but_references_missing(tmp_path, monk
     (bundle_dir / "SKILL.md").write_text("body\n", encoding="utf-8")
     try:
         with pytest.raises(SystemExit) as exc:
-            with patch("graphify.__main__.Path.home", return_value=tmp_path):
+            with patch("monarch_atlas.__main__.Path.home", return_value=tmp_path):
                 monkeypatch.chdir(tmp_path)
                 mainmod._copy_skill_file("claude")
         assert exc.value.code == 1
@@ -250,7 +250,7 @@ def test_unbuilt_bundle_host_falls_back_to_monolith(tmp_path):
         pytest.skip("every progressive host bundle has shipped; nothing to fall back")
     assert not (PKG_DIR / "skills" / mainmod._PLATFORM_CONFIG[host]["skill_refs"]).exists()
     _install(tmp_path, host)
-    with patch("graphify.__main__.Path.home", return_value=tmp_path):
+    with patch("monarch_atlas.__main__.Path.home", return_value=tmp_path):
         dst = mainmod._platform_skill_destination(host)
     skill_dir = dst.parent
     assert (skill_dir / "SKILL.md").exists()
@@ -264,7 +264,7 @@ def test_claude_install_ships_lean_core_and_references(tmp_path):
     skills_claude = PKG_DIR / "skills" / "claude" / "references"
     assert skills_claude.is_dir(), "claude bundle must ship in this build"
     _install(tmp_path, "claude")
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
     skill = skill_dir / "SKILL.md"
     refs = skill_dir / "references"
     assert skill.exists()
@@ -280,7 +280,7 @@ def test_claude_install_ships_lean_core_and_references(tmp_path):
     # The lean core is materially smaller than the old ~1156-line monolith.
     assert len(body.splitlines()) < 800
     # The version stamp covers SKILL.md + references/ together.
-    assert (skill_dir / ".graphify_version").read_text() == mainmod.__version__
+    assert (skill_dir / ".atlas_version").read_text() == mainmod.__version__
     # The eight on-demand fragments all landed.
     names = sorted(p.name for p in refs.glob("*.md"))
     assert names == [
@@ -304,7 +304,7 @@ def test_gemini_install_references_all_resolve(tmp_path):
     """
     import re
     _install(tmp_path, "gemini")
-    skill = tmp_path / ".gemini" / "skills" / "graphify" / "SKILL.md"
+    skill = tmp_path / ".gemini" / "skills" / "atlas" / "SKILL.md"
     assert skill.exists()
     refdir = skill.parent / "references"
     assert refdir.is_dir()
@@ -330,10 +330,10 @@ def test_claude_twins_ride_the_claude_bundle(tmp_path):
 def test_pyproject_declares_references_globs():
     """package-data must declare the references + always-on globs that ship the bundles.
 
-    The references sidecar ships under graphify/skills/<host>/references/ and the
-    always-on injection blocks under graphify/always_on/. The earlier
-    skills/*/SKILL.md glob matched nothing (no graphify/skills/<host>/SKILL.md
-    exists; the skill bodies are graphify/skill*.md, listed explicitly), so it was
+    The references sidecar ships under monarch_atlas/skills/<host>/references/ and the
+    always-on injection blocks under monarch_atlas/always_on/. The earlier
+    skills/*/SKILL.md glob matched nothing (no monarch_atlas/skills/<host>/SKILL.md
+    exists; the skill bodies are monarch_atlas/skill*.md, listed explicitly), so it was
     removed. This test guards the real shipped layout.
     """
     try:
@@ -345,7 +345,7 @@ def test_pyproject_declares_references_globs():
     if not pyproject.exists():
         pytest.skip("pyproject.toml not adjacent to package (installed wheel)")
     data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
-    pkg_data = data["tool"]["setuptools"]["package-data"]["graphify"]
+    pkg_data = data["tool"]["setuptools"]["package-data"]["monarch_atlas"]
     assert "skills/*/references/*.md" in pkg_data
     assert "always_on/*.md" in pkg_data
     # The dead glob that matched no file must not creep back in.
@@ -443,39 +443,39 @@ def test_built_wheel_ships_the_full_skill_payload():
 
     names = _build_wheel_names(repo_root)
 
-    missing_bodies = [b for b in _EXPECTED_SKILL_BODIES if f"graphify/{b}" not in names]
+    missing_bodies = [b for b in _EXPECTED_SKILL_BODIES if f"atlas/{b}" not in names]
     assert not missing_bodies, f"wheel is missing skill bodies: {missing_bodies}"
     assert len(_EXPECTED_SKILL_BODIES) == 15
 
     missing_refs = [
-        f"graphify/skills/{host}/references/{ref}"
+        f"monarch_atlas/skills/{host}/references/{ref}"
         for host in _SPLIT_HOSTS
         for ref in _REFERENCE_NAMES
-        if f"graphify/skills/{host}/references/{ref}" not in names
+        if f"monarch_atlas/skills/{host}/references/{ref}" not in names
     ]
     assert not missing_refs, f"wheel is missing references: {missing_refs}"
     assert len(_SPLIT_HOSTS) * len(_REFERENCE_NAMES) == 104
 
     missing_always_on = [
-        f"graphify/always_on/{name}"
+        f"monarch_atlas/always_on/{name}"
         for name in _ALWAYS_ON_NAMES
-        if f"graphify/always_on/{name}" not in names
+        if f"monarch_atlas/always_on/{name}" not in names
     ]
     assert not missing_always_on, f"wheel is missing always-on blocks: {missing_always_on}"
     assert len(_ALWAYS_ON_NAMES) == 6
 
     # The specific headline file that the stale glob would have dropped.
-    assert "graphify/skills/claude/references/extraction-spec.md" in names
-    assert "graphify/skills/trae/references/hooks.md" in names
+    assert "monarch_atlas/skills/claude/references/extraction-spec.md" in names
+    assert "monarch_atlas/skills/trae/references/hooks.md" in names
     # amp is now a split host too; its bundle must ship like every other.
-    assert "graphify/skills/amp/references/hooks.md" in names
+    assert "monarch_atlas/skills/amp/references/hooks.md" in names
 
 
 def test_monolith_install_clears_orphan_references(tmp_path, fake_bundle):
     """A monolith platform install removes any orphan references/ left behind."""
     # aider is a monolith (no skill_refs). Seed an orphan references/ dir at its
     # destination, then install and confirm it is cleared.
-    skill_dst = tmp_path / ".aider" / "graphify" / "SKILL.md"
+    skill_dst = tmp_path / ".aider" / "atlas" / "SKILL.md"
     orphan = skill_dst.parent / "references"
     orphan.mkdir(parents=True)
     (orphan / "leftover.md").write_text("leftover\n", encoding="utf-8")
@@ -487,11 +487,11 @@ def test_monolith_install_clears_orphan_references(tmp_path, fake_bundle):
 def test_amp_user_install_carries_references(tmp_path, monkeypatch):
     """amp is progressive: its corrected user dir also gets the references/ sidecar.
 
-    amp's real bundle now ships in the package (graphify/skills/amp/), so the
+    amp's real bundle now ships in the package (monarch_atlas/skills/amp/), so the
     install copies the actual committed references alongside SKILL.md. This is the
     case the progressive split was built to cover: amp was the omitted 13th host.
     """
-    from graphify.__main__ import main
+    from monarch_atlas.__main__ import main
 
     assert (PKG_DIR / "skills" / "amp" / "references" / "hooks.md").exists(), (
         "amp's references bundle must ship in this build"
@@ -501,16 +501,16 @@ def test_amp_user_install_carries_references(tmp_path, monkeypatch):
     project = tmp_path / "project"
     project.mkdir()
     monkeypatch.chdir(project)
-    with patch("graphify.__main__.Path.home", return_value=home):
-        monkeypatch.setattr(sys, "argv", ["graphify", "amp", "install"])
+    with patch("monarch_atlas.__main__.Path.home", return_value=home):
+        monkeypatch.setattr(sys, "argv", ["atlas", "amp", "install"])
         main()
-        skill_dir = home / ".config" / "agents" / "skills" / "graphify"
+        skill_dir = home / ".config" / "agents" / "skills" / "atlas"
         assert (skill_dir / "SKILL.md").exists()
         # A representative reference from the shipped amp bundle lands too.
         assert (skill_dir / "references" / "exports.md").exists()
         assert (skill_dir / "references" / "hooks.md").exists()
 
-        monkeypatch.setattr(sys, "argv", ["graphify", "amp", "uninstall"])
+        monkeypatch.setattr(sys, "argv", ["atlas", "amp", "uninstall"])
         main()
 
     assert not skill_dir.exists()
@@ -538,7 +538,7 @@ def test_install_from_read_only_package_dir(tmp_path, fake_bundle):
         for path, mode in modes.items():
             path.chmod(mode)
 
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
     refs = skill_dir / "references"
     assert refs.is_dir()
     assert (refs / "query.md").read_text() == "# query fragment\n"

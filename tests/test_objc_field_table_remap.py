@@ -4,7 +4,7 @@
 BY class node id. The #1529 passes rewrote node ids, edge endpoints,
 `raw_calls[].caller_nid` and `swift_extensions[].nid` — but not those keys.
 The remap fires whenever the input paths carry a common absolute prefix,
-i.e. always via `graphify update <dir>`, so `[self.<field> …]` receiver
+i.e. always via `atlas update <dir>`, so `[self.<field> …]` receiver
 typing was inert through the CLI and worked only in tests, which hand
 extract() already-relative paths. The cached shard had the same split: the
 portability rewrite re-anchored every id except the table keys.
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 try:
     import tree_sitter_objc  # noqa: F401
@@ -98,7 +98,7 @@ def test_the_in_process_remap_rewrites_the_table_keys():
     """Unit form of the CLI-path fix: the same mapping that rewrites node ids
     must rewrite the table keys."""
     try:
-        from graphify.extract import _remap_objc_field_tables
+        from monarch_atlas.extract import _remap_objc_field_tables
     except ImportError:  # pre-fix tree
         pytest.skip("pre-fix tree")
     per_file = [{"objc_field_types": {"path": "src/Direct.h",
@@ -111,8 +111,8 @@ def test_the_in_process_remap_rewrites_the_table_keys():
 def test_cache_portability_rewrites_the_table_keys(tmp_path):
     """Round-trip a payload through the #2257 portability rewrite: the class id
     inside the table key must follow the node id."""
-    from graphify.cache import _absolutize_ids_in, _relativize_ids_in
-    from graphify.extractors.base import _make_id
+    from monarch_atlas.cache import _absolutize_ids_in, _relativize_ids_in
+    from monarch_atlas.extractors.base import _make_id
 
     root = tmp_path / "proj"
     root.mkdir()

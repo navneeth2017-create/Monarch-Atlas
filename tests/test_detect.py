@@ -3,8 +3,8 @@ import subprocess
 import unicodedata
 import pytest
 from pathlib import Path
-from graphify.detect import classify_file, count_words, detect, detect_incremental, save_manifest, FileType, _looks_like_paper, _is_ignored, _load_graphifyignore, _is_sensitive
-from graphify import detect as detect_mod
+from monarch_atlas.detect import classify_file, count_words, detect, detect_incremental, save_manifest, FileType, _looks_like_paper, _is_ignored, _load_atlasignore, _is_sensitive
+from monarch_atlas import detect as detect_mod
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -85,13 +85,13 @@ def test_detect_warns_small_corpus():
     assert result["warning"] is not None
 
 def test_detect_skips_noise_dot_dirs():
-    """Noise dot dirs (.next, .nuxt, .graphify cache, …) are skipped (#873).
+    """Noise dot dirs (.next, .nuxt, .atlas cache, …) are skipped (#873).
     Non-noise dot dirs (.github, .claude, …) are now allowed through."""
     result = detect(FIXTURES)
     for files in result["files"].values():
         for f in files:
-            # graphify's own cache is always skipped
-            assert "/.graphify/" not in f
+            # atlas's own cache is always skipped
+            assert "/.atlas/" not in f
             # well-known framework caches are always skipped
             for noise in ("/.next/", "/.nuxt/", "/.turbo/", "/.angular/"):
                 assert noise not in f
@@ -136,15 +136,15 @@ def test_classify_md_doc_without_signals(tmp_path):
 
 def test_classify_attention_paper():
     """The real attention paper file should be classified as PAPER."""
-    paper_path = Path("/home/safi/graphify_eval/papers/attention_is_all_you_need.md")
+    paper_path = Path("/home/safi/atlas_eval/papers/attention_is_all_you_need.md")
     if paper_path.exists():
         result = classify_file(paper_path)
         assert result == FileType.PAPER
 
 
-def test_graphifyignore_excludes_file(tmp_path):
-    """Files matching .graphifyignore patterns are excluded from detect()."""
-    (tmp_path / ".graphifyignore").write_text("vendor/\n*.generated.py\n")
+def test_atlasignore_excludes_file(tmp_path):
+    """Files matching .atlasignore patterns are excluded from detect()."""
+    (tmp_path / ".atlasignore").write_text("vendor/\n*.generated.py\n")
     vendor = tmp_path / "vendor"
     vendor.mkdir()
     (vendor / "lib.py").write_text("x = 1")
@@ -156,10 +156,10 @@ def test_graphifyignore_excludes_file(tmp_path):
     assert any("main.py" in f for f in file_list)
     assert not any("vendor" in f for f in file_list)
     assert not any("generated" in f for f in file_list)
-    assert result["graphifyignore_patterns"] == 2
+    assert result["atlasignore_patterns"] == 2
 
 
-def test_graphifyignore_matches_nfd_path_with_nfc_pattern(tmp_path):
+def test_atlasignore_matches_nfd_path_with_nfc_pattern(tmp_path):
     """An accented pattern excludes its directory even when the FS stores NFD.
 
     macOS returns filenames in NFD ("c" + U+0327) while editors write ignore
@@ -171,7 +171,7 @@ def test_graphifyignore_matches_nfd_path_with_nfc_pattern(tmp_path):
     nfd_name = unicodedata.normalize("NFD", nfc_name)
     assert nfc_name != nfd_name  # guard: the two forms really do differ
 
-    (tmp_path / ".graphifyignore").write_text(f"{nfc_name}/\n", encoding="utf-8")
+    (tmp_path / ".atlasignore").write_text(f"{nfc_name}/\n", encoding="utf-8")
     secret_dir = tmp_path / nfd_name
     secret_dir.mkdir()
     (secret_dir / "contrato.py").write_text("x = 1")
@@ -183,12 +183,12 @@ def test_graphifyignore_matches_nfd_path_with_nfc_pattern(tmp_path):
     assert not any("contrato.py" in f for f in file_list)
 
 
-def test_graphifyignore_matches_nfc_path_with_nfd_pattern(tmp_path):
+def test_atlasignore_matches_nfc_path_with_nfd_pattern(tmp_path):
     """The reverse direction also holds: NFD pattern, NFC path on disk."""
     nfc_name = unicodedata.normalize("NFC", "Or\u00e7amento")
     nfd_name = unicodedata.normalize("NFD", nfc_name)
 
-    (tmp_path / ".graphifyignore").write_text(f"{nfd_name}/\n", encoding="utf-8")
+    (tmp_path / ".atlasignore").write_text(f"{nfd_name}/\n", encoding="utf-8")
     d = tmp_path / nfc_name
     d.mkdir()
     (d / "contrato.py").write_text("x = 1")
@@ -200,9 +200,9 @@ def test_graphifyignore_matches_nfc_path_with_nfd_pattern(tmp_path):
     assert not any("contrato.py" in f for f in file_list)
 
 
-def test_graphifyignore_ascii_patterns_unaffected(tmp_path):
+def test_atlasignore_ascii_patterns_unaffected(tmp_path):
     """Normalization is a no-op for ASCII patterns — no regression."""
-    (tmp_path / ".graphifyignore").write_text("vendor/\n")
+    (tmp_path / ".atlasignore").write_text("vendor/\n")
     v = tmp_path / "vendor"
     v.mkdir()
     (v / "lib.py").write_text("x = 1")
@@ -214,16 +214,16 @@ def test_graphifyignore_ascii_patterns_unaffected(tmp_path):
     assert not any("vendor" in f for f in file_list)
 
 
-def test_graphifyignore_missing_is_fine(tmp_path):
-    """No .graphifyignore is not an error."""
+def test_atlasignore_missing_is_fine(tmp_path):
+    """No .atlasignore is not an error."""
     (tmp_path / "main.py").write_text("x = 1")
     result = detect(tmp_path)
-    assert result["graphifyignore_patterns"] == 0
+    assert result["atlasignore_patterns"] == 0
 
 
-def test_graphifyignore_comments_ignored(tmp_path):
-    """Comment lines in .graphifyignore are not treated as patterns."""
-    (tmp_path / ".graphifyignore").write_text("# this is a comment\n\nmain.py\n")
+def test_atlasignore_comments_ignored(tmp_path):
+    """Comment lines in .atlasignore are not treated as patterns."""
+    (tmp_path / ".atlasignore").write_text("# this is a comment\n\nmain.py\n")
     (tmp_path / "main.py").write_text("x = 1")
     (tmp_path / "other.py").write_text("x = 2")
     result = detect(tmp_path)
@@ -231,11 +231,11 @@ def test_graphifyignore_comments_ignored(tmp_path):
     assert any("other.py" in f for f in result["files"]["code"])
 
 
-def test_graphifyignore_utf8_bom_first_pattern_honored(tmp_path):
-    """A UTF-8 BOM at the start of .graphifyignore must not corrupt the first
+def test_atlasignore_utf8_bom_first_pattern_honored(tmp_path):
+    """A UTF-8 BOM at the start of .atlasignore must not corrupt the first
     pattern (#2163): git strips a single leading BOM, so `*.log` on line 1
     must still exclude app.log."""
-    (tmp_path / ".graphifyignore").write_bytes(b"\xef\xbb\xbf*.log\nbuild/\n")
+    (tmp_path / ".atlasignore").write_bytes(b"\xef\xbb\xbf*.log\nbuild/\n")
     build = tmp_path / "build"
     build.mkdir()
     (build / "lib.py").write_text("x = 1")
@@ -247,7 +247,7 @@ def test_graphifyignore_utf8_bom_first_pattern_honored(tmp_path):
     assert not any("app.log" in f for f in all_files), "BOM'd first pattern was dropped"
     assert not any("build" in f for f in all_files)
     assert any("main.py" in f for f in all_files)
-    assert result["graphifyignore_patterns"] == 2
+    assert result["atlasignore_patterns"] == 2
 
 
 def test_gitignore_utf8_bom_matches_git(tmp_path):
@@ -262,28 +262,28 @@ def test_gitignore_utf8_bom_matches_git(tmp_path):
     assert any("main.py" in f for f in all_files)
 
 
-def test_graphifyignore_bom_only_file(tmp_path):
-    """A .graphifyignore containing only a BOM yields zero patterns, not one
+def test_atlasignore_bom_only_file(tmp_path):
+    """A .atlasignore containing only a BOM yields zero patterns, not one
     bogus U+FEFF pattern (#2163)."""
-    (tmp_path / ".graphifyignore").write_bytes(b"\xef\xbb\xbf")
+    (tmp_path / ".atlasignore").write_bytes(b"\xef\xbb\xbf")
     (tmp_path / "main.py").write_text("x = 1")
 
     result = detect(tmp_path)
-    assert result["graphifyignore_patterns"] == 0
+    assert result["atlasignore_patterns"] == 0
     assert any("main.py" in f for f in result["files"]["code"])
 
 
-def test_graphifyignore_bom_then_comment(tmp_path):
+def test_atlasignore_bom_then_comment(tmp_path):
     """A BOM followed by a comment must still parse as a comment, not become
     a `\\ufeff# comment` pattern (#2163)."""
-    (tmp_path / ".graphifyignore").write_bytes(b"\xef\xbb\xbf# comment\nmain.py\n")
+    (tmp_path / ".atlasignore").write_bytes(b"\xef\xbb\xbf# comment\nmain.py\n")
     (tmp_path / "main.py").write_text("x = 1")
     (tmp_path / "other.py").write_text("x = 2")
 
     result = detect(tmp_path)
     assert not any("main.py" in f for f in result["files"]["code"])
     assert any("other.py" in f for f in result["files"]["code"])
-    assert result["graphifyignore_patterns"] == 1, "BOM'd comment became a pattern"
+    assert result["atlasignore_patterns"] == 1, "BOM'd comment became a pattern"
 
 
 def test_nested_gitignore_utf8_bom(tmp_path):
@@ -303,7 +303,7 @@ def test_nested_gitignore_utf8_bom(tmp_path):
 
 def test_git_info_exclude_utf8_bom(tmp_path):
     """A BOM at the start of $GIT_DIR/info/exclude must not corrupt the first
-    pattern either (#2163) — second read site in _load_graphifyignore."""
+    pattern either (#2163) — second read site in _load_atlasignore."""
     (tmp_path / ".git" / "info").mkdir(parents=True)
     (tmp_path / ".git" / "info" / "exclude").write_bytes(b"\xef\xbb\xbfsecrets/\n")
     secrets = tmp_path / "secrets"
@@ -341,9 +341,9 @@ def test_detect_follows_symlinked_file(requires_symlinks, tmp_path):
     assert any("link.py" in f for f in code)
 
 
-def test_graphifyignore_hermetic_without_vcs(tmp_path):
-    """Without a VCS root, parent .graphifyignore does NOT apply (hermetic)."""
-    (tmp_path / ".graphifyignore").write_text("vendor/\n")
+def test_atlasignore_hermetic_without_vcs(tmp_path):
+    """Without a VCS root, parent .atlasignore does NOT apply (hermetic)."""
+    (tmp_path / ".atlasignore").write_text("vendor/\n")
     sub = tmp_path / "packages" / "mylib"
     sub.mkdir(parents=True)
     (sub / "main.py").write_text("x = 1")
@@ -354,15 +354,15 @@ def test_graphifyignore_hermetic_without_vcs(tmp_path):
     result = detect(sub)
     code_files = result["files"]["code"]
     assert any("main.py" in f for f in code_files)
-    # parent .graphifyignore must NOT leak into a non-VCS scan
+    # parent .atlasignore must NOT leak into a non-VCS scan
     assert any("vendor" in f for f in code_files)
-    assert result["graphifyignore_patterns"] == 0
+    assert result["atlasignore_patterns"] == 0
 
 
-def test_graphifyignore_discovered_from_parent_in_vcs(tmp_path):
-    """Inside a VCS repo, parent .graphifyignore applies to subdirectory scans."""
+def test_atlasignore_discovered_from_parent_in_vcs(tmp_path):
+    """Inside a VCS repo, parent .atlasignore applies to subdirectory scans."""
     (tmp_path / ".git").mkdir()
-    (tmp_path / ".graphifyignore").write_text("vendor/\n")
+    (tmp_path / ".atlasignore").write_text("vendor/\n")
     sub = tmp_path / "packages" / "mylib"
     sub.mkdir(parents=True)
     (sub / "main.py").write_text("x = 1")
@@ -374,12 +374,12 @@ def test_graphifyignore_discovered_from_parent_in_vcs(tmp_path):
     code_files = result["files"]["code"]
     assert any("main.py" in f for f in code_files)
     assert not any("vendor" in f for f in code_files)
-    assert result["graphifyignore_patterns"] >= 1
+    assert result["atlasignore_patterns"] >= 1
 
 
-def test_graphifyignore_stops_at_git_boundary(tmp_path):
+def test_atlasignore_stops_at_git_boundary(tmp_path):
     """Upward search stops at the git repo root (.git directory)."""
-    (tmp_path / ".graphifyignore").write_text("main.py\n")
+    (tmp_path / ".atlasignore").write_text("main.py\n")
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / ".git").mkdir()
@@ -390,15 +390,15 @@ def test_graphifyignore_stops_at_git_boundary(tmp_path):
     result = detect(sub)
     code_files = result["files"]["code"]
     assert any("main.py" in f for f in code_files)
-    assert result["graphifyignore_patterns"] == 0
+    assert result["atlasignore_patterns"] == 0
 
 
-def test_graphifyignore_at_git_root_is_included(tmp_path):
-    """A .graphifyignore at the git repo root is included when scanning a subdir."""
+def test_atlasignore_at_git_root_is_included(tmp_path):
+    """A .atlasignore at the git repo root is included when scanning a subdir."""
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / ".git").mkdir()
-    (repo / ".graphifyignore").write_text("vendor/\n")
+    (repo / ".atlasignore").write_text("vendor/\n")
     sub = repo / "packages" / "mylib"
     sub.mkdir(parents=True)
     (sub / "main.py").write_text("x = 1")
@@ -410,7 +410,7 @@ def test_graphifyignore_at_git_root_is_included(tmp_path):
     code_files = result["files"]["code"]
     assert any("main.py" in f for f in code_files)
     assert not any("vendor" in f for f in code_files)
-    assert result["graphifyignore_patterns"] == 1
+    assert result["atlasignore_patterns"] == 1
 
 
 def test_gitignore_nested_below_root_excludes_file(tmp_path):
@@ -434,7 +434,7 @@ def test_gitignore_nested_below_root_excludes_file(tmp_path):
     assert any("keep.py" in f for f in code_files)
     assert not any("root.log" in f for f in code_files)
     assert not any("secret.txt" in f for f in code_files)
-    assert result["graphifyignore_patterns"] == 2
+    assert result["atlasignore_patterns"] == 2
 
 
 def test_gitignore_keeps_tracked_file_but_drops_untracked_sibling(tmp_path):
@@ -460,7 +460,7 @@ def test_gitignore_keeps_tracked_file_but_drops_untracked_sibling(tmp_path):
     assert str(tracked) not in result["ignored"]
 
 
-def test_graphifyignore_still_excludes_git_tracked_file(tmp_path):
+def test_atlasignore_still_excludes_git_tracked_file(tmp_path):
     """A graph-specific exclusion remains authoritative for tracked paths."""
     _git(tmp_path, "init", "-q")
     storage = tmp_path / "storage"
@@ -468,7 +468,7 @@ def test_graphifyignore_still_excludes_git_tracked_file(tmp_path):
     tracked = storage / "fileWatcher.js"
     tracked.write_text("export function watch(){ return 1; }", encoding="utf-8")
     _git(tmp_path, "add", "storage/fileWatcher.js")
-    (tmp_path / ".graphifyignore").write_text("storage/\n", encoding="utf-8")
+    (tmp_path / ".atlasignore").write_text("storage/\n", encoding="utf-8")
 
     result = detect(tmp_path)
 
@@ -708,9 +708,9 @@ def test_detect_incremental_propagates_follow_symlinks(requires_symlinks, tmp_pa
     (real_dir / "note.md").write_text("# real note\n\nsome content")
     (tmp_path / "linked_corpus").symlink_to(real_dir)
 
-    # Store manifest inside graphify-out/ so it is pruned by _SKIP_DIRS
+    # Store manifest inside atlas-out/ so it is pruned by _SKIP_DIRS
     # and doesn't get re-detected as a code file now that .json is indexed.
-    manifest_dir = tmp_path / "graphify-out"
+    manifest_dir = tmp_path / "atlas-out"
     manifest_dir.mkdir()
     manifest_path = str(manifest_dir / "manifest.json")
 
@@ -742,7 +742,7 @@ def test_detect_incremental_survives_dict_valued_mtime(tmp_path, monkeypatch):
     src = tmp_path / "mod.py"
     src.write_text("def f():\n    return 1\n", encoding="utf-8")
 
-    manifest_dir = tmp_path / "graphify-out"
+    manifest_dir = tmp_path / "atlas-out"
     manifest_dir.mkdir()
     manifest_path = str(manifest_dir / "manifest.json")
 
@@ -784,7 +784,7 @@ def test_detect_incremental_legacy_float_reextracts_on_backwards_mtime(tmp_path,
     src.write_text("def old_content():\n    return 1\n", encoding="utf-8")
     current_mtime = os.stat(src).st_mtime
 
-    manifest_dir = tmp_path / "graphify-out"
+    manifest_dir = tmp_path / "atlas-out"
     manifest_dir.mkdir()
     manifest_path = str(manifest_dir / "manifest.json")
 
@@ -813,7 +813,7 @@ def test_detect_incremental_legacy_float_skips_when_mtime_matches(tmp_path, monk
     src = tmp_path / "mod.py"
     src.write_text("def stable():\n    return 1\n", encoding="utf-8")
 
-    manifest_dir = tmp_path / "graphify-out"
+    manifest_dir = tmp_path / "atlas-out"
     manifest_dir.mkdir()
     manifest_path = str(manifest_dir / "manifest.json")
 
@@ -829,7 +829,7 @@ def test_detect_incremental_legacy_float_skips_when_mtime_matches(tmp_path, monk
 
 def test_classify_video_extensions():
     """Video and audio file extensions should classify as VIDEO."""
-    from graphify.detect import FileType
+    from monarch_atlas.detect import FileType
     assert classify_file(Path("lecture.mp4")) == FileType.VIDEO
     assert classify_file(Path("podcast.mp3")) == FileType.VIDEO
     assert classify_file(Path("talk.mov")) == FileType.VIDEO
@@ -863,7 +863,7 @@ def test_detect_converts_google_workspace_shortcuts_when_enabled(tmp_path, monke
         out.write_text("# Notes\n\nA converted Google Doc.", encoding="utf-8")
         return out
 
-    monkeypatch.setattr("graphify.detect.convert_google_workspace_file", fake_convert)
+    monkeypatch.setattr("monarch_atlas.detect.convert_google_workspace_file", fake_convert)
 
     result = detect(tmp_path, google_workspace=True)
 
@@ -873,14 +873,14 @@ def test_detect_converts_google_workspace_shortcuts_when_enabled(tmp_path, monke
 
 
 def test_detect_office_sidecar_survives_a_gitignored_output_dir(tmp_path, monkeypatch):
-    """#3504: the documented .gitignore advice puts graphify-out/ (and so
-    graphify-out/converted/, where Office sidecars land) inside a gitignored
+    """#3504: the documented .gitignore advice puts atlas-out/ (and so
+    atlas-out/converted/, where Office sidecars land) inside a gitignored
     tree. The ignore check exists to keep USER files out of the scan, not to
     filter output this same pass just produced from an already-admitted
     source file -- so a sidecar landing under converted/ must survive it,
     or every .docx/.xlsx silently vanishes from the corpus the moment a repo
     follows that advice."""
-    (tmp_path / ".gitignore").write_text("graphify-out/\n", encoding="utf-8")
+    (tmp_path / ".gitignore").write_text("atlas-out/\n", encoding="utf-8")
     src = tmp_path / "report.docx"
     src.write_text("placeholder", encoding="utf-8")
 
@@ -890,7 +890,7 @@ def test_detect_office_sidecar_survives_a_gitignored_output_dir(tmp_path, monkey
         out.write_text("# Report\n\nConverted content.", encoding="utf-8")
         return out
 
-    monkeypatch.setattr("graphify.detect.convert_office_file", fake_convert)
+    monkeypatch.setattr("monarch_atlas.detect.convert_office_file", fake_convert)
 
     result = detect(tmp_path)
 
@@ -904,7 +904,7 @@ def test_detect_office_sidecar_survives_a_gitignored_output_dir(tmp_path, monkey
 def test_detect_google_workspace_sidecar_survives_a_gitignored_output_dir(tmp_path, monkeypatch):
     """Same trap as the Office sidecar case (#3504), for the Google Workspace
     conversion branch, which writes into the same converted/ directory."""
-    (tmp_path / ".gitignore").write_text("graphify-out/\n", encoding="utf-8")
+    (tmp_path / ".gitignore").write_text("atlas-out/\n", encoding="utf-8")
     shortcut = tmp_path / "notes.gdoc"
     shortcut.write_text('{"doc_id":"doc-1"}', encoding="utf-8")
 
@@ -914,7 +914,7 @@ def test_detect_google_workspace_sidecar_survives_a_gitignored_output_dir(tmp_pa
         out.write_text("# Notes\n\nA converted Google Doc.", encoding="utf-8")
         return out
 
-    monkeypatch.setattr("graphify.detect.convert_google_workspace_file", fake_convert)
+    monkeypatch.setattr("monarch_atlas.detect.convert_google_workspace_file", fake_convert)
 
     result = detect(tmp_path, google_workspace=True)
 
@@ -1002,7 +1002,7 @@ def test_collect_files_keeps_coverage_code_namespace(tmp_path):
     """#2339 as reported: collect_files returned [] for a real coverage package,
     both when it is the walk target and when it is reached through the repo root.
     A genuine report dir alongside it must still be skipped."""
-    from graphify.extract import collect_files
+    from monarch_atlas.extract import collect_files
 
     pkg = tmp_path / "auditor_toolkit" / "assurance" / "coverage"
     pkg.mkdir(parents=True)
@@ -1141,7 +1141,7 @@ def test_detect_skips_nox_virtualenv(tmp_path):
 def test_detect_honors_git_info_exclude(tmp_path):
     """.git/info/exclude (where `git worktree add` records nested worktree paths,
     and where local-only excludes live) must be honored, not just .gitignore /
-    .graphifyignore — otherwise nested worktree copies get fully indexed (#1810)."""
+    .atlasignore — otherwise nested worktree copies get fully indexed (#1810)."""
     (tmp_path / ".git" / "info").mkdir(parents=True)
     (tmp_path / ".git" / "info" / "exclude").write_text("worktrees/\n")
     wt = tmp_path / "worktrees" / "foo"
@@ -1157,26 +1157,26 @@ def test_detect_honors_git_info_exclude(tmp_path):
 def test_git_info_exclude_ranks_below_gitignore_negation(tmp_path):
     """info/exclude is loaded at lowest priority, so a later .gitignore `!` negation
     of the same (non-directory) pattern still wins under last-match-wins (#1810)."""
-    from graphify.detect import _load_graphifyignore, _is_ignored
+    from monarch_atlas.detect import _load_atlasignore, _is_ignored
     (tmp_path / ".git" / "info").mkdir(parents=True)
     (tmp_path / ".git" / "info" / "exclude").write_text("secret*.txt\n")
     (tmp_path / ".gitignore").write_text("!secret-ok.txt\n")
     (tmp_path / "secret-bad.txt").write_text("x")
     (tmp_path / "secret-ok.txt").write_text("x")
-    patterns = _load_graphifyignore(tmp_path)
+    patterns = _load_atlasignore(tmp_path)
     assert _is_ignored(tmp_path / "secret-bad.txt", tmp_path, patterns)
     assert not _is_ignored(tmp_path / "secret-ok.txt", tmp_path, patterns)
 
 
-def test_detect_skips_graphify_own_cache(tmp_path):
-    """.graphify/ (extraction cache) must never be re-indexed as source (#873)."""
-    cache = tmp_path / ".graphify" / "cache"
+def test_detect_skips_atlas_own_cache(tmp_path):
+    """.atlas/ (extraction cache) must never be re-indexed as source (#873)."""
+    cache = tmp_path / ".atlas" / "cache"
     cache.mkdir(parents=True)
     (cache / "abc123.json").write_text('{"nodes": [], "edges": []}')
     (tmp_path / "app.py").write_text("def go(): pass")
     result = detect(tmp_path)
     all_files = [f for files in result["files"].values() for f in files]
-    assert not any(".graphify" in f for f in all_files)
+    assert not any(".atlas" in f for f in all_files)
     assert any("app.py" in f for f in all_files)
 
 
@@ -1188,7 +1188,7 @@ def test_anchored_root_wildcard_negation_reincludes_subtree(tmp_path):
         path = tmp_path / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("x\n")
-    (tmp_path / ".graphifyignore").write_text("/*\n!/src/\n")
+    (tmp_path / ".atlasignore").write_text("/*\n!/src/\n")
 
     result = detect(tmp_path)
 
@@ -1205,7 +1205,7 @@ def test_anchored_negation_cannot_skip_excluded_parent(tmp_path):
     victim = tmp_path / "src" / "app" / "main.py"
     victim.parent.mkdir(parents=True)
     victim.write_text("x\n")
-    (tmp_path / ".graphifyignore").write_text("/*\n!/src/app/\n")
+    (tmp_path / ".atlasignore").write_text("/*\n!/src/app/\n")
 
     assert detect(tmp_path)["total_files"] == 0
 
@@ -1218,7 +1218,7 @@ def test_path_pattern_single_star_does_not_cross_segment(tmp_path):
     direct.write_text("x\n")
     nested.write_text("x\n")
     for pattern in ("/src/*.py", "src/*.py"):
-        (tmp_path / ".graphifyignore").write_text(f"{pattern}\n")
+        (tmp_path / ".atlasignore").write_text(f"{pattern}\n")
         result = detect(tmp_path)
         files = as_posix_list(
             path for paths in result["files"].values() for path in paths
@@ -1238,7 +1238,7 @@ def test_directory_only_negation_does_not_reinclude_file(tmp_path):
     """A trailing slash restricts a pattern to directories, as in gitignore."""
     readme = tmp_path / "README.md"
     readme.write_text("# docs\n")
-    (tmp_path / ".graphifyignore").write_text("/*\n!/README.md/\n")
+    (tmp_path / ".atlasignore").write_text("/*\n!/README.md/\n")
 
     assert detect(tmp_path)["total_files"] == 0
 
@@ -1250,19 +1250,19 @@ def test_anchored_double_star_crosses_path_segments(tmp_path):
     nested.parent.mkdir(parents=True)
     direct.write_text("x\n")
     nested.write_text("x\n")
-    (tmp_path / ".graphifyignore").write_text("/src/**/generated.py\n")
+    (tmp_path / ".atlasignore").write_text("/src/**/generated.py\n")
 
     assert detect(tmp_path)["total_files"] == 0
 
 def test_negation_cannot_rescue_file_under_excluded_dir(tmp_path):
     """A ! re-include cannot un-ignore a file whose parent dir is excluded (#882)."""
-    from graphify.detect import _is_ignored, _load_graphifyignore
+    from monarch_atlas.detect import _is_ignored, _load_atlasignore
     android = tmp_path / "android" / "app" / "src"
     android.mkdir(parents=True)
     victim = android / "Main.kt"
     victim.write_text("fun main() {}")
-    (tmp_path / ".graphifyignore").write_text("android/\n!src/\n")
-    patterns = _load_graphifyignore(tmp_path)
+    (tmp_path / ".atlasignore").write_text("android/\n!src/\n")
+    patterns = _load_atlasignore(tmp_path)
     assert _is_ignored(victim, tmp_path, patterns), (
         "android/app/src/Main.kt must remain ignored even with !src/ because "
         "the parent android/ is excluded"
@@ -1271,13 +1271,13 @@ def test_negation_cannot_rescue_file_under_excluded_dir(tmp_path):
 
 def test_negation_works_when_no_ancestor_excluded(tmp_path):
     """A ! re-include must still un-ignore a file when no ancestor is excluded (#882)."""
-    from graphify.detect import _is_ignored, _load_graphifyignore
+    from monarch_atlas.detect import _is_ignored, _load_atlasignore
     src = tmp_path / "src"
     src.mkdir()
     keep = src / "keep.py"
     keep.write_text("x = 1")
-    (tmp_path / ".graphifyignore").write_text("*.py\n!src/keep.py\n")
-    patterns = _load_graphifyignore(tmp_path)
+    (tmp_path / ".atlasignore").write_text("*.py\n!src/keep.py\n")
+    patterns = _load_atlasignore(tmp_path)
     assert not _is_ignored(keep, tmp_path, patterns), (
         "src/keep.py should be un-ignored by !src/keep.py since src/ itself is not excluded"
     )
@@ -1285,13 +1285,13 @@ def test_negation_works_when_no_ancestor_excluded(tmp_path):
 
 def test_negation_ancestor_itself_reincluded(tmp_path):
     """If the ancestor dir itself is re-included, its children should not be blocked (#882)."""
-    from graphify.detect import _is_ignored, _load_graphifyignore
+    from monarch_atlas.detect import _is_ignored, _load_atlasignore
     vendor = tmp_path / "vendor" / "lib"
     vendor.mkdir(parents=True)
     f = vendor / "utils.py"
     f.write_text("x = 1")
-    (tmp_path / ".graphifyignore").write_text("vendor/\n!vendor/\n")
-    patterns = _load_graphifyignore(tmp_path)
+    (tmp_path / ".atlasignore").write_text("vendor/\n!vendor/\n")
+    patterns = _load_atlasignore(tmp_path)
     # vendor/ is excluded then re-included; ancestor eval returns False so file is evaluated on its own
     assert not _is_ignored(f, tmp_path, patterns)
 
@@ -1307,9 +1307,9 @@ def test_negation_does_not_disable_directory_pruning(tmp_path, monkeypatch):
     be descended, while the negation must still re-include its target.
     """
     import os
-    import graphify.detect as det
+    import monarch_atlas.detect as det
 
-    (tmp_path / ".graphifyignore").write_text("myignored/\n*.md\n!docs/**\n")
+    (tmp_path / ".atlasignore").write_text("myignored/\n*.md\n!docs/**\n")
     deep = tmp_path / "myignored" / "deep" / "deeper"
     deep.mkdir(parents=True)
     (deep / "junk.py").write_text("x = 1")
@@ -1345,13 +1345,13 @@ def test_negation_does_not_disable_directory_pruning(tmp_path, monkeypatch):
 
 def test_anchored_dir_not_matched_at_depth(tmp_path):
     """/inbox/ must not match src/inbox/ — only inbox/ at the anchor root."""
-    from graphify.detect import _is_ignored, _load_graphifyignore
+    from monarch_atlas.detect import _is_ignored, _load_atlasignore
     src_inbox = tmp_path / "src" / "inbox"
     src_inbox.mkdir(parents=True)
     f = src_inbox / "main.rs"
     f.write_text("fn main() {}")
-    (tmp_path / ".graphifyignore").write_text("/inbox/\n")
-    patterns = _load_graphifyignore(tmp_path)
+    (tmp_path / ".atlasignore").write_text("/inbox/\n")
+    patterns = _load_atlasignore(tmp_path)
     assert not _is_ignored(f, tmp_path, patterns), (
         "src/inbox/main.rs must NOT be ignored by /inbox/ — the pattern is anchored to root"
     )
@@ -1362,13 +1362,13 @@ def test_anchored_dir_not_matched_at_depth(tmp_path):
 
 def test_anchored_dir_matches_at_root(tmp_path):
     """/inbox/ must still match inbox/ at the anchor root (positive case)."""
-    from graphify.detect import _is_ignored, _load_graphifyignore
+    from monarch_atlas.detect import _is_ignored, _load_atlasignore
     inbox = tmp_path / "inbox"
     inbox.mkdir()
     f = inbox / "data.json"
     f.write_text("{}")
-    (tmp_path / ".graphifyignore").write_text("/inbox/\n")
-    patterns = _load_graphifyignore(tmp_path)
+    (tmp_path / ".atlasignore").write_text("/inbox/\n")
+    patterns = _load_atlasignore(tmp_path)
     assert _is_ignored(f, tmp_path, patterns), (
         "inbox/data.json must be ignored by /inbox/"
     )
@@ -1379,11 +1379,11 @@ def test_anchored_dir_matches_at_root(tmp_path):
 
 def test_anchored_file_not_matched_at_depth(tmp_path):
     """/build must not match src/build."""
-    from graphify.detect import _is_ignored, _load_graphifyignore
+    from monarch_atlas.detect import _is_ignored, _load_atlasignore
     src_build = tmp_path / "src" / "build"
     src_build.mkdir(parents=True)
-    (tmp_path / ".graphifyignore").write_text("/build\n")
-    patterns = _load_graphifyignore(tmp_path)
+    (tmp_path / ".atlasignore").write_text("/build\n")
+    patterns = _load_atlasignore(tmp_path)
     assert not _is_ignored(src_build, tmp_path, patterns), (
         "src/build must NOT be ignored by /build"
     )
@@ -1391,13 +1391,13 @@ def test_anchored_file_not_matched_at_depth(tmp_path):
 
 def test_unanchored_dir_still_matches_at_depth(tmp_path):
     """inbox/ (no leading /) must still match src/inbox/ anywhere in the tree."""
-    from graphify.detect import _is_ignored, _load_graphifyignore
+    from monarch_atlas.detect import _is_ignored, _load_atlasignore
     src_inbox = tmp_path / "src" / "inbox"
     src_inbox.mkdir(parents=True)
     f = src_inbox / "main.rs"
     f.write_text("fn main() {}")
-    (tmp_path / ".graphifyignore").write_text("inbox/\n")
-    patterns = _load_graphifyignore(tmp_path)
+    (tmp_path / ".atlasignore").write_text("inbox/\n")
+    patterns = _load_atlasignore(tmp_path)
     assert _is_ignored(f, tmp_path, patterns), (
         "src/inbox/main.rs must be ignored by unanchored inbox/"
     )
@@ -1405,15 +1405,15 @@ def test_unanchored_dir_still_matches_at_depth(tmp_path):
 
 def test_anchored_multi_segment_pattern(tmp_path):
     """/src/inbox/ must match src/inbox/ but not x/src/inbox/."""
-    from graphify.detect import _is_ignored, _load_graphifyignore
+    from monarch_atlas.detect import _is_ignored, _load_atlasignore
     (tmp_path / "src" / "inbox").mkdir(parents=True)
     (tmp_path / "x" / "src" / "inbox").mkdir(parents=True)
     target_ok = tmp_path / "src" / "inbox" / "a.py"
     target_ok.write_text("x=1")
     target_bad = tmp_path / "x" / "src" / "inbox" / "b.py"
     target_bad.write_text("x=1")
-    (tmp_path / ".graphifyignore").write_text("/src/inbox/\n")
-    patterns = _load_graphifyignore(tmp_path)
+    (tmp_path / ".atlasignore").write_text("/src/inbox/\n")
+    patterns = _load_atlasignore(tmp_path)
     assert _is_ignored(target_ok, tmp_path, patterns), (
         "src/inbox/a.py must be ignored by /src/inbox/"
     )
@@ -1427,7 +1427,7 @@ def test_detect_does_not_ignore_scan_root_itself_via_parent_gitignore(tmp_path):
     (the scan root itself), files inside the scan root must not be ignored (#2468)."""
     (tmp_path / ".git").mkdir()
 
-    corpus_dir = tmp_path / "graphify-corpus"
+    corpus_dir = tmp_path / "atlas-corpus"
     corpus_dir.mkdir()
 
     (corpus_dir / "keep.py").write_text("x = 1\n", encoding="utf-8")
@@ -1436,7 +1436,7 @@ def test_detect_does_not_ignore_scan_root_itself_via_parent_gitignore(tmp_path):
     docs_dir.mkdir()
     (docs_dir / "intro.md").write_text("# Introduction\n", encoding="utf-8")
 
-    (tmp_path / ".gitignore").write_text("graphify-corpus/\n", encoding="utf-8")
+    (tmp_path / ".gitignore").write_text("atlas-corpus/\n", encoding="utf-8")
 
     result = detect(corpus_dir)
 
@@ -1453,7 +1453,7 @@ def test_detect_preserves_unrelated_parent_ignores_inside_scan_root(tmp_path):
     inside the scan root, even while the scan root itself is not ignored (#2468)."""
     (tmp_path / ".git").mkdir()
 
-    corpus_dir = tmp_path / "graphify-corpus"
+    corpus_dir = tmp_path / "atlas-corpus"
     corpus_dir.mkdir()
 
     (corpus_dir / "keep.py").write_text("x = 1\n", encoding="utf-8")
@@ -1467,7 +1467,7 @@ def test_detect_preserves_unrelated_parent_ignores_inside_scan_root(tmp_path):
     (node_modules_dir / "lib.js").write_text("console.log(1);\n", encoding="utf-8")
 
     # Parent .gitignore ignoring the scan root itself AND node_modules/
-    (tmp_path / ".gitignore").write_text("graphify-corpus/\nnode_modules/\n", encoding="utf-8")
+    (tmp_path / ".gitignore").write_text("atlas-corpus/\nnode_modules/\n", encoding="utf-8")
 
     result = detect(corpus_dir)
 
@@ -1489,7 +1489,7 @@ def test_is_ignored_cache_matches_uncached_results(tmp_path):
     asserts that evaluating every path with a cache yields identical results
     to evaluating without one (#1235).
     """
-    from graphify.detect import _is_ignored, _load_graphifyignore
+    from monarch_atlas.detect import _is_ignored, _load_atlasignore
 
     # Normal pattern: ignore everything under build/.
     # Negation pattern: re-include logs/keep.log even though *.log is ignored.
@@ -1509,10 +1509,10 @@ def test_is_ignored_cache_matches_uncached_results(tmp_path):
     for p in paths:
         if p.suffix:
             p.write_text("x")
-    (tmp_path / ".graphifyignore").write_text(
+    (tmp_path / ".atlasignore").write_text(
         "build/\n*.log\n!logs/keep.log\n"
     )
-    patterns = _load_graphifyignore(tmp_path)
+    patterns = _load_atlasignore(tmp_path)
 
     cache: dict = {}
     for p in paths:
@@ -1534,7 +1534,7 @@ def test_is_ignored_cache_evaluates_each_dir_once():
     cache: every directory (ancestor) should be evaluated exactly once across
     a multi-file subtree rather than once per descendant file.
     """
-    from graphify.detect import _is_ignored
+    from monarch_atlas.detect import _is_ignored
 
     root = Path("/repo")
     patterns = [(root, "*.tmp")]  # non-empty so _eval runs
@@ -1576,7 +1576,7 @@ def test_is_ignored_cache_evaluates_each_dir_once():
 
 
 # Regression tests for the per-file pathlib ignore-evaluation defect: a scan of
-# a 76k-file vault with a 29k-file directory listed in .graphifyignore pinned a
+# a 76k-file vault with a 29k-file directory listed in .atlasignore pinned a
 # CPU for 50+ minutes inside _eval's per-pattern Path.relative_to calls. The
 # walk must pay ONE evaluation per ignored directory (pruning), and each
 # evaluated entry must pay string matching, not per-pattern Path construction.
@@ -1586,13 +1586,13 @@ def test_ignored_dir_pruned_walk_never_lists_contents(tmp_path, monkeypatch):
 
     The walk must never descend into it (its files are never listed), while
     non-ignored siblings are still detected. Mirrors the real defect shape:
-    a regenerated notes/ dir listed in .graphifyignore.
+    a regenerated notes/ dir listed in .atlasignore.
     """
-    import graphify.detect as det
+    import monarch_atlas.detect as det
 
-    (tmp_path / ".graphifyignore").write_text("graphify-notes/\n")
+    (tmp_path / ".atlasignore").write_text("atlas-notes/\n")
     for d in range(5):
-        sub = tmp_path / "graphify-notes" / f"note-dir-{d}"
+        sub = tmp_path / "atlas-notes" / f"note-dir-{d}"
         sub.mkdir(parents=True)
         for f in range(4):
             (sub / f"note-{f}.md").write_text("# note")
@@ -1611,16 +1611,16 @@ def test_ignored_dir_pruned_walk_never_lists_contents(tmp_path, monkeypatch):
     monkeypatch.setattr(det.os, "walk", tracking_walk)
     result = det.detect(tmp_path)
 
-    assert not any("graphify-notes" in Path(v).parts for v in visited), (
+    assert not any("atlas-notes" in Path(v).parts for v in visited), (
         "walk descended into the ignored dir — directory pruning regressed"
     )
     all_files = as_posix_list(p for cat in result["files"].values() for p in cat)
-    assert not any("graphify-notes" in p for p in all_files)
+    assert not any("atlas-notes" in p for p in all_files)
     assert any(p.endswith("src/app.py") for p in all_files)
     assert any(p.endswith("notes.md") for p in all_files)
     # The pruned dir is reported once, as a directory entry.
     ignored = as_posix_list(result["ignored"])
-    assert sum("graphify-notes" in p for p in ignored) == 1
+    assert sum("atlas-notes" in p for p in ignored) == 1
 
 
 def test_scan_ignore_cost_is_per_directory_not_per_file(tmp_path, monkeypatch):
@@ -1630,12 +1630,12 @@ def test_scan_ignore_cost_is_per_directory_not_per_file(tmp_path, monkeypatch):
     ignored subtree must cost exactly one directory-level check — never one
     per contained file (the 29k-file defect shape).
     """
-    import graphify.detect as det
+    import monarch_atlas.detect as det
 
     n_ignored_dirs, n_ignored_files_per_dir = 100, 20  # 2,000 ignored files
-    (tmp_path / ".graphifyignore").write_text("graphify-notes/\n")
+    (tmp_path / ".atlasignore").write_text("atlas-notes/\n")
     for d in range(n_ignored_dirs):
-        sub = tmp_path / "graphify-notes" / f"note-dir-{d:03d}"
+        sub = tmp_path / "atlas-notes" / f"note-dir-{d:03d}"
         sub.mkdir(parents=True)
         for f in range(n_ignored_files_per_dir):
             (sub / f"note-{f:02d}.md").write_text("# note")
@@ -1652,7 +1652,7 @@ def test_scan_ignore_cost_is_per_directory_not_per_file(tmp_path, monkeypatch):
 
     def counting_scan(path, *args, **kwargs):
         scan_calls["total"] += 1
-        if "graphify-notes" in path.parts:
+        if "atlas-notes" in path.parts:
             scan_calls["under_ignored"] += 1
         return real_scan(path, *args, **kwargs)
 
@@ -1694,7 +1694,7 @@ def test_is_ignored_no_per_pattern_path_construction(monkeypatch):
     """
     import pathlib
 
-    from graphify.detect import _is_ignored
+    from monarch_atlas.detect import _is_ignored
 
     root = Path("/repo")
     patterns = [(root, f"*.zzz{i}") for i in range(200)]
@@ -1737,10 +1737,10 @@ def test_string_matcher_preserves_pattern_forms(tmp_path):
     (tmp_path / "docs" / "deep" / "guide.md").write_text("x")
     (tmp_path / "x" / "cache" / "y").mkdir(parents=True)
     (tmp_path / "x" / "cache" / "y" / "f.py").write_text("x=1")
-    (tmp_path / ".graphifyignore").write_text(
+    (tmp_path / ".atlasignore").write_text(
         "build/\n*.log\n!keep.log\n/anchored.md\ndocs/**\ncache\n"
     )
-    patterns = _load_graphifyignore(tmp_path)
+    patterns = _load_atlasignore(tmp_path)
 
     # dir-only pattern: matches the dir and everything under it...
     assert _is_ignored(tmp_path / "build", tmp_path, patterns)
@@ -1918,7 +1918,7 @@ def test_save_manifest_skips_semantic_hash_for_files_without_cache(tmp_path):
     """Files in failed chunks have no semantic cache entry; save_manifest must
     leave their semantic_hash empty so detect_incremental re-queues them (#933)."""
     import json
-    from graphify.cache import save_cached
+    from monarch_atlas.cache import save_cached
 
     doc1 = tmp_path / "docs" / "a.md"
     doc2 = tmp_path / "docs" / "b.md"
@@ -1959,7 +1959,7 @@ def test_save_manifest_clear_semantic_erases_stale_hash_for_omitted_file(tmp_pat
     doc = tmp_path / "docs" / "doc.md"
     doc.parent.mkdir()
     doc.write_text("# Doc\n\ncontent")
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
 
     # Run 1: doc.md is dispatched and stamped.
     corpus = {str(doc)}
@@ -1987,14 +1987,14 @@ def test_save_manifest_clear_semantic_erases_stale_hash_for_omitted_file(tmp_pat
 
 def test_save_manifest_clear_ast_blanks_both_hashes_for_failed_extra(tmp_path):
     """#2543: AST failure (missing optional extra) must blank both hashes so
-    the next extract re-queues the file without deleting graphify-out/."""
+    the next extract re-queues the file without deleting atlas-out/."""
     import json
 
     sql = tmp_path / "schema.sql"
     sql.write_text("CREATE TABLE users (id INT);\n")
     py = tmp_path / "main.py"
     py.write_text("def main():\n    return 1\n")
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
     corpus = {str(sql), str(py)}
 
     # Run 1: both files stamped as if a prior full extract succeeded.
@@ -2042,10 +2042,10 @@ def test_save_manifest_without_filter_unchanged_for_code(tmp_path):
     manifest = json.loads(Path(manifest_path).read_text())
     assert str(py) in manifest
     assert manifest[str(py)]["ast_hash"] != ""
-# Regression tests for #945 - .gitignore fallback when no .graphifyignore exists
+# Regression tests for #945 - .gitignore fallback when no .atlasignore exists
 
-def test_gitignore_fallback_when_no_graphifyignore(tmp_path):
-    """When no .graphifyignore exists, .gitignore patterns are honored (#945)."""
+def test_gitignore_fallback_when_no_atlasignore(tmp_path):
+    """When no .atlasignore exists, .gitignore patterns are honored (#945)."""
     (tmp_path / ".git").mkdir()
     (tmp_path / ".gitignore").write_text("vendor/\n*.generated.py\n")
     vendor = tmp_path / "vendor"
@@ -2061,14 +2061,14 @@ def test_gitignore_fallback_when_no_graphifyignore(tmp_path):
     assert not any("generated" in f for f in code)
 
 
-def test_graphifyignore_and_gitignore_are_merged(tmp_path):
+def test_atlasignore_and_gitignore_are_merged(tmp_path):
     """When both exist, their patterns are MERGED — a file excluded only by
-    .gitignore stays excluded even though .graphifyignore says nothing about it
-    (#1363). Previously the presence of a .graphifyignore silently disabled the
+    .gitignore stays excluded even though .atlasignore says nothing about it
+    (#1363). Previously the presence of a .atlasignore silently disabled the
     dir's .gitignore, leaking gitignore-only secrets into the graph."""
     (tmp_path / ".git").mkdir()
     (tmp_path / ".gitignore").write_text("main.py\n")        # gitignore-only exclusion
-    (tmp_path / ".graphifyignore").write_text("other.py\n")  # says nothing about main.py
+    (tmp_path / ".atlasignore").write_text("other.py\n")  # says nothing about main.py
     (tmp_path / "main.py").write_text("x = 1")
     (tmp_path / "other.py").write_text("x = 2")
     (tmp_path / "keep.py").write_text("x = 3")
@@ -2076,22 +2076,22 @@ def test_graphifyignore_and_gitignore_are_merged(tmp_path):
     result = detect(tmp_path)
     code = result["files"]["code"]
     assert not any("main.py" in f for f in code)   # gitignore STILL applied (merged)
-    assert not any("other.py" in f for f in code)  # graphifyignore applied
+    assert not any("other.py" in f for f in code)  # atlasignore applied
     assert any("keep.py" in f for f in code)       # neither excludes it
 
 
-def test_graphifyignore_negation_overrides_gitignore(tmp_path):
-    """.graphifyignore is evaluated after .gitignore, so a `!` negation in it can
+def test_atlasignore_negation_overrides_gitignore(tmp_path):
+    """.atlasignore is evaluated after .gitignore, so a `!` negation in it can
     re-include a file the .gitignore excluded (last-match-wins, #1363)."""
     (tmp_path / ".git").mkdir()
     (tmp_path / ".gitignore").write_text("*.py\n")           # exclude all .py
-    (tmp_path / ".graphifyignore").write_text("!keep.py\n")  # but rescue keep.py
+    (tmp_path / ".atlasignore").write_text("!keep.py\n")  # but rescue keep.py
     (tmp_path / "main.py").write_text("x = 1")
     (tmp_path / "keep.py").write_text("x = 2")
 
     result = detect(tmp_path)
     code = result["files"]["code"]
-    assert any("keep.py" in f for f in code)      # rescued by graphifyignore negation
+    assert any("keep.py" in f for f in code)      # rescued by atlasignore negation
     assert not any("main.py" in f for f in code)  # still excluded
 
 
@@ -2144,7 +2144,7 @@ def test_detect_extra_excludes_pattern(tmp_path):
 
 def test_shebang_interpreter_plain(tmp_path):
     """Plain shebang returns the interpreter basename."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "plain"
     script.write_bytes(b"#!/usr/bin/python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2152,7 +2152,7 @@ def test_shebang_interpreter_plain(tmp_path):
 
 def test_shebang_interpreter_env_single_arg(tmp_path):
     """`#!/usr/bin/env python3` returns the interpreter, not 'env'."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_single"
     script.write_bytes(b"#!/usr/bin/env python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2160,7 +2160,7 @@ def test_shebang_interpreter_env_single_arg(tmp_path):
 
 def test_shebang_interpreter_env_dash_s(tmp_path):
     """`#!/usr/bin/env -S python3 -u` (-S split-args form) recovers the interpreter."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_dashs"
     script.write_bytes(b"#!/usr/bin/env -S python3 -u\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2168,7 +2168,7 @@ def test_shebang_interpreter_env_dash_s(tmp_path):
 
 def test_shebang_interpreter_env_with_flags(tmp_path):
     """`#!/usr/bin/env -i bash` skips env flags and resolves to the interpreter."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_flags"
     script.write_bytes(b"#!/usr/bin/env -i bash\necho hi\n")
     assert _shebang_interpreter(script) == "bash"
@@ -2176,7 +2176,7 @@ def test_shebang_interpreter_env_with_flags(tmp_path):
 
 def test_shebang_interpreter_env_with_assignment(tmp_path):
     """`#!/usr/bin/env DEBUG=1 python3` skips var=value assignments."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_assign"
     script.write_bytes(b"#!/usr/bin/env DEBUG=1 python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2184,7 +2184,7 @@ def test_shebang_interpreter_env_with_assignment(tmp_path):
 
 def test_shebang_interpreter_no_shebang(tmp_path):
     """File without shebang returns None."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "no_shebang"
     script.write_bytes(b"print('x')\n")
     assert _shebang_interpreter(script) is None
@@ -2192,7 +2192,7 @@ def test_shebang_interpreter_no_shebang(tmp_path):
 
 def test_shebang_interpreter_quoted_path(tmp_path):
     """Quoted interpreter path with spaces parses correctly via shlex."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "quoted"
     # Note: actual `#!` on disk wouldn't permit a quoted path on most kernels,
     # but shlex must not crash and should produce a reasonable answer
@@ -2210,14 +2210,14 @@ def test_shebang_file_type_classifies_via_interpreter(tmp_path):
 
 def test_shebang_interpreter_unreadable_returns_none(tmp_path):
     """Unreadable / nonexistent files return None, never raise."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     missing = tmp_path / "does_not_exist"
     assert _shebang_interpreter(missing) is None
 
 
 def test_shebang_interpreter_env_unset_with_operand(tmp_path):
     """`env -u VAR python3` skips both -u and its required operand."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_unset"
     script.write_bytes(b"#!/usr/bin/env -u PYTHONPATH python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2226,7 +2226,7 @@ def test_shebang_interpreter_env_unset_with_operand(tmp_path):
 
 def test_shebang_interpreter_env_chdir_with_operand(tmp_path):
     """`env -C /tmp python3` skips both -C and its workdir operand."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_chdir"
     script.write_bytes(b"#!/usr/bin/env -C /tmp python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2235,7 +2235,7 @@ def test_shebang_interpreter_env_chdir_with_operand(tmp_path):
 
 def test_shebang_interpreter_env_path_with_operand(tmp_path):
     """`env -P /bin python3` skips both -P and its utilpath operand."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_path"
     script.write_bytes(b"#!/usr/bin/env -P /bin python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2244,7 +2244,7 @@ def test_shebang_interpreter_env_path_with_operand(tmp_path):
 
 def test_shebang_interpreter_env_dash_s_after_flag(tmp_path):
     """`env -i -S "python3 -u"` handles -S after another env flag."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_flag_dash_s"
     script.write_bytes(b'#!/usr/bin/env -i -S "python3 -u"\nprint("x")\n')
     assert _shebang_interpreter(script) == "python3"
@@ -2253,7 +2253,7 @@ def test_shebang_interpreter_env_dash_s_after_flag(tmp_path):
 
 def test_shebang_interpreter_env_clumped_u_operand(tmp_path):
     """Clumped `-uPYTHONPATH` form (no space between flag and operand) is one arg."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_clumped"
     script.write_bytes(b"#!/usr/bin/env -uPYTHONPATH python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2262,7 +2262,7 @@ def test_shebang_interpreter_env_clumped_u_operand(tmp_path):
 
 def test_shebang_interpreter_env_missing_operand_returns_none(tmp_path):
     """`env -u` with no operand → not a valid command, return None."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_missing_op"
     script.write_bytes(b"#!/usr/bin/env -u\n")
     assert _shebang_interpreter(script) is None
@@ -2270,7 +2270,7 @@ def test_shebang_interpreter_env_missing_operand_returns_none(tmp_path):
 
 def test_shebang_interpreter_env_gnu_split_string_equals(tmp_path):
     """GNU `--split-string='python3 -u'` (with `=` operand) → python3."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_split_eq"
     script.write_bytes(b"#!/usr/bin/env --split-string='python3 -u'\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2279,7 +2279,7 @@ def test_shebang_interpreter_env_gnu_split_string_equals(tmp_path):
 
 def test_shebang_interpreter_env_gnu_split_string_separate(tmp_path):
     """GNU `--split-string "python3 -u"` (separate operand) → python3."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_split_sep"
     script.write_bytes(b'#!/usr/bin/env --split-string "python3 -u"\nprint("x")\n')
     assert _shebang_interpreter(script) == "python3"
@@ -2288,7 +2288,7 @@ def test_shebang_interpreter_env_gnu_split_string_separate(tmp_path):
 
 def test_shebang_interpreter_env_gnu_argv0_operand(tmp_path):
     """GNU `-a alias python3` skips both -a and its argv0 operand."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_argv0"
     script.write_bytes(b"#!/usr/bin/env -a alias python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2297,7 +2297,7 @@ def test_shebang_interpreter_env_gnu_argv0_operand(tmp_path):
 
 def test_shebang_interpreter_env_compact_dash_s(tmp_path):
     """Compact `-Spython3 -u` form (no space between -S and packed string)."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_compact_dash_s"
     script.write_bytes(b"#!/usr/bin/env -Spython3 -u\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2306,7 +2306,7 @@ def test_shebang_interpreter_env_compact_dash_s(tmp_path):
 
 def test_shebang_interpreter_env_compact_v_then_s(tmp_path):
     """Compact `-vSpython3` (-v plus compact -S)."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_compact_vs"
     script.write_bytes(b"#!/usr/bin/env -vSpython3 -u\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2315,7 +2315,7 @@ def test_shebang_interpreter_env_compact_v_then_s(tmp_path):
 
 def test_shebang_interpreter_env_long_unset_separate_operand(tmp_path):
     """GNU `--unset PYTHONPATH python3` (separate operand)."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_long_unset"
     script.write_bytes(b"#!/usr/bin/env --unset PYTHONPATH python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2324,7 +2324,7 @@ def test_shebang_interpreter_env_long_unset_separate_operand(tmp_path):
 
 def test_shebang_interpreter_env_long_unset_equals(tmp_path):
     """GNU `--unset=PYTHONPATH python3` (`=` operand form)."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_long_unset_eq"
     script.write_bytes(b"#!/usr/bin/env --unset=PYTHONPATH python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2333,7 +2333,7 @@ def test_shebang_interpreter_env_long_unset_equals(tmp_path):
 
 def test_shebang_interpreter_env_long_chdir_separate_operand(tmp_path):
     """GNU `--chdir /tmp python3` (separate operand)."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_long_chdir"
     script.write_bytes(b"#!/usr/bin/env --chdir /tmp python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2342,7 +2342,7 @@ def test_shebang_interpreter_env_long_chdir_separate_operand(tmp_path):
 
 def test_shebang_interpreter_env_long_chdir_equals(tmp_path):
     """GNU `--chdir=/tmp python3` (`=` operand form)."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_long_chdir_eq"
     script.write_bytes(b"#!/usr/bin/env --chdir=/tmp python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2351,7 +2351,7 @@ def test_shebang_interpreter_env_long_chdir_equals(tmp_path):
 
 def test_shebang_interpreter_env_signal_flags(tmp_path):
     """GNU signal-handling flags skip transparently."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_signal"
     script.write_bytes(b"#!/usr/bin/env --default-signal=TERM --ignore-signal=PIPE python3\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2360,7 +2360,7 @@ def test_shebang_interpreter_env_signal_flags(tmp_path):
 
 def test_shebang_interpreter_env_unknown_option_returns_none(tmp_path):
     """Unknown hyphen-prefixed env option → return None rather than guessing."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_unknown"
     script.write_bytes(b"#!/usr/bin/env --no-such-flag python3\n")
     # Must refuse to guess: if we can't classify the option, we can't trust
@@ -2370,7 +2370,7 @@ def test_shebang_interpreter_env_unknown_option_returns_none(tmp_path):
 
 def test_shebang_interpreter_env_dash_s_assignment_before_interpreter(tmp_path):
     """`-S` payload may carry NAME=value assignments before the interpreter."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_s_assignment"
     script.write_bytes(
         b"#!/usr/bin/env -S PYTHONPATH=/opt/custom:${PYTHONPATH} python3\n"
@@ -2382,7 +2382,7 @@ def test_shebang_interpreter_env_dash_s_assignment_before_interpreter(tmp_path):
 
 def test_shebang_interpreter_env_dash_s_flag_before_interpreter(tmp_path):
     """`-S` payload may carry env flags (e.g. -i) before the interpreter."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_s_flag"
     script.write_bytes(b"#!/usr/bin/env -S -i OLDUSER=${USER} python3\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2391,7 +2391,7 @@ def test_shebang_interpreter_env_dash_s_flag_before_interpreter(tmp_path):
 
 def test_shebang_interpreter_env_long_split_assignment_before_interpreter(tmp_path):
     """`--split-string=` payload may carry assignments before the interpreter."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_long_split_assignment"
     script.write_bytes(
         b"#!/usr/bin/env --split-string='PYTHONPATH=/opt/custom:${PYTHONPATH} python3 -u'\n"
@@ -2403,7 +2403,7 @@ def test_shebang_interpreter_env_long_split_assignment_before_interpreter(tmp_pa
 
 def test_shebang_interpreter_env_long_split_flag_before_interpreter(tmp_path):
     """`--split-string=` payload may carry env flags before the interpreter."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_long_split_flag"
     script.write_bytes(b"#!/usr/bin/env --split-string='-i python3 -u'\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2414,7 +2414,7 @@ def test_shebang_interpreter_env_nested_split_string_rejected(tmp_path):
     """A `-S` payload that itself starts with `-S` is rejected (allow_split=False
     on the recursive call bounds the recursion depth at one). Without this guard,
     a malicious or strange shebang could spin the parser indefinitely."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_nested_split"
     # Outer -S splits into ["-S", "python3", "-u"]; inner -S is treated as an
     # unknown option in the recursed pass, so we get None (refuse to guess).
@@ -2424,7 +2424,7 @@ def test_shebang_interpreter_env_nested_split_string_rejected(tmp_path):
 
 def test_shebang_interpreter_env_vs_assignment_before_interpreter(tmp_path):
     """`-vS` packed payload also re-parses for leading assignments."""
-    from graphify.detect import _shebang_interpreter
+    from monarch_atlas.detect import _shebang_interpreter
     script = tmp_path / "env_vs_assignment"
     script.write_bytes(b"#!/usr/bin/env -vS DEBUG=1 python3 -u\nprint('x')\n")
     assert _shebang_interpreter(script) == "python3"
@@ -2433,20 +2433,20 @@ def test_shebang_interpreter_env_vs_assignment_before_interpreter(tmp_path):
 
 # --- #777: portable manifest paths ------------------------------------------
 # When ``root`` is supplied, the on-disk manifest stores forward-slash
-# relative keys so a committed ``graphify-out/`` round-trips across machines
+# relative keys so a committed ``atlas-out/`` round-trips across machines
 # and CI runners. In-memory the keys are still absolute, so internal callers
 # (notably :func:`detect_incremental`) remain unchanged.
 
 def test_save_manifest_relativizes_keys_when_root_given(tmp_path):
     """``save_manifest(root=...)`` writes forward-slash relative keys."""
     import json
-    from graphify.detect import save_manifest, load_manifest
+    from monarch_atlas.detect import save_manifest, load_manifest
 
     (tmp_path / "src").mkdir()
     (tmp_path / "src" / "foo.py").write_text("def x(): pass\n")
     (tmp_path / "doc.md").write_text("hello\n")
 
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
     files = {
         "code": [str(tmp_path / "src" / "foo.py")],
         "document": [str(tmp_path / "doc.md")],
@@ -2470,11 +2470,11 @@ def test_save_manifest_without_root_keeps_absolute_keys(tmp_path):
     absolute-keyed manifest format. Required so skill-generated scripts that
     call ``save_manifest(detect['files'])`` keep working unchanged."""
     import json
-    from graphify.detect import save_manifest
+    from monarch_atlas.detect import save_manifest
 
     f = tmp_path / "foo.py"
     f.write_text("pass\n")
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
     save_manifest({"code": [str(f)]}, manifest_path)
 
     raw = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
@@ -2487,9 +2487,9 @@ def test_load_manifest_absolutizes_relative_keys(tmp_path):
     """``load_manifest(root=...)`` re-anchors stored relative keys so the
     in-memory shape matches what :func:`detect` returns."""
     import json
-    from graphify.detect import load_manifest
+    from monarch_atlas.detect import load_manifest
 
-    manifest_path = tmp_path / "graphify-out" / "manifest.json"
+    manifest_path = tmp_path / "atlas-out" / "manifest.json"
     manifest_path.parent.mkdir(parents=True)
     manifest_path.write_text(json.dumps({
         "src/foo.py": {"mtime": 0.0, "ast_hash": "h1", "semantic_hash": ""},
@@ -2505,9 +2505,9 @@ def test_load_manifest_passes_through_legacy_absolute_keys(tmp_path):
     """Legacy absolute-keyed manifests still load correctly when ``root``
     is supplied — the absolutize step is a no-op for already-absolute keys."""
     import json
-    from graphify.detect import load_manifest
+    from monarch_atlas.detect import load_manifest
 
-    manifest_path = tmp_path / "graphify-out" / "manifest.json"
+    manifest_path = tmp_path / "atlas-out" / "manifest.json"
     manifest_path.parent.mkdir(parents=True)
     abs_key = str((tmp_path / "foo.py").resolve())
     manifest_path.write_text(json.dumps({abs_key: {"mtime": 0.0, "ast_hash": "h", "semantic_hash": ""}}))
@@ -2521,12 +2521,12 @@ def test_save_manifest_out_of_root_keeps_absolute(tmp_path):
     absolute so they round-trip on the saving machine even when they can't
     be portably encoded."""
     import json
-    from graphify.detect import save_manifest
+    from monarch_atlas.detect import save_manifest
 
     outside = tmp_path.parent / f"{tmp_path.name}-sibling.py"
     outside.write_text("pass\n")
     try:
-        manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+        manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
         save_manifest({"code": [str(outside)]}, manifest_path, root=tmp_path)
         raw = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
         key = list(raw)[0]
@@ -2543,7 +2543,7 @@ def test_detect_incremental_portable_across_paths(tmp_path):
     Simulates two checkouts of the same corpus by hard-linking files into a
     second tmp dir and comparing detection results."""
     import json
-    from graphify.detect import save_manifest, detect_incremental
+    from monarch_atlas.detect import save_manifest, detect_incremental
 
     # First "machine": create corpus, save manifest with root.
     repo_a = tmp_path / "repo_a"
@@ -2552,7 +2552,7 @@ def test_detect_incremental_portable_across_paths(tmp_path):
     (repo_a / "src" / "foo.py").write_text("pass\n")
     (repo_a / "doc.md").write_text("hello\n")
 
-    manifest_a = str(repo_a / "graphify-out" / "manifest.json")
+    manifest_a = str(repo_a / "atlas-out" / "manifest.json")
     files = {
         "code": [str(repo_a / "src" / "foo.py")],
         "document": [str(repo_a / "doc.md")],
@@ -2564,8 +2564,8 @@ def test_detect_incremental_portable_across_paths(tmp_path):
     (repo_b / "src").mkdir(parents=True)
     (repo_b / "src" / "foo.py").write_text("pass\n")
     (repo_b / "doc.md").write_text("hello\n")
-    (repo_b / "graphify-out").mkdir()
-    manifest_b = repo_b / "graphify-out" / "manifest.json"
+    (repo_b / "atlas-out").mkdir()
+    manifest_b = repo_b / "atlas-out" / "manifest.json"
     manifest_b.write_text(Path(manifest_a).read_text())
 
     # Stat the copied files match the originals' content hash so
@@ -2668,7 +2668,7 @@ def test_save_manifest_in_root_symlink_roundtrips(tmp_path):
     ``alias.py`` key missed on reload and re-extracted on every incremental
     run."""
     import json
-    from graphify.detect import save_manifest, load_manifest
+    from monarch_atlas.detect import save_manifest, load_manifest
 
     (tmp_path / "sub").mkdir()
     target = tmp_path / "sub" / "target.py"
@@ -2680,7 +2680,7 @@ def test_save_manifest_in_root_symlink_roundtrips(tmp_path):
         import pytest
         pytest.skip("filesystem does not support symlinks")
 
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
     save_manifest({"code": [str(alias)]}, manifest_path, root=tmp_path)
 
     raw = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
@@ -2744,13 +2744,13 @@ def test_convert_office_file_does_not_rewrite_existing_sidecar(tmp_path, monkeyp
 def test_convert_office_file_sidecar_name_stable_across_checkouts(tmp_path, monkeypatch):
     """#2059: the sidecar name must depend on the scan-root-RELATIVE path, not the
     absolute checkout location, so the same tracked file in two clones/worktrees
-    produces the same sidecar name (no unbounded duplicates when graphify-out/ is
+    produces the same sidecar name (no unbounded duplicates when atlas-out/ is
     committed). Also verifies the no-root fallback matches the explicit form."""
     monkeypatch.setattr(detect_mod, "xlsx_to_markdown", lambda p: "sheet body")
 
     def _sidecar(root):
         src = root / "docs" / "report.xlsx"
-        out_dir = root / "graphify-out" / "converted"
+        out_dir = root / "atlas-out" / "converted"
         return detect_mod.convert_office_file(src, out_dir, root=root)
 
     checkout_a = tmp_path / "checkout-a"
@@ -2765,7 +2765,7 @@ def test_convert_office_file_sidecar_name_stable_across_checkouts(tmp_path, monk
 
     # No explicit root -> the out_dir.parent.parent fallback yields the same name.
     fallback = detect_mod.convert_office_file(
-        checkout_a / "docs" / "report.xlsx", checkout_a / "graphify-out" / "converted"
+        checkout_a / "docs" / "report.xlsx", checkout_a / "atlas-out" / "converted"
     )
     assert fallback is not None and fallback.name == out_a.name
 
@@ -2777,7 +2777,7 @@ def test_convert_office_file_hash_disambiguates_same_stem(tmp_path, monkeypatch)
     root = tmp_path / "repo"
     (root / "a").mkdir(parents=True)
     (root / "b").mkdir(parents=True)
-    out_dir = root / "graphify-out" / "converted"
+    out_dir = root / "atlas-out" / "converted"
     out_a = detect_mod.convert_office_file(root / "a" / "report.xlsx", out_dir, root=root)
     out_b = detect_mod.convert_office_file(root / "b" / "report.xlsx", out_dir, root=root)
     assert out_a is not None and out_b is not None
@@ -2789,9 +2789,9 @@ def test_convert_office_file_outside_root_falls_back(tmp_path, monkeypatch):
     absolute-path hash without raising, and stays deterministic."""
     monkeypatch.setattr(detect_mod, "docx_to_markdown", lambda p: "body")
     root = tmp_path / "repo"
-    (root / "graphify-out" / "converted").mkdir(parents=True)
+    (root / "atlas-out" / "converted").mkdir(parents=True)
     outside = tmp_path / "elsewhere" / "doc.docx"
-    out_dir = root / "graphify-out" / "converted"
+    out_dir = root / "atlas-out" / "converted"
     out1 = detect_mod.convert_office_file(outside, out_dir, root=root)
     out2 = detect_mod.convert_office_file(outside, out_dir, root=root)
     assert out1 is not None and out1.name == out2.name
@@ -2799,7 +2799,7 @@ def test_convert_office_file_outside_root_falls_back(tmp_path, monkeypatch):
 
 def test_detect_office_conversion_respects_cache_root(tmp_path, monkeypatch):
     """#2787: detect() with cache_root must write converted sidecars under
-    cache_root/GRAPHIFY_OUT/converted, leaving the scanned corpus untouched, while
+    cache_root/ATLAS_OUT/converted, leaving the scanned corpus untouched, while
     keeping the sidecar filename hash anchored to the scan root."""
     monkeypatch.setattr(detect_mod, "docx_to_markdown", lambda p: "# Spec\nConverted specification text.")
 
@@ -2814,12 +2814,12 @@ def test_detect_office_conversion_respects_cache_root(tmp_path, monkeypatch):
     result = detect(corpus, cache_root=cache_out)
 
     # 1. Scanned corpus tree must not be mutated
-    assert not (corpus / detect_mod.GRAPHIFY_OUT).exists(), (
-        "detect() must not write graphify-out into the scanned corpus tree when cache_root is provided (#2787)"
+    assert not (corpus / detect_mod.ATLAS_OUT).exists(), (
+        "detect() must not write atlas-out into the scanned corpus tree when cache_root is provided (#2787)"
     )
 
     # 2. Converted sidecar must exist under cache_root
-    converted_dir = cache_out / detect_mod.GRAPHIFY_OUT / "converted"
+    converted_dir = cache_out / detect_mod.ATLAS_OUT / "converted"
     assert converted_dir.is_dir(), "converted directory must be created under cache_root"
 
     # 3. Detection result must point to the redirected sidecar
@@ -2893,7 +2893,7 @@ def test_detect_prunes_venv_names_without_markers(tmp_path):
 @pytest.mark.parametrize(
     ("configured_out", "absolute", "symlink_target"),
     [
-        pytest.param("graphify-out/nlp", False, None, id="default-parent"),
+        pytest.param("atlas-out/nlp", False, None, id="default-parent"),
         pytest.param("artifacts/nlp", False, None, id="custom-parent"),
         pytest.param("artifacts/nlp", True, None, id="absolute"),
         pytest.param(
@@ -2904,7 +2904,7 @@ def test_detect_prunes_venv_names_without_markers(tmp_path):
         ),
     ],
 )
-def test_nested_graphify_out_prunes_only_configured_path(
+def test_nested_atlas_out_prunes_only_configured_path(
     tmp_path, configured_out, absolute, symlink_target
 ):
     """#2273: a nested output basename must not prune same-named source dirs."""
@@ -2944,14 +2944,14 @@ def test_nested_graphify_out_prunes_only_configured_path(
             (
                 "import json, sys\n"
                 "from pathlib import Path\n"
-                "from graphify.detect import detect\n"
+                "from monarch_atlas.detect import detect\n"
                 "result = detect(Path(sys.argv[1]))\n"
                 "print(json.dumps(result['files']['code']))\n"
             ),
             str(tmp_path),
         ],
         cwd=Path(__file__).parents[1],
-        env={**os.environ, "GRAPHIFY_OUT": configured_out},
+        env={**os.environ, "ATLAS_OUT": configured_out},
         check=True,
         capture_output=True,
         text=True,
@@ -2984,10 +2984,10 @@ def test_detect_unclassified_empty_when_all_supported(tmp_path):
     assert res.get("unclassified", []) == []
 
 
-def test_graphifyinclude_is_inert_and_not_unclassified(tmp_path, capsys):
-    """#2112: .graphifyinclude support was removed (dead since #873).
+def test_atlasinclude_is_inert_and_not_unclassified(tmp_path, capsys):
+    """#2112: .atlasinclude support was removed (dead since #873).
 
-    A leftover .graphifyinclude must not error, must not surface in the
+    A leftover .atlasinclude must not error, must not surface in the
     unclassified list, and must not change which real files are indexed.
     detect() prints a one-time stderr note so the removal is not silent.
     """
@@ -2996,17 +2996,17 @@ def test_graphifyinclude_is_inert_and_not_unclassified(tmp_path, capsys):
     baseline = detect(tmp_path)
     capsys.readouterr()  # discard any baseline output
 
-    (tmp_path / ".graphifyinclude").write_text(".github/\ndocs/**\n")
+    (tmp_path / ".atlasinclude").write_text(".github/\ndocs/**\n")
     result = detect(tmp_path)
 
     # not surfaced as an unclassified scan input
-    assert not any(".graphifyinclude" in p for p in result["unclassified"])
+    assert not any(".atlasinclude" in p for p in result["unclassified"])
     # real files are indexed exactly as before; the file changes nothing
     assert result["files"] == baseline["files"]
     assert any("main.py" in f for f in result["files"]["code"])
-    # one-time stderr note, matching the [graphify] warning convention
+    # one-time stderr note, matching the [atlas] warning convention
     err = capsys.readouterr().err
-    assert err.count("[graphify] WARNING: .graphifyinclude is no longer supported") == 1
+    assert err.count("[atlas] WARNING: .atlasinclude is no longer supported") == 1
 
 
 def test_detect_reports_walk_errors_key():
@@ -3127,7 +3127,7 @@ def test_save_manifest_full_scan_prunes_excluded_but_alive_row(tmp_path):
     b = tmp_path / "b.py"
     a.write_text("x = 1\n")
     b.write_text("y = 2\n")
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
 
     save_manifest({"code": [str(a), str(b)]}, manifest_path, root=tmp_path)
     raw = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
@@ -3151,7 +3151,7 @@ def test_save_manifest_full_scan_still_prunes_missing_file(tmp_path):
     gone = tmp_path / "gone.py"
     a.write_text("x = 1\n")
     gone.write_text("y = 2\n")
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
     save_manifest({"code": [str(a), str(gone)]}, manifest_path, root=tmp_path)
 
     gone.unlink()
@@ -3171,7 +3171,7 @@ def test_save_manifest_subset_save_preserves_untouched_rows(tmp_path):
     b = tmp_path / "b.py"
     a.write_text("x = 1\n")
     b.write_text("y = 2\n")
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
     save_manifest({"code": [str(a), str(b)]}, manifest_path, root=tmp_path)
 
     # Incremental hook re-stamps only a.py; b.py's row must survive.
@@ -3192,7 +3192,7 @@ def test_save_manifest_full_scan_keeps_out_of_root_rows(tmp_path):
     outside = tmp_path.parent / f"{tmp_path.name}-extern.py"
     outside.write_text("z = 3\n")
     try:
-        manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+        manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
         save_manifest(
             {"code": [str(a), str(outside)]}, manifest_path, root=tmp_path
         )
@@ -3216,7 +3216,7 @@ def test_detect_incremental_reports_excluded_not_deleted(tmp_path):
     b = tmp_path / "b.py"
     a.write_text("x = 1\n")
     b.write_text("y = 2\n")
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
     full = detect(tmp_path)
     save_manifest(full["files"], manifest_path, root=tmp_path)
 
@@ -3236,7 +3236,7 @@ def test_detect_incremental_still_reports_real_deletions(tmp_path):
     b = tmp_path / "b.py"
     a.write_text("x = 1\n")
     b.write_text("y = 2\n")
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
     full = detect(tmp_path)
     save_manifest(full["files"], manifest_path, root=tmp_path)
 
@@ -3254,7 +3254,7 @@ def test_detect_incremental_exclusion_stable_across_runs(tmp_path):
     b = tmp_path / "b.py"
     a.write_text("x = 1\n")
     b.write_text("y = 2\n")
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
     full = detect(tmp_path)
     save_manifest(full["files"], manifest_path, root=tmp_path)
 
@@ -3279,7 +3279,7 @@ def test_save_manifest_unchanged_file_preserves_seen(tmp_path):
     import json
     a = tmp_path / "a.py"
     a.write_text("x = 1\n", encoding="utf-8")
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
 
     save_manifest({"code": [str(a)]}, manifest_path, root=tmp_path)
     raw1 = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
@@ -3300,7 +3300,7 @@ def test_save_manifest_changed_file_updates_seen(tmp_path):
     import time
     a = tmp_path / "a.py"
     a.write_text("x = 1\n", encoding="utf-8")
-    manifest_path = str(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = str(tmp_path / "atlas-out" / "manifest.json")
 
     save_manifest({"code": [str(a)]}, manifest_path, root=tmp_path)
     raw1 = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
@@ -3320,7 +3320,7 @@ def test_save_manifest_noop_skips_disk_write(tmp_path):
     """#2838: save_manifest does not rewrite manifest.json when payload is identical."""
     a = tmp_path / "a.py"
     a.write_text("x = 1\n", encoding="utf-8")
-    manifest_path = Path(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = Path(tmp_path / "atlas-out" / "manifest.json")
 
     save_manifest({"code": [str(a)]}, str(manifest_path), root=tmp_path)
     mtime_1 = manifest_path.stat().st_mtime_ns
@@ -3335,12 +3335,12 @@ def test_save_manifest_noop_skips_disk_write(tmp_path):
 
 
 def test_save_manifest_ast_kind_noop_then_change(tmp_path):
-    """#2838's literal path: `graphify update` calls save_manifest with kind='ast'.
+    """#2838's literal path: `atlas update` calls save_manifest with kind='ast'.
     A no-op re-run must leave the manifest byte-identical; a real edit must update it."""
     import json
     a = tmp_path / "a.py"
     a.write_text("x = 1\n", encoding="utf-8")
-    manifest_path = Path(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = Path(tmp_path / "atlas-out" / "manifest.json")
 
     save_manifest({"code": [str(a)]}, str(manifest_path), root=tmp_path, kind="ast")
     bytes_1 = manifest_path.read_bytes()
@@ -3363,7 +3363,7 @@ def test_save_manifest_corrupt_existing_manifest_still_writes(tmp_path):
     import json
     a = tmp_path / "a.py"
     a.write_text("x = 1\n", encoding="utf-8")
-    manifest_path = Path(tmp_path / "graphify-out" / "manifest.json")
+    manifest_path = Path(tmp_path / "atlas-out" / "manifest.json")
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text("{ this is not valid json", encoding="utf-8")
 
@@ -3387,7 +3387,7 @@ def test_save_manifest_corrupt_existing_manifest_still_writes(tmp_path):
     "password-reset/design.md",
 ])
 def test_sensitive_filter_indexes_topic_prose_and_source(path):
-    from graphify.detect import _is_sensitive
+    from monarch_atlas.detect import _is_sensitive
     assert not _is_sensitive(Path(path)), f"{path} is a topic doc / real source, must be indexed (#2106)"
 
 
@@ -3400,13 +3400,13 @@ def test_sensitive_filter_indexes_topic_prose_and_source(path):
     "secrets/prod.tfvars", "credentials/id_rsa",
 ])
 def test_sensitive_filter_still_excludes_real_secrets(path):
-    from graphify.detect import _is_sensitive
+    from monarch_atlas.detect import _is_sensitive
     assert _is_sensitive(Path(path)), f"{path} is a real secret, must stay excluded (#2106)"
 
 
 def test_sensitive_bare_keyword_prose_still_dropped():
     """A prose file whose stem IS exactly a bare keyword still reads as a dump."""
-    from graphify.detect import _is_sensitive
+    from monarch_atlas.detect import _is_sensitive
     assert _is_sensitive(Path("secrets.md"))
     assert _is_sensitive(Path("token.rst"))
     assert not _is_sensitive(Path("token-lifecycle.md"))  # multi-word slug indexed
@@ -3421,14 +3421,14 @@ def test_sensitive_bare_plural_tokens_prose_indexed(path):
     """Bare plural "tokens" in a prose file is a design-token reference doc,
     not a credential dump — unlike "token.md" (singular) or "secrets.md"
     (another keyword's bare plural), which still read as dumps (#3527)."""
-    from graphify.detect import _is_sensitive
+    from monarch_atlas.detect import _is_sensitive
     assert not _is_sensitive(Path(path))
 
 
 def test_sensitive_bare_plural_tokens_still_flagged_outside_prose():
     """The plural exemption is scoped to prose extensions only — "tokens.txt"
     is still a plausible secret store and stays excluded (#3527)."""
-    from graphify.detect import _is_sensitive
+    from monarch_atlas.detect import _is_sensitive
     assert _is_sensitive(Path("tokens.txt"))
     assert _is_sensitive(Path("tokens.json"))
 
@@ -3442,7 +3442,7 @@ def test_sensitive_design_token_source_files_indexed(path):
     """Genuine design-token source files (.dart/.ts) are graphable source and
     exempt from the generic-keyword drop regardless of the bare/plural rules
     above — they were the headline repro in #3527."""
-    from graphify.detect import _is_sensitive
+    from monarch_atlas.detect import _is_sensitive
     assert not _is_sensitive(Path(path))
 
 
@@ -3491,7 +3491,7 @@ def test_lexical_relative_matches_pathlib_relative_to():
     None where relative_to raises (target not under anchor). Guards the
     reimplemented relative_to against silent drift (#2226)."""
     from pathlib import Path
-    from graphify.detect import _lexical_relative, _nfc
+    from monarch_atlas.detect import _lexical_relative, _nfc
 
     anchors = ["/a/b", "/a", "/a/b/c", "/x", "/"]
     targets = [
@@ -3514,7 +3514,7 @@ def test_globstar_matcher_leaves_no_reference_cycle():
     as the old per-call `@lru_cache` closure did (it referenced itself). With gc
     disabled, a run of the matcher must leave nothing for the collector."""
     import gc
-    from graphify.detect import _match_anchored_ignore_pattern
+    from monarch_atlas.detect import _match_anchored_ignore_pattern
 
     gc.collect()
     gc.disable()

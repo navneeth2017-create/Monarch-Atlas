@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 
 
 def _corpus(tmp_path):
@@ -30,7 +30,7 @@ def _record_force(monkeypatch):
         rec["force"] = force
         return True
 
-    monkeypatch.setattr("graphify.export.to_json", _stub)
+    monkeypatch.setattr("monarch_atlas.export.to_json", _stub)
     return rec
 
 
@@ -53,11 +53,11 @@ def _arm(monkeypatch, tmp_path, *, uncovered=(), partial=(), extra_argv=()):
                 "input_tokens": 10, "output_tokens": 5,
                 "uncovered_files": [str(corpus / sf) for sf in uncovered]}
 
-    monkeypatch.setattr("graphify.llm.extract_corpus_parallel", _stub_corpus)
+    monkeypatch.setattr("monarch_atlas.llm.extract_corpus_parallel", _stub_corpus)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(corpus), "--backend", "claude",
+        ["atlas", "extract", str(corpus), "--backend", "claude",
          "--out", str(out_dir), *extra_argv],
     )
     return out_dir
@@ -111,8 +111,8 @@ def test_the_manifest_is_not_stamped_when_the_guard_refuses(monkeypatch, tmp_pat
     them — the same contract a crashed chunk already has."""
     def _refuse(G, communities, output_path, *, force=False, **kwargs):
         return False
-    monkeypatch.setattr("graphify.export.to_json", _refuse)
+    monkeypatch.setattr("monarch_atlas.export.to_json", _refuse)
     out_dir = _arm(monkeypatch, tmp_path, uncovered=("GUIDE.md",))
     code = _run()
     assert code not in (None, 0)
-    assert not (out_dir / "graphify-out" / "manifest.json").exists()
+    assert not (out_dir / "atlas-out" / "manifest.json").exists()

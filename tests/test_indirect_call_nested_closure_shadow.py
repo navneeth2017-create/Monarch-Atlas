@@ -25,8 +25,8 @@ from pathlib import Path
 
 import networkx as nx
 
-from graphify.affected import affected_nodes
-from graphify.extract import extract
+from monarch_atlas.affected import affected_nodes
+from monarch_atlas.extract import extract
 
 
 def _extract_js_dir(tmp_path, files: dict[str, str]):

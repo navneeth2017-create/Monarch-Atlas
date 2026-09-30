@@ -7,7 +7,7 @@ char is added only if the original file does not end with it.
 In this test we will make sure this works.
 """
 
-from graphify.extract import extract, extract_c, extract_cpp
+from monarch_atlas.extract import extract, extract_c, extract_cpp
 
 TEST_HEADER_1 = """\
 #define A 8

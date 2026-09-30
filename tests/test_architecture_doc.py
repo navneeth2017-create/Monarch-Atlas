@@ -37,7 +37,7 @@ def _documented_symbols() -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
     for module, cell in _ROW.findall(text[start:end]):
         for func in _FUNC.findall(cell):
-            pairs.append((f"graphify.{module}", func))
+            pairs.append((f"monarch_atlas.{module}", func))
     return pairs
 
 
@@ -47,7 +47,7 @@ def test_the_table_was_actually_parsed():
     pairs = _documented_symbols()
     assert len(pairs) >= 10, f"parsed too few symbols, regex likely broken: {pairs}"
     modules = {m for m, _ in pairs}
-    assert {"graphify.extract", "graphify.build", "graphify.serve"} <= modules, modules
+    assert {"monarch_atlas.extract", "monarch_atlas.build", "monarch_atlas.serve"} <= modules, modules
 
 
 @pytest.mark.parametrize("module,func", _documented_symbols())
@@ -62,7 +62,7 @@ def test_architecture_table_symbols_exist(module, func):
 def test_architecture_documents_extract_as_taking_a_list():
     """`extract(path)` was documented for a function whose first parameter is a
     list; a caller passing one Path gets TypeError: not iterable."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
 
     params = list(inspect.signature(extract).parameters.values())
     assert params[0].name == "paths", params
@@ -77,7 +77,7 @@ def test_architecture_tells_library_callers_to_pass_root():
     """The omitted `root=` is the parameter whose absence yields non-canonical
     ids and source_file values, so the doc must not just name it -- it has to
     say to pass it."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
 
     root = inspect.signature(extract).parameters["root"]
     assert root.kind is inspect.Parameter.KEYWORD_ONLY, root.kind

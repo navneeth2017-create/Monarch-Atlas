@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _write(path: Path, text: str) -> Path:
@@ -488,7 +488,7 @@ def test_csharp_same_name_diff_namespace_have_distinct_ids(tmp_path: Path):
 
 def test_csharp_global_scope_id_unchanged(tmp_path: Path):
     # A C# type at global scope (no namespace) keeps the bare stem+name id (empty namespace dropped by make_id).
-    from graphify.extractors.base import _make_id, _file_stem
+    from monarch_atlas.extractors.base import _make_id, _file_stem
     f = _write(tmp_path / "g.cs", "class Glob {}\n")
     result = extract([f], cache_root=tmp_path)
     glob = next(n for n in result["nodes"] if n.get("label") == "Glob")

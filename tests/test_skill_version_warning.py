@@ -1,6 +1,6 @@
 """Direction-aware skill-version mismatch warning (#1568).
 
-`_check_skill_version` used to advise `graphify install` on ANY version
+`_check_skill_version` used to advise `atlas install` on ANY version
 mismatch. But `install` writes the package's OWN bundled skill and re-stamps
 the version, so when the skill on disk is NEWER than the package, following
 that advice silently DOWNGRADES the skill. These tests pin that the warning is
@@ -13,14 +13,14 @@ from pathlib import Path
 
 import pytest
 
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 
 
 def _make_skill(tmp_path: Path, stamped: str) -> Path:
-    skill_dst = tmp_path / "skills" / "graphify" / "SKILL.md"
+    skill_dst = tmp_path / "skills" / "atlas" / "SKILL.md"
     skill_dst.parent.mkdir(parents=True, exist_ok=True)
-    skill_dst.write_text("# graphify skill\n", encoding="utf-8")
-    (skill_dst.parent / ".graphify_version").write_text(stamped, encoding="utf-8")
+    skill_dst.write_text("# atlas skill\n", encoding="utf-8")
+    (skill_dst.parent / ".atlas_version").write_text(stamped, encoding="utf-8")
     return skill_dst
 
 
@@ -38,7 +38,7 @@ def test_skill_older_than_package_recommends_install(tmp_path, monkeypatch, caps
     skill_dst = _make_skill(tmp_path, "0.8.27")
     mainmod._check_skill_version(skill_dst)
     err = capsys.readouterr().err
-    assert "Run 'graphify install' to update" in err
+    assert "Run 'atlas install' to update" in err
     assert "downgrade" not in err
 
 
@@ -48,7 +48,7 @@ def test_skill_newer_than_package_recommends_upgrade_not_install(tmp_path, monke
     mainmod._check_skill_version(skill_dst)
     err = capsys.readouterr().err
     # must NOT tell the user to run install (that would downgrade the skill)
-    assert "Run 'graphify install' to update" not in err
+    assert "Run 'atlas install' to update" not in err
     assert "downgrade" in err
     assert "upgrade" in err.lower()
 

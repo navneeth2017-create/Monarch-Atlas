@@ -7,7 +7,7 @@ user's mcpServers/enabledPlugins/theme/hooks. The fix:
 
 - read with utf-8-sig (BOM-tolerant),
 - refuse to touch an existing file that is not a JSON object (stderr + exit 1),
-- back up to <name>.graphify-bak before any modifying write,
+- back up to <name>.atlas-bak before any modifying write,
 - skip the write entirely when nothing changed (idempotent re-install),
 - never crash on (and always preserve) non-dict hook entries.
 """
@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify.install import (
+from monarch_atlas.install import (
     _install_claude_hook,
     _install_codebuddy_hook,
     _install_codex_hook,
@@ -58,7 +58,7 @@ def _run(tmp_path: Path, installer: str, **kwargs) -> Path:
 
 
 def test_claude_install_preserves_existing_settings(tmp_path):
-    """#2167 core case: every key graphify does not own must survive install."""
+    """#2167 core case: every key atlas does not own must survive install."""
     seeded = {
         "mcpServers": {"context7": {"command": "npx", "args": ["context7"]}},
         "enabledPlugins": ["my-plugin@marketplace"],
@@ -77,19 +77,19 @@ def test_claude_install_preserves_existing_settings(tmp_path):
     _run(tmp_path, "claude", strict=True)
 
     result = json.loads(settings_path.read_text(encoding="utf-8"))
-    # top-level keys graphify does not own are untouched
+    # top-level keys atlas does not own are untouched
     assert result["mcpServers"] == seeded["mcpServers"]
     assert result["enabledPlugins"] == seeded["enabledPlugins"]
     assert result["theme"] == "dark"
-    # hooks sections graphify does not manage are untouched
+    # hooks sections atlas does not manage are untouched
     assert result["hooks"]["PostToolUse"] == seeded["hooks"]["PostToolUse"]
-    # the user's own PreToolUse entry survives alongside graphify's
+    # the user's own PreToolUse entry survives alongside atlas's
     pre_tool = result["hooks"]["PreToolUse"]
     assert seeded["hooks"]["PreToolUse"][0] in pre_tool
-    graphify_hooks = [h for h in pre_tool if "graphify" in str(h)]
-    assert len(graphify_hooks) == 2
+    atlas_hooks = [h for h in pre_tool if "atlas" in str(h)]
+    assert len(atlas_hooks) == 2
     # strict=True lands on the read guard
-    assert any(h["hooks"][0]["command"].endswith("--strict") for h in graphify_hooks)
+    assert any(h["hooks"][0]["command"].endswith("--strict") for h in atlas_hooks)
 
 
 # ---------------------------------------------------------------- BOM
@@ -108,7 +108,7 @@ def test_bom_settings_are_merged_not_clobbered(tmp_path, installer):
     assert result["mcpServers"] == seeded["mcpServers"]
     assert result["theme"] == "dark"
     section = _INSTALLERS[installer][2]
-    assert any("graphify" in str(h) for h in result["hooks"][section])
+    assert any("atlas" in str(h) for h in result["hooks"][section])
 
 
 # ---------------------------------------------------------------- invalid JSON
@@ -126,7 +126,7 @@ def test_invalid_json_aborts_without_clobbering(tmp_path, installer, capsys):
     assert excinfo.value.code == 1
     assert str(settings_path) in capsys.readouterr().err
     assert settings_path.read_bytes() == original
-    assert not settings_path.with_name(settings_path.name + ".graphify-bak").exists()
+    assert not settings_path.with_name(settings_path.name + ".atlas-bak").exists()
 
 
 @ALL_INSTALLERS
@@ -164,7 +164,7 @@ def test_backup_written_before_modify_and_stable_on_reinstall(tmp_path, installe
     seeded = {"theme": "dark", "mcpServers": {"keep": {}}}
     settings_path = _seed(tmp_path, installer, seeded)
     pre_write = settings_path.read_text(encoding="utf-8")
-    backup = settings_path.with_name(settings_path.name + ".graphify-bak")
+    backup = settings_path.with_name(settings_path.name + ".atlas-bak")
 
     _run(tmp_path, installer)
 
@@ -174,7 +174,7 @@ def test_backup_written_before_modify_and_stable_on_reinstall(tmp_path, installe
     assert merged != pre_write  # sanity: the run was a modifying one
 
     # Idempotent second run: output is unchanged, so neither the settings file
-    # nor the backup may be rewritten (the backup keeps the pre-graphify content).
+    # nor the backup may be rewritten (the backup keeps the pre-atlas content).
     _run(tmp_path, installer)
     assert settings_path.read_text(encoding="utf-8") == merged
     assert backup.read_text(encoding="utf-8") == pre_write
@@ -183,7 +183,7 @@ def test_backup_written_before_modify_and_stable_on_reinstall(tmp_path, installe
 def test_no_backup_on_fresh_install(tmp_path):
     settings_path = _run(tmp_path, "claude")
     assert settings_path.exists()
-    assert not settings_path.with_name(settings_path.name + ".graphify-bak").exists()
+    assert not settings_path.with_name(settings_path.name + ".atlas-bak").exists()
 
 
 # ---------------------------------------------------------------- non-dict entries
@@ -201,4 +201,4 @@ def test_non_dict_hook_entry_is_preserved_not_fatal(tmp_path, installer):
 
     entries = json.loads(settings_path.read_text(encoding="utf-8"))["hooks"][section]
     assert "legacy-string" in entries
-    assert any("graphify" in str(h) for h in entries)
+    assert any("atlas" in str(h) for h in entries)

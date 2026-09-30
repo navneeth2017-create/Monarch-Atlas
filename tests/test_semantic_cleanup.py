@@ -1,8 +1,8 @@
-"""Tests for graphify.semantic_cleanup.validate_semantic_fragment (#825)."""
+"""Tests for monarch_atlas.semantic_cleanup.validate_semantic_fragment (#825)."""
 
 import json
 
-from graphify import semantic_cleanup as sc
+from monarch_atlas import semantic_cleanup as sc
 
 
 def _valid_fragment():
@@ -84,7 +84,7 @@ def test_validate_semantic_fragment_accepts_concept_file_type():
 
 
 def test_load_validated_semantic_fragment_accepts_valid(tmp_path):
-    chunk = tmp_path / ".graphify_chunk_00.json"
+    chunk = tmp_path / ".atlas_chunk_00.json"
     chunk.write_text(json.dumps(_valid_fragment()))
     fragment, errors = sc.load_validated_semantic_fragment(chunk)
     assert errors == []
@@ -94,7 +94,7 @@ def test_load_validated_semantic_fragment_accepts_valid(tmp_path):
 def test_load_validated_semantic_fragment_rejects_oversize_before_parse(tmp_path, monkeypatch):
     """Oversize files are rejected by stat() — payload is never parsed."""
     monkeypatch.setattr(sc, "MAX_SEMANTIC_FRAGMENT_BYTES", 64)
-    chunk = tmp_path / ".graphify_chunk_99.json"
+    chunk = tmp_path / ".atlas_chunk_99.json"
     # Write something that would PARSE successfully if read, but exceeds the size guard.
     chunk.write_text("[" + ",".join(['"x"'] * 50) + "]")
     fragment, errors = sc.load_validated_semantic_fragment(chunk)
@@ -104,7 +104,7 @@ def test_load_validated_semantic_fragment_rejects_oversize_before_parse(tmp_path
 
 def test_load_validated_semantic_fragment_rejects_invalid_json(tmp_path):
     """Invalid JSON returns an error instead of raising."""
-    chunk = tmp_path / ".graphify_chunk_bad.json"
+    chunk = tmp_path / ".atlas_chunk_bad.json"
     chunk.write_text("{not valid json")
     fragment, errors = sc.load_validated_semantic_fragment(chunk)
     assert fragment is None

@@ -9,8 +9,8 @@ named on the RHS is the local, not the module fn. The negatives pin that the fal
 """
 import networkx as nx
 
-from graphify.affected import affected_nodes
-from graphify.extract import extract_python
+from monarch_atlas.affected import affected_nodes
+from monarch_atlas.extract import extract_python
 
 
 def _extract(tmp_path, src):

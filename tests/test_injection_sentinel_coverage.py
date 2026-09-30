@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from graphify.llm import _neutralise_injection_sentinels, _wrap_untrusted
+from monarch_atlas.llm import _neutralise_injection_sentinels, _wrap_untrusted
 
 ZWSP = "​"
 

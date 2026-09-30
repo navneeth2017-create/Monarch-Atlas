@@ -1,4 +1,4 @@
-"""Regression tests for Graphify issue #3477:
+"""Regression tests for Atlas issue #3477:
 Scoped entity deduplication during incremental build_merge().
 
 Ensures:
@@ -15,9 +15,9 @@ from pathlib import Path
 import pytest
 import networkx as nx
 
-import graphify.build as buildmod
-from graphify.build import build, build_merge
-from graphify.dedup import deduplicate_entities
+import monarch_atlas.build as buildmod
+from monarch_atlas.build import build, build_merge
+from monarch_atlas.dedup import deduplicate_entities
 
 
 def _write_graph(graph_path: Path, nodes, edges=(), hyperedges=()) -> None:
@@ -37,7 +37,7 @@ def _write_graph(graph_path: Path, nodes, edges=(), hyperedges=()) -> None:
 def test_untouched_duplicate_nodes_survive_incremental_merge(tmp_path):
     """#3477: Two duplicate-labeled nodes in two untouched files must not be collapsed
     when an unrelated third file is incrementally updated with dedup=True."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     node_a = {
         "id": "a_auth_service",
         "label": "Authentication Service Component",
@@ -80,7 +80,7 @@ def test_untouched_duplicate_nodes_survive_incremental_merge(tmp_path):
 def test_incoming_duplicate_merges_into_untouched_node_as_canonical_survivor(tmp_path):
     """#3477: An incoming entity duplicate merges into an untouched entity, and the
     untouched node MUST be the canonical survivor, with edges rewired."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     untouched_cache = {
         "id": "a_cache_mgr",
         "label": "Memory Cache Manager System",
@@ -139,7 +139,7 @@ def test_two_untouched_plus_one_incoming_duplicate_bridge_case(tmp_path):
     - Both untouched nodes survive as separate entities.
     - Incoming node resolves to at most one protected survivor.
     - The two protected nodes do not become transitively connected."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     node_a = {
         "id": "a_auth",
         "label": "Authentication Service Gateway",
@@ -199,7 +199,7 @@ def test_two_untouched_plus_one_incoming_duplicate_bridge_case(tmp_path):
 
 def test_two_incoming_duplicate_nodes_deduplicate_normally(tmp_path):
     """#3477: Multiple incoming duplicates still deduplicate normally during build_merge."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     untouched_node = {
         "id": "a_existing",
         "label": "Existing Untouched Component",
@@ -279,7 +279,7 @@ def test_full_build_protected_ids_none_retains_global_dedup():
 
 def test_fuzzy_dedup_protected_nodes_do_not_merge(tmp_path):
     """#3477: Pass 2 fuzzy dedup must not collapse two near-identical nodes in untouched files."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     # Near-identical labels that clear the Jaro threshold
     node_a = {
         "id": "a_auth_system",
@@ -320,7 +320,7 @@ def test_fuzzy_dedup_protected_nodes_do_not_merge(tmp_path):
 
 def test_fuzzy_dedup_incoming_merges_into_protected_as_canonical(tmp_path):
     """#3477: Pass 2 fuzzy dedup merges incoming typo into untouched canonical node."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     untouched = {
         "id": "a_auth_system",
         "label": "Authentication Manager Processing Engine",
@@ -349,7 +349,7 @@ def test_fuzzy_dedup_incoming_merges_into_protected_as_canonical(tmp_path):
 
 def test_fuzzy_dedup_incoming_bridge_case(tmp_path):
     """#3477: In fuzzy dedup, an incoming node must not bridge two untouched nodes."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     node_a = {
         "id": "a_cluster",
         "label": "Distributed Storage Processing Cluster Subsystem",

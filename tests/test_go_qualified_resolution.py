@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _extract(root: Path) -> dict:
@@ -268,8 +268,8 @@ def test_incremental_sibling_addition_keeps_cross_package_edge(tmp_path: Path) -
     ONLY a.go (the --update path). The stored ``Start -> Run`` edge from the
     untouched app package has to keep pointing at the exported ``Run``.
     """
-    from graphify.build import build_from_json, build_merge
-    from graphify.export import to_json
+    from monarch_atlas.build import build_from_json, build_merge
+    from monarch_atlas.export import to_json
 
     (tmp_path / "go.mod").write_text("module example.com/repro\n\ngo 1.22\n")
     (tmp_path / "pkga").mkdir()

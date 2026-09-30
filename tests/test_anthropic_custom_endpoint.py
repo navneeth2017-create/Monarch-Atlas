@@ -7,7 +7,7 @@ OPENAI_BASE_URL / OPENAI_MODEL pattern.
 
 import importlib
 
-from graphify import llm
+from monarch_atlas import llm
 
 
 def test_claude_defaults_without_env(monkeypatch):

@@ -6,7 +6,7 @@ the single file being extracted. Real Delphi/MTM-style code very commonly
 splits a class across two files (a generated base class + a manual
 descendant that extends it in a separate unit), so a call from the
 descendant to a method it inherits from the base falls outside any one
-file's own scope. graphify.pascal_resolution closes that gap as a
+file's own scope. monarch_atlas.pascal_resolution closes that gap as a
 corpus-wide, post-extraction pass. See its module docstring for the full
 rationale.
 
@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.extract import extract, extract_pascal
+from monarch_atlas.extract import extract, extract_pascal
 
 FIXTURES = Path(__file__).parent / "fixtures" / "pascal_cross_file"
 BASE = FIXTURES / "BaseGadget.pas"
@@ -66,7 +66,7 @@ def test_single_file_extraction_reports_unresolved_inherited_call():
 
 
 def test_calls_resolve_across_files_via_inherits_chain(tmp_path):
-    # cache_root only controls where graphify-out/cache/ is written -- it has
+    # cache_root only controls where atlas-out/cache/ is written -- it has
     # no bearing on the Pascal cross-file class lookup, which is keyed off
     # each source path's own project root (see module docstring). Using
     # tmp_path here just keeps cache artifacts out of the repo.
@@ -90,6 +90,6 @@ def test_cross_file_calls_do_not_cross_unrelated_classes(tmp_path):
 
 
 def test_pascal_resolver_registered():
-    from graphify.resolver_registry import registered_resolvers
+    from monarch_atlas.resolver_registry import registered_resolvers
     names = {r.name for r in registered_resolvers()}
     assert "pascal_inherited_calls" in names

@@ -11,7 +11,7 @@ from pathlib import Path
 import networkx as nx
 import pytest
 
-from graphify.llm import label_communities, generate_community_labels
+from monarch_atlas.llm import label_communities, generate_community_labels
 
 
 def _graph():
@@ -35,7 +35,7 @@ def test_label_communities_happy_path(monkeypatch):
         captured["backend"] = backend
         return '{"0": "Order Management", "1": "Payment Flow"}'
 
-    monkeypatch.setattr("graphify.llm._call_llm", fake_call)
+    monkeypatch.setattr("monarch_atlas.llm._call_llm", fake_call)
     labels = label_communities(G, communities, backend="gemini")
 
     assert labels == {0: "Order Management", 1: "Payment Flow"}
@@ -54,7 +54,7 @@ def test_label_communities_passes_model_override(monkeypatch):
         captured["model"] = model
         return '{"0": "Order Management", "1": "Payment Flow"}'
 
-    monkeypatch.setattr("graphify.llm._call_llm", fake_call)
+    monkeypatch.setattr("monarch_atlas.llm._call_llm", fake_call)
     labels = label_communities(
         G,
         communities,
@@ -67,9 +67,9 @@ def test_label_communities_passes_model_override(monkeypatch):
 
 
 def test_label_cli_passes_model_override(tmp_path, monkeypatch):
-    import graphify.__main__ as cli
+    import monarch_atlas.__main__ as cli
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     graph = {
         "directed": False,
@@ -91,13 +91,13 @@ def test_label_cli_passes_model_override(tmp_path, monkeypatch):
         captured["batch_size"] = batch_size
         return {0: "Orders"}, "llm"
 
-    monkeypatch.setattr("graphify.llm.generate_community_labels", fake_generate)
-    monkeypatch.setattr("graphify.export.to_html", lambda *args, **kwargs: None)
+    monkeypatch.setattr("monarch_atlas.llm.generate_community_labels", fake_generate)
+    monkeypatch.setattr("monarch_atlas.export.to_html", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         sys,
         "argv",
         [
-            "graphify",
+            "atlas",
             "label",
             str(tmp_path),
             "--backend",
@@ -123,9 +123,9 @@ def test_label_cli_passes_model_override(tmp_path, monkeypatch):
 
 
 def test_label_cli_missing_only_preserves_existing_labels(tmp_path, monkeypatch):
-    import graphify.__main__ as cli
+    import monarch_atlas.__main__ as cli
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     graph = {
         "directed": False,
@@ -137,7 +137,7 @@ def test_label_cli_missing_only_preserves_existing_labels(tmp_path, monkeypatch)
         "links": [],
     }
     (out / "graph.json").write_text(json.dumps(graph), encoding="utf-8")
-    (out / ".graphify_labels.json").write_text(
+    (out / ".atlas_labels.json").write_text(
         json.dumps({"0": "Order Management", "1": "Community 1"}),
         encoding="utf-8",
     )
@@ -149,24 +149,24 @@ def test_label_cli_missing_only_preserves_existing_labels(tmp_path, monkeypatch)
         captured["communities"] = dict(communities)
         return {1: "Payment Flow"}, "llm"
 
-    monkeypatch.setattr("graphify.llm.generate_community_labels", fake_generate)
-    monkeypatch.setattr("graphify.export.to_html", lambda *args, **kwargs: None)
+    monkeypatch.setattr("monarch_atlas.llm.generate_community_labels", fake_generate)
+    monkeypatch.setattr("monarch_atlas.export.to_html", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         sys,
         "argv",
-        ["graphify", "label", str(tmp_path), "--missing-only", "--backend", "gemini", "--no-viz"],
+        ["atlas", "label", str(tmp_path), "--missing-only", "--backend", "gemini", "--no-viz"],
     )
 
     cli.main()
 
     assert set(captured["communities"]) == {1}
-    labels = json.loads((out / ".graphify_labels.json").read_text(encoding="utf-8"))
+    labels = json.loads((out / ".atlas_labels.json").read_text(encoding="utf-8"))
     assert labels == {"0": "Order Management", "1": "Payment Flow"}
 
 
 def test_label_communities_partial_reply_fills_placeholder(monkeypatch):
     G, communities = _graph()
-    monkeypatch.setattr("graphify.llm._call_llm",
+    monkeypatch.setattr("monarch_atlas.llm._call_llm",
                         lambda p, *, backend, max_tokens=200: '{"0": "Order Management"}')
     labels = label_communities(G, communities, backend="gemini")
     assert labels[0] == "Order Management"
@@ -176,7 +176,7 @@ def test_label_communities_partial_reply_fills_placeholder(monkeypatch):
 def test_label_communities_strips_code_fences(monkeypatch):
     G, communities = _graph()
     monkeypatch.setattr(
-        "graphify.llm._call_llm",
+        "monarch_atlas.llm._call_llm",
         lambda p, *, backend, max_tokens=200: '```json\n{"0":"Orders","1":"Pay"}\n```',
     )
     labels = label_communities(G, communities, backend="gemini")
@@ -185,7 +185,7 @@ def test_label_communities_strips_code_fences(monkeypatch):
 
 def test_label_communities_malformed_raises(monkeypatch):
     G, communities = _graph()
-    monkeypatch.setattr("graphify.llm._call_llm",
+    monkeypatch.setattr("monarch_atlas.llm._call_llm",
                         lambda p, *, backend, max_tokens=200: "sorry, I cannot help")
     with pytest.raises(Exception):
         label_communities(G, communities, backend="gemini")
@@ -193,7 +193,7 @@ def test_label_communities_malformed_raises(monkeypatch):
 
 def test_generate_community_labels_degrades_on_error(monkeypatch):
     G, communities = _graph()
-    monkeypatch.setattr("graphify.llm._call_llm",
+    monkeypatch.setattr("monarch_atlas.llm._call_llm",
                         lambda p, *, backend, max_tokens=200: "not json")
     labels, source = generate_community_labels(G, communities, backend="gemini", quiet=True)
     assert source == "placeholder"
@@ -202,10 +202,10 @@ def test_generate_community_labels_degrades_on_error(monkeypatch):
 
 def test_generate_community_labels_no_backend(monkeypatch):
     G, communities = _graph()
-    monkeypatch.setattr("graphify.llm.detect_backend", lambda: None)
+    monkeypatch.setattr("monarch_atlas.llm.detect_backend", lambda: None)
     # Keep hermetic: the claude-cli labelling fallback (#3475) probes PATH, so a
     # machine with `claude` installed would otherwise take the CLI path here.
-    monkeypatch.setattr("graphify.llm._claude_cli_available", lambda: False)
+    monkeypatch.setattr("monarch_atlas.llm._claude_cli_available", lambda: False)
     labels, source = generate_community_labels(G, communities, backend=None, quiet=True)
     assert source == "placeholder"
     assert labels == {0: "Community 0", 1: "Community 1"}
@@ -213,7 +213,7 @@ def test_generate_community_labels_no_backend(monkeypatch):
 
 def test_generate_community_labels_success(monkeypatch):
     G, communities = _graph()
-    monkeypatch.setattr("graphify.llm._call_llm",
+    monkeypatch.setattr("monarch_atlas.llm._call_llm",
                         lambda p, *, backend, max_tokens=200: '{"0":"Orders","1":"Payments"}')
     labels, source = generate_community_labels(G, communities, backend="gemini", quiet=True)
     assert source == "llm"
@@ -223,7 +223,7 @@ def test_generate_community_labels_success(monkeypatch):
 def test_generate_community_labels_warns_on_partial_success(monkeypatch, capsys):
     G, communities = _graph()
     monkeypatch.setattr(
-        "graphify.llm.label_communities",
+        "monarch_atlas.llm.label_communities",
         lambda *args, **kwargs: {0: "Orders", 1: "Community 1"},
     )
 
@@ -237,7 +237,7 @@ def test_generate_community_labels_warns_on_partial_success(monkeypatch, capsys)
 def test_gods_as_dicts_do_not_crash(monkeypatch):
     """god_nodes() returns list[dict] with an 'id' key, not bare ids."""
     G, communities = _graph()
-    monkeypatch.setattr("graphify.llm._call_llm",
+    monkeypatch.setattr("monarch_atlas.llm._call_llm",
                         lambda p, *, backend, max_tokens=200: '{"0":"Orders","1":"Pay"}')
     gods = [{"id": "order_repo", "label": "OrderRepository"}]
     labels = label_communities(G, communities, backend="gemini", gods=gods)
@@ -253,7 +253,7 @@ def test_empty_communities_returns_placeholders(monkeypatch):
         called = True
         return "{}"
 
-    monkeypatch.setattr("graphify.llm._call_llm", fake_call)
+    monkeypatch.setattr("monarch_atlas.llm._call_llm", fake_call)
     # community with no resolvable nodes -> no prompt line -> no backend call
     labels = label_communities(G, {0: []}, backend="gemini")
     assert labels == {0: "Community 0"}
@@ -291,7 +291,7 @@ def test_label_communities_batches_when_over_batch_size(monkeypatch):
         calls.append(len(cids))
         return "{" + ", ".join(f'"{c}": "Cluster {c}"' for c in cids) + "}"
 
-    monkeypatch.setattr("graphify.llm._call_llm", fake_call)
+    monkeypatch.setattr("monarch_atlas.llm._call_llm", fake_call)
     # max_concurrency=1 keeps the batches sequential so `calls` records them in a
     # deterministic order; the default concurrent path can complete them out of
     # order (the ordering is asserted separately in
@@ -320,7 +320,7 @@ def test_label_communities_partial_batch_failure_keeps_successful_batches(monkey
             raise RuntimeError("simulated transient backend failure")
         return "{" + ", ".join(f'"{c}": "Named {c}"' for c in cids) + "}"
 
-    monkeypatch.setattr("graphify.llm._call_llm", fake_call)
+    monkeypatch.setattr("monarch_atlas.llm._call_llm", fake_call)
     labels = label_communities(G, communities, backend="gemini", batch_size=50)
 
     # 3 batches; second one fails. First and third produce real labels;
@@ -337,7 +337,7 @@ def test_label_communities_all_batches_fail_raises(monkeypatch):
     def always_fail(prompt, *, backend, max_tokens=200):
         raise RuntimeError("backend down")
 
-    monkeypatch.setattr("graphify.llm._call_llm", always_fail)
+    monkeypatch.setattr("monarch_atlas.llm._call_llm", always_fail)
     # Every batch fails -> propagate so generate_community_labels can degrade.
     with pytest.raises(RuntimeError, match="backend down"):
         label_communities(G, communities, backend="gemini", batch_size=50)
@@ -357,7 +357,7 @@ def test_label_communities_max_communities_caps_total(monkeypatch):
         captured_cids.extend(cids)
         return "{" + ", ".join(f'"{c}": "X{c}"' for c in cids) + "}"
 
-    monkeypatch.setattr("graphify.llm._call_llm", fake_call)
+    monkeypatch.setattr("monarch_atlas.llm._call_llm", fake_call)
     label_communities(G, communities, backend="gemini", max_communities=40, batch_size=100)
     # Only 40 communities should have been sent to the backend.
     assert len(captured_cids) == 40
@@ -386,7 +386,7 @@ def test_label_communities_parallel_matches_sequential(monkeypatch):
     def fake_batch(batch_cids, batch_lines, *, backend, model=None):
         return {cid: f"name-{cid}" for cid in batch_cids}
 
-    monkeypatch.setattr("graphify.llm._label_batch_with_retry", fake_batch)
+    monkeypatch.setattr("monarch_atlas.llm._label_batch_with_retry", fake_batch)
     seq = label_communities(G, communities, backend="gemini", batch_size=1, max_concurrency=1)
     par = label_communities(G, communities, backend="gemini", batch_size=1, max_concurrency=4)
     assert seq == par == {i: f"name-{i}" for i in range(6)}
@@ -400,7 +400,7 @@ def test_label_communities_batch_size_controls_batch_count(monkeypatch):
         calls.append(list(batch_cids))
         return {cid: f"n-{cid}" for cid in batch_cids}
 
-    monkeypatch.setattr("graphify.llm._label_batch_with_retry", fake_batch)
+    monkeypatch.setattr("monarch_atlas.llm._label_batch_with_retry", fake_batch)
     labels = label_communities(G, communities, backend="gemini", batch_size=2, max_concurrency=1)
     assert len(calls) == 3                       # 5 communities / batch 2 -> 3 batches
     assert sum(len(c) for c in calls) == 5
@@ -426,7 +426,7 @@ def _peak_tracker():
 def test_label_communities_runs_batches_concurrently(monkeypatch):
     G, communities = _many_communities(8)
     fake_batch, state = _peak_tracker()
-    monkeypatch.setattr("graphify.llm._label_batch_with_retry", fake_batch)
+    monkeypatch.setattr("monarch_atlas.llm._label_batch_with_retry", fake_batch)
     label_communities(G, communities, backend="gemini", batch_size=1, max_concurrency=4)
     assert state["peak"] > 1, "batches should run in parallel with max_concurrency>1"
 
@@ -435,8 +435,8 @@ def test_label_communities_forces_serial_for_ollama(monkeypatch):
     """ollama/claude-cli must stay serial regardless of --max-concurrency."""
     G, communities = _many_communities(8)
     fake_batch, state = _peak_tracker()
-    monkeypatch.setattr("graphify.llm._label_batch_with_retry", fake_batch)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_PARALLEL", raising=False)
+    monkeypatch.setattr("monarch_atlas.llm._label_batch_with_retry", fake_batch)
+    monkeypatch.delenv("ATLAS_OLLAMA_PARALLEL", raising=False)
     label_communities(G, communities, backend="ollama", batch_size=1, max_concurrency=8)
     assert state["peak"] == 1, "ollama must be forced serial"
 
@@ -447,7 +447,7 @@ def test_label_communities_salvages_truncated_reply(monkeypatch):
     # column 6`. The complete pairs that arrived are now salvaged.
     G, communities = _graph()
     monkeypatch.setattr(
-        "graphify.llm._call_llm",
+        "monarch_atlas.llm._call_llm",
         lambda p, *, backend, max_tokens=200: '{"0": "Order Management", "1":',
     )
     labels = label_communities(G, communities, backend="gemini")
@@ -474,7 +474,7 @@ def test_label_communities_accumulates_token_usage(monkeypatch):
                 cids.append(int(line.split(":", 1)[0]))
         return json.dumps({str(c): f"Name {c}" for c in cids})
 
-    monkeypatch.setattr("graphify.llm._call_llm", fake_call)
+    monkeypatch.setattr("monarch_atlas.llm._call_llm", fake_call)
     usage = {"input": 0, "output": 0}
     # batch_size=2 -> 3 batches, run serially so the count is deterministic
     labels = label_communities(
@@ -496,7 +496,7 @@ def test_label_communities_counts_tokens_for_failed_batch(monkeypatch):
             usage_out["output"] = usage_out.get("output", 0) + 5
         return "not json at all"
 
-    monkeypatch.setattr("graphify.llm._call_llm", fake_call)
+    monkeypatch.setattr("monarch_atlas.llm._call_llm", fake_call)
     usage = {"input": 0, "output": 0}
     # single community -> no split retry; the only batch fails to parse, so
     # label_communities re-raises (every batch failed) after counting tokens.
@@ -533,25 +533,25 @@ def test_cluster_commands_render_aggregated_html_above_viz_limit(
     tmp_path, monkeypatch, capsys, command,
 ):
     """#2853: relabeling a large graph must keep a current aggregated HTML."""
-    import graphify.__main__ as cli
+    import monarch_atlas.__main__ as cli
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     _two_community_graph(out)
     html = out / "graph.html"
     html.write_text("stale visualization", encoding="utf-8")
 
-    monkeypatch.setenv("GRAPHIFY_VIZ_NODE_LIMIT", "3")
+    monkeypatch.setenv("ATLAS_VIZ_NODE_LIMIT", "3")
     monkeypatch.setattr(cli, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
-        "graphify.llm.generate_community_labels",
+        "monarch_atlas.llm.generate_community_labels",
         lambda G, comms, **kwargs: (
             {cid: f"Fresh community {cid}" for cid in comms},
             "test",
         ),
     )
 
-    argv = ["graphify", command, str(tmp_path)]
+    argv = ["atlas", command, str(tmp_path)]
     if command == "cluster-only":
         argv.append("--no-label")
     monkeypatch.setattr(sys, "argv", argv)
@@ -574,25 +574,25 @@ def test_cluster_only_preserves_but_does_not_claim_unusable_aggregate(
 ):
     """A skipped aggregate must not race with or falsely claim an HTML write."""
     import importlib
-    import graphify.__main__ as cli
+    import monarch_atlas.__main__ as cli
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     _two_community_graph(out)
     html = out / "graph.html"
     html.write_text("stale visualization", encoding="utf-8")
 
-    monkeypatch.setenv("GRAPHIFY_VIZ_NODE_LIMIT", "3")
+    monkeypatch.setenv("ATLAS_VIZ_NODE_LIMIT", "3")
     monkeypatch.setattr(cli, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
-        importlib.import_module("graphify.cluster"),
+        importlib.import_module("monarch_atlas.cluster"),
         "cluster",
         lambda G, **kwargs: {0: list(G.nodes())},
     )
     monkeypatch.setattr(
         sys,
         "argv",
-        ["graphify", "cluster-only", str(tmp_path), "--no-label"],
+        ["atlas", "cluster-only", str(tmp_path), "--no-label"],
     )
 
     cli.main()
@@ -610,9 +610,9 @@ def test_cluster_only_restores_html_after_unexpected_render_failure(
 ):
     """A failed render must not destroy the previous HTML file."""
     import importlib
-    import graphify.__main__ as cli
+    import monarch_atlas.__main__ as cli
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     _two_community_graph(out)
     html = out / "graph.html"
@@ -621,17 +621,17 @@ def test_cluster_only_restores_html_after_unexpected_render_failure(
     def fail_render(*args, **kwargs):
         raise OSError("simulated render failure")
 
-    monkeypatch.setenv("GRAPHIFY_VIZ_NODE_LIMIT", "3")
+    monkeypatch.setenv("ATLAS_VIZ_NODE_LIMIT", "3")
     monkeypatch.setattr(cli, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
-        importlib.import_module("graphify.export"),
+        importlib.import_module("monarch_atlas.export"),
         "to_html",
         fail_render,
     )
     monkeypatch.setattr(
         sys,
         "argv",
-        ["graphify", "cluster-only", str(tmp_path), "--no-label"],
+        ["atlas", "cluster-only", str(tmp_path), "--no-label"],
     )
 
     with pytest.raises(OSError, match="simulated render failure"):
@@ -646,10 +646,10 @@ def test_cluster_only_marks_html_stale_before_report_generation(
     tmp_path, monkeypatch,
 ):
     """An interruption after graph.json advances must remain repairable."""
-    import graphify.__main__ as cli
-    from graphify.watch import _reconcile_graph_html
+    import monarch_atlas.__main__ as cli
+    from monarch_atlas.watch import _reconcile_graph_html
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     _two_community_graph(out)
     html = out / "graph.html"
@@ -658,13 +658,13 @@ def test_cluster_only_marks_html_stale_before_report_generation(
     def interrupt_report(*args, **kwargs):
         raise KeyboardInterrupt
 
-    monkeypatch.setenv("GRAPHIFY_VIZ_NODE_LIMIT", "3")
+    monkeypatch.setenv("ATLAS_VIZ_NODE_LIMIT", "3")
     monkeypatch.setattr(cli, "_check_skill_version", lambda _: None)
-    monkeypatch.setattr("graphify.report.generate", interrupt_report)
+    monkeypatch.setattr("monarch_atlas.report.generate", interrupt_report)
     monkeypatch.setattr(
         sys,
         "argv",
-        ["graphify", "cluster-only", str(tmp_path), "--no-label"],
+        ["atlas", "cluster-only", str(tmp_path), "--no-label"],
     )
 
     with pytest.raises(KeyboardInterrupt):
@@ -684,9 +684,9 @@ def test_cluster_only_refused_graph_write_preserves_existing_stale_marker(
     tmp_path, monkeypatch,
 ):
     """A refused write must not erase retry state owned by an earlier run."""
-    import graphify.__main__ as cli
+    import monarch_atlas.__main__ as cli
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     _two_community_graph(out)
     html = out / "graph.html"
@@ -695,11 +695,11 @@ def test_cluster_only_refused_graph_write_preserves_existing_stale_marker(
     marker.touch()
 
     monkeypatch.setattr(cli, "_check_skill_version", lambda _: None)
-    monkeypatch.setattr("graphify.export.to_json", lambda *args, **kwargs: False)
+    monkeypatch.setattr("monarch_atlas.export.to_json", lambda *args, **kwargs: False)
     monkeypatch.setattr(
         sys,
         "argv",
-        ["graphify", "cluster-only", str(tmp_path), "--no-label"],
+        ["atlas", "cluster-only", str(tmp_path), "--no-label"],
     )
 
     with pytest.raises(SystemExit) as stopped:
@@ -714,9 +714,9 @@ def test_cluster_only_succeeds_when_stale_marker_cleanup_fails(
     tmp_path, monkeypatch, capsys,
 ):
     """A completed HTML replacement must remain a successful command."""
-    import graphify.__main__ as cli
+    import monarch_atlas.__main__ as cli
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     _two_community_graph(out)
     html = out / "graph.html"
@@ -730,13 +730,13 @@ def test_cluster_only_succeeds_when_stale_marker_cleanup_fails(
             raise PermissionError("simulated marker cleanup failure")
         return original_unlink(path, *args, **kwargs)
 
-    monkeypatch.setenv("GRAPHIFY_VIZ_NODE_LIMIT", "3")
+    monkeypatch.setenv("ATLAS_VIZ_NODE_LIMIT", "3")
     monkeypatch.setattr(cli, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(Path, "unlink", reject_marker_unlink)
     monkeypatch.setattr(
         sys,
         "argv",
-        ["graphify", "cluster-only", str(tmp_path), "--no-label"],
+        ["atlas", "cluster-only", str(tmp_path), "--no-label"],
     )
 
     cli.main()
@@ -753,9 +753,9 @@ def test_cluster_only_does_not_erase_concurrent_html_after_failure(
 ):
     """A failing renderer must not roll back a concurrent successful writer."""
     import importlib
-    import graphify.__main__ as cli
+    import monarch_atlas.__main__ as cli
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     _two_community_graph(out)
     html = out / "graph.html"
@@ -765,17 +765,17 @@ def test_cluster_only_does_not_erase_concurrent_html_after_failure(
         html.write_text("newer concurrent visualization", encoding="utf-8")
         raise OSError("simulated render failure")
 
-    monkeypatch.setenv("GRAPHIFY_VIZ_NODE_LIMIT", "3")
+    monkeypatch.setenv("ATLAS_VIZ_NODE_LIMIT", "3")
     monkeypatch.setattr(cli, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
-        importlib.import_module("graphify.export"),
+        importlib.import_module("monarch_atlas.export"),
         "to_html",
         concurrent_then_fail,
     )
     monkeypatch.setattr(
         sys,
         "argv",
-        ["graphify", "cluster-only", str(tmp_path), "--no-label"],
+        ["atlas", "cluster-only", str(tmp_path), "--no-label"],
     )
 
     with pytest.raises(OSError, match="simulated render failure"):
@@ -785,28 +785,28 @@ def test_cluster_only_does_not_erase_concurrent_html_after_failure(
 
 
 def test_cluster_only_no_label_does_not_persist_placeholders(tmp_path, monkeypatch):
-    """#2073: --no-label must not write .graphify_labels.json with 'Community N'
+    """#2073: --no-label must not write .atlas_labels.json with 'Community N'
     placeholders (which the reuse path would then treat as fresh forever). A
     later normal run must produce real (non-placeholder) labels."""
-    import graphify.__main__ as cli
-    out = tmp_path / "graphify-out"
+    import monarch_atlas.__main__ as cli
+    out = tmp_path / "atlas-out"
     out.mkdir()
     _two_community_graph(out)
-    labels_path = out / ".graphify_labels.json"
+    labels_path = out / ".atlas_labels.json"
 
     monkeypatch.setattr(cli, "_check_skill_version", lambda _: None)
-    monkeypatch.setattr("graphify.export.to_html", lambda *a, **k: None)
+    monkeypatch.setattr("monarch_atlas.export.to_html", lambda *a, **k: None)
     # No-backend fallback shape: returns placeholders, which must not clobber hubs.
-    monkeypatch.setattr("graphify.llm.generate_community_labels",
+    monkeypatch.setattr("monarch_atlas.llm.generate_community_labels",
                         lambda G, comms, **k: ({cid: f"Community {cid}" for cid in comms}, "none"))
 
-    monkeypatch.setattr(sys, "argv", ["graphify", "cluster-only", str(tmp_path), "--no-label", "--no-viz"])
+    monkeypatch.setattr(sys, "argv", ["atlas", "cluster-only", str(tmp_path), "--no-label", "--no-viz"])
     cli.main()
     assert not labels_path.exists(), "--no-label persisted a placeholder labels file (#2073)"
-    assert not (out / ".graphify_labels.json.sig").exists()
+    assert not (out / ".atlas_labels.json.sig").exists()
 
     # A later normal run generates real labels (no sticky placeholders blocking it).
-    monkeypatch.setattr(sys, "argv", ["graphify", "cluster-only", str(tmp_path), "--no-viz"])
+    monkeypatch.setattr(sys, "argv", ["atlas", "cluster-only", str(tmp_path), "--no-viz"])
     cli.main()
     assert labels_path.exists()
     saved = json.loads(labels_path.read_text(encoding="utf-8"))
@@ -820,21 +820,21 @@ def test_cluster_only_heals_persisted_placeholder_but_reuses_genuine(tmp_path, m
     """#2073: an already-polluted sidecar (a placeholder for one community, a
     genuine label for another) self-heals — the placeholder is replaced by the
     hub name while the genuine label is reused, with no LLM call."""
-    import graphify.__main__ as cli
-    out = tmp_path / "graphify-out"
+    import monarch_atlas.__main__ as cli
+    out = tmp_path / "atlas-out"
     out.mkdir()
     _two_community_graph(out)
-    labels_path = out / ".graphify_labels.json"
+    labels_path = out / ".atlas_labels.json"
     # Polluted state: community 0 is a stuck placeholder, community 1 is genuine.
     labels_path.write_text(json.dumps({"0": "Community 0", "1": "Payment Flow"}), encoding="utf-8")
 
     monkeypatch.setattr(cli, "_check_skill_version", lambda _: None)
-    monkeypatch.setattr("graphify.export.to_html", lambda *a, **k: None)
+    monkeypatch.setattr("monarch_atlas.export.to_html", lambda *a, **k: None)
     def _fail_generate(*a, **k):
         raise AssertionError("generate_community_labels must not be called on the reuse path")
-    monkeypatch.setattr("graphify.llm.generate_community_labels", _fail_generate)
+    monkeypatch.setattr("monarch_atlas.llm.generate_community_labels", _fail_generate)
 
-    monkeypatch.setattr(sys, "argv", ["graphify", "cluster-only", str(tmp_path), "--no-viz"])
+    monkeypatch.setattr(sys, "argv", ["atlas", "cluster-only", str(tmp_path), "--no-viz"])
     cli.main()
     saved = json.loads(labels_path.read_text(encoding="utf-8"))
     assert saved["0"] != "Community 0", "stuck placeholder was not healed (#2073)"
@@ -849,7 +849,7 @@ def test_label_prompt_lines_use_bare_cid_keys():
     the no-backend placeholder sentinel. A model that echoed the key back as the
     name produced a reply indistinguishable from the fallback, so the caller's
     sentinel filter silently dropped it (#2534). The key must be the bare id."""
-    from graphify.llm import _community_label_lines
+    from monarch_atlas.llm import _community_label_lines
 
     G, communities = _graph()
     lines, labeled_cids = _community_label_lines(G, communities, None, 10, 12)
@@ -863,9 +863,9 @@ def test_label_cli_drops_sentinel_and_bare_key_echoes(tmp_path, monkeypatch):
     """#2534 case 2, cli side: an LLM reply that echoes the sentinel
     ("Community 5") or the bare prompt key ("7") must not survive the filter —
     the deterministic hub labels win — while a real name still overrides."""
-    import graphify.__main__ as cli
+    import monarch_atlas.__main__ as cli
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     graph = {
         "directed": False,
@@ -883,16 +883,16 @@ def test_label_cli_drops_sentinel_and_bare_key_echoes(tmp_path, monkeypatch):
                       quiet=False, max_concurrency=4, batch_size=100, usage_out=None):
         return {0: "Order Management", 5: "Community 5", 7: "7"}, "llm"
 
-    monkeypatch.setattr("graphify.llm.generate_community_labels", fake_generate)
-    monkeypatch.setattr("graphify.export.to_html", lambda *args, **kwargs: None)
+    monkeypatch.setattr("monarch_atlas.llm.generate_community_labels", fake_generate)
+    monkeypatch.setattr("monarch_atlas.export.to_html", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         sys, "argv",
-        ["graphify", "label", str(tmp_path), "--backend", "gemini", "--no-viz"],
+        ["atlas", "label", str(tmp_path), "--backend", "gemini", "--no-viz"],
     )
 
     cli.main()
 
-    labels = json.loads((out / ".graphify_labels.json").read_text(encoding="utf-8"))
+    labels = json.loads((out / ".atlas_labels.json").read_text(encoding="utf-8"))
     assert labels["0"] == "Order Management"            # real name survives
     assert labels["5"] == "PaymentService"              # sentinel echo dropped -> hub label
     assert labels["7"] == "ShippingService"             # bare-key echo dropped -> hub label

@@ -32,7 +32,7 @@ arrow parameter: a binding form that never reached the shadow set.
 import os
 from pathlib import Path
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 VENDOR = "var Lib=function(){function k(a){return a}return{k:k}}();\n"
 

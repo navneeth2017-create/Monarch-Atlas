@@ -27,8 +27,8 @@ import time
 
 import pytest
 
-import graphify.cli as cli
-from graphify.cli import _is_cwd_relative
+import monarch_atlas.cli as cli
+from monarch_atlas.cli import _is_cwd_relative
 
 
 def _fake_os_name(monkeypatch, name):
@@ -116,7 +116,7 @@ def _project(tmp_path):
     src.mkdir()
     f = src / "mod.py"
     f.write_text("def x():\n    return 1\n", encoding="utf-8")
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     (out / "manifest.json").write_text(
         json.dumps({"src/mod.py": {"mtime": 1}}), encoding="utf-8")

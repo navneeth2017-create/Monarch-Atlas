@@ -10,8 +10,8 @@ from pathlib import Path
 import networkx as nx
 import pytest
 
-from graphify.build import build_from_json
-from graphify.extract import extract, extract_terraform
+from monarch_atlas.build import build_from_json
+from monarch_atlas.extract import extract, extract_terraform
 
 
 def _write(root, name, body):
@@ -165,7 +165,7 @@ def test_cache_recomputes_topology_and_ids_are_portable(tmp_path, monkeypatch):
         _write(root, "main.tf", 'module "app" { source = "./app" }')
         _write(root, "app/main.tf", 'variable "x" {}')
     first = _extract(roots[0])
-    from graphify.extract import _DISPATCH
+    from monarch_atlas.extract import _DISPATCH
     with monkeypatch.context() as cached:
         def unexpected_parse(path):
             raise AssertionError(f"cache miss for unchanged {path}")
@@ -199,16 +199,16 @@ def test_incremental_source_change_target_addition_and_deletion(tmp_path, monkey
 
     def rebuild(changed=None):
         if mode == "watch":
-            from graphify.watch import _rebuild_code
+            from monarch_atlas.watch import _rebuild_code
             assert _rebuild_code(root, changed_paths=changed, acquire_lock=False,
                                  no_cluster=no_cluster)
         else:
-            args = [sys.executable, "-m", "graphify", "extract", str(root), "--code-only"]
+            args = [sys.executable, "-m", "monarch_atlas", "extract", str(root), "--code-only"]
             if no_cluster:
                 args.append("--no-cluster")
             p = subprocess.run(args, cwd=root, env=os.environ.copy(), capture_output=True, text=True)
             assert p.returncode == 0, p.stdout + p.stderr
-        result = json.loads((root / "graphify-out/graph.json").read_text())
+        result = json.loads((root / "atlas-out/graph.json").read_text())
         _assert_integrity(result)
         return result
 
@@ -239,18 +239,18 @@ def test_incremental_exclusion_removes_incoming_module_links(tmp_path, monkeypat
 
     def rebuild(changed=None):
         if mode == "watch":
-            from graphify.watch import _rebuild_code
+            from monarch_atlas.watch import _rebuild_code
             assert _rebuild_code(root, changed_paths=changed, acquire_lock=False, no_cluster=True)
         else:
             p = subprocess.run(
-                [sys.executable, "-m", "graphify", "extract", str(root), "--code-only", "--no-cluster"],
+                [sys.executable, "-m", "monarch_atlas", "extract", str(root), "--code-only", "--no-cluster"],
                 capture_output=True, text=True,
             )
             assert p.returncode == 0, p.stdout + p.stderr
-        return json.loads((root / "graphify-out/graph.json").read_text())
+        return json.loads((root / "atlas-out/graph.json").read_text())
 
     assert len(_module_edges(rebuild())) == 1
-    ignore = _write(root, ".graphifyignore", "app/\n")
+    ignore = _write(root, ".atlasignore", "app/\n")
     result = rebuild([ignore])
     _assert_integrity(result)
     assert _module_edges(result) == []

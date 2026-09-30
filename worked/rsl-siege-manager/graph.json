@@ -16969,13 +16969,13 @@
       "id": "tests_test_import_excel_rationale_881"
     },
     {
-      "label": "run-graphify-dry-run.ps1",
+      "label": "run-atlas-dry-run.ps1",
       "file_type": "code",
-      "source_file": "scripts/experiments/run-graphify-dry-run.ps1",
+      "source_file": "scripts/experiments/run-atlas-dry-run.ps1",
       "source_location": "L1",
       "community": 140,
-      "norm_label": "run-graphify-dry-run.ps1",
-      "id": "scripts_experiments_run_graphify_dry_run_ps1"
+      "norm_label": "run-atlas-dry-run.ps1",
+      "id": "scripts_experiments_run_atlas_dry_run_ps1"
     }
   ],
   "links": [

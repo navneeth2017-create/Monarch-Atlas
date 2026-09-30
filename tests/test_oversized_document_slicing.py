@@ -19,15 +19,15 @@ from pathlib import Path
 
 import pytest
 
-from graphify.detect import DOC_EXTENSIONS
-from graphify.file_slice import (
+from monarch_atlas.detect import DOC_EXTENSIONS
+from monarch_atlas.file_slice import (
     _SPLITTABLE_TEXT_SUFFIXES,
     expand_oversized_files,
     is_splittable_text,
     read_slice_text,
     slice_boundaries,
 )
-from graphify.llm import _FILE_CHAR_CAP, _read_files
+from monarch_atlas.llm import _FILE_CHAR_CAP, _read_files
 
 # Document suffixes whose bytes are NOT what the model is shown, so a character
 # range over the raw file would be meaningless. `_file_to_text` routes these

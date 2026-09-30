@@ -7,7 +7,7 @@ warning. It now gets the same evidence gating ``env``/``coverage``/
 ``snapshots`` already have (#1666/#2058/#2339): keep on doubt, prune on proof.
 """
 
-from graphify.detect import detect
+from monarch_atlas.detect import detect
 
 
 def _scanned(td):

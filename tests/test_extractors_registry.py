@@ -1,13 +1,13 @@
 """Facade / registry identity guards for the per-language extractor split (#1212).
 
 The ``extract.py`` decomposition (#1737) moved each language extractor into its
-own ``graphify/extractors/<lang>.py`` module, kept a verbatim re-export in
-``graphify.extract`` (the facade every existing importer uses), and seeded a
-``graphify.extractors.LANGUAGE_EXTRACTORS`` registry. Three things must stay
+own ``monarch_atlas/extractors/<lang>.py`` module, kept a verbatim re-export in
+``monarch_atlas.extract`` (the facade every existing importer uses), and seeded a
+``monarch_atlas.extractors.LANGUAGE_EXTRACTORS`` registry. Three things must stay
 true for that split to be behavior-preserving:
 
 - the function is importable from its new per-language module,
-- ``graphify.extract`` still re-exports the SAME function object (facade
+- ``monarch_atlas.extract`` still re-exports the SAME function object (facade
   identity — a stale copy or shadowing import would silently diverge),
 - ``LANGUAGE_EXTRACTORS`` maps to that same object (registry identity).
 
@@ -17,8 +17,8 @@ re-export (or re-exports a different object) fails loudly.
 """
 from __future__ import annotations
 
-import graphify.extract as facade
-from graphify.extractors import LANGUAGE_EXTRACTORS
+import monarch_atlas.extract as facade
+from monarch_atlas.extractors import LANGUAGE_EXTRACTORS
 
 
 def test_every_registry_extractor_is_reexported_from_facade():
@@ -31,14 +31,14 @@ def test_every_registry_extractor_is_reexported_from_facade():
             continue
         if getattr(facade, name) is not fn:
             diverged.append((lang, name))
-    assert not missing, f"registry extractors not re-exported from graphify.extract: {missing}"
+    assert not missing, f"registry extractors not re-exported from monarch_atlas.extract: {missing}"
     assert not diverged, f"facade object diverges from registry: {diverged}"
 
 
 def test_terraform_migrated():
     # The concrete anchor from #1721: extract_terraform lives in its own module,
     # and both the facade and the registry point at that one object.
-    from graphify.extractors.terraform import extract_terraform
+    from monarch_atlas.extractors.terraform import extract_terraform
 
     assert facade.extract_terraform is extract_terraform
     assert LANGUAGE_EXTRACTORS["terraform"] is extract_terraform

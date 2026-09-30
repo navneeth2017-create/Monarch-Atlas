@@ -1,10 +1,10 @@
-"""Tests for graphify.querylog."""
+"""Tests for monarch_atlas.querylog."""
 import json
 import os
 import pytest
 from pathlib import Path
 
-from graphify.querylog import log_query, nodes_from_result
+from monarch_atlas.querylog import log_query, nodes_from_result
 
 
 # ---------------------------------------------------------------------------
@@ -34,8 +34,8 @@ def test_nodes_from_result_empty():
 
 def test_log_query_writes_jsonl(tmp_path, monkeypatch):
     log_file = tmp_path / "q.log"
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(log_file))
-    monkeypatch.delenv("GRAPHIFY_QUERY_LOG_DISABLE", raising=False)
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(log_file))
+    monkeypatch.delenv("ATLAS_QUERY_LOG_DISABLE", raising=False)
 
     log_query(kind="query", question="what is X", corpus="/some/graph.json",
               result="3 nodes found\nNODE a", duration_ms=12.5, mode="bfs", depth=2)
@@ -55,8 +55,8 @@ def test_log_query_writes_jsonl(tmp_path, monkeypatch):
 
 def test_log_query_appends(tmp_path, monkeypatch):
     log_file = tmp_path / "q.log"
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(log_file))
-    monkeypatch.delenv("GRAPHIFY_QUERY_LOG_DISABLE", raising=False)
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(log_file))
+    monkeypatch.delenv("ATLAS_QUERY_LOG_DISABLE", raising=False)
 
     log_query(kind="query", question="q1", corpus="/g.json")
     log_query(kind="query", question="q2", corpus="/g.json")
@@ -73,8 +73,8 @@ def test_log_query_appends(tmp_path, monkeypatch):
 
 def test_disable_env(tmp_path, monkeypatch):
     log_file = tmp_path / "q.log"
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(log_file))
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG_DISABLE", "1")
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(log_file))
+    monkeypatch.setenv("ATLAS_QUERY_LOG_DISABLE", "1")
 
     log_query(kind="query", question="q", corpus="/g.json")
 
@@ -83,8 +83,8 @@ def test_disable_env(tmp_path, monkeypatch):
 
 def test_disable_env_true(tmp_path, monkeypatch):
     log_file = tmp_path / "q.log"
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(log_file))
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG_DISABLE", "true")
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(log_file))
+    monkeypatch.setenv("ATLAS_QUERY_LOG_DISABLE", "true")
 
     log_query(kind="query", question="q", corpus="/g.json")
 
@@ -93,9 +93,9 @@ def test_disable_env_true(tmp_path, monkeypatch):
 
 def test_responses_not_logged_by_default(tmp_path, monkeypatch):
     log_file = tmp_path / "q.log"
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(log_file))
-    monkeypatch.delenv("GRAPHIFY_QUERY_LOG_DISABLE", raising=False)
-    monkeypatch.delenv("GRAPHIFY_QUERY_LOG_RESPONSES", raising=False)
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(log_file))
+    monkeypatch.delenv("ATLAS_QUERY_LOG_DISABLE", raising=False)
+    monkeypatch.delenv("ATLAS_QUERY_LOG_RESPONSES", raising=False)
 
     log_query(kind="query", question="q", corpus="/g.json", result="NODE foo")
 
@@ -105,9 +105,9 @@ def test_responses_not_logged_by_default(tmp_path, monkeypatch):
 
 def test_responses_optin(tmp_path, monkeypatch):
     log_file = tmp_path / "q.log"
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(log_file))
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG_RESPONSES", "1")
-    monkeypatch.delenv("GRAPHIFY_QUERY_LOG_DISABLE", raising=False)
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(log_file))
+    monkeypatch.setenv("ATLAS_QUERY_LOG_RESPONSES", "1")
+    monkeypatch.delenv("ATLAS_QUERY_LOG_DISABLE", raising=False)
 
     log_query(kind="query", question="q", corpus="/g.json", result="NODE foo bar")
 
@@ -123,8 +123,8 @@ def test_log_never_raises(tmp_path, monkeypatch):
     # Point at a directory — open() for append will fail
     bad_path = tmp_path / "is_a_dir"
     bad_path.mkdir()
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(bad_path))
-    monkeypatch.delenv("GRAPHIFY_QUERY_LOG_DISABLE", raising=False)
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(bad_path))
+    monkeypatch.delenv("ATLAS_QUERY_LOG_DISABLE", raising=False)
 
     # Must not raise
     log_query(kind="query", question="q", corpus="/g.json")
@@ -132,8 +132,8 @@ def test_log_never_raises(tmp_path, monkeypatch):
 
 def test_log_creates_parent_dirs(tmp_path, monkeypatch):
     log_file = tmp_path / "deep" / "nested" / "q.log"
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(log_file))
-    monkeypatch.delenv("GRAPHIFY_QUERY_LOG_DISABLE", raising=False)
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(log_file))
+    monkeypatch.delenv("ATLAS_QUERY_LOG_DISABLE", raising=False)
 
     log_query(kind="query", question="q", corpus="/g.json")
 
@@ -146,8 +146,8 @@ def test_log_creates_parent_dirs(tmp_path, monkeypatch):
 
 def test_nodes_returned_inferred_from_result(tmp_path, monkeypatch):
     log_file = tmp_path / "q.log"
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(log_file))
-    monkeypatch.delenv("GRAPHIFY_QUERY_LOG_DISABLE", raising=False)
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(log_file))
+    monkeypatch.delenv("ATLAS_QUERY_LOG_DISABLE", raising=False)
 
     log_query(kind="query", question="q", corpus="/g.json",
               result="5 nodes found\nNODE a\nNODE b")
@@ -158,8 +158,8 @@ def test_nodes_returned_inferred_from_result(tmp_path, monkeypatch):
 
 def test_explicit_nodes_returned_takes_precedence(tmp_path, monkeypatch):
     log_file = tmp_path / "q.log"
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(log_file))
-    monkeypatch.delenv("GRAPHIFY_QUERY_LOG_DISABLE", raising=False)
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(log_file))
+    monkeypatch.delenv("ATLAS_QUERY_LOG_DISABLE", raising=False)
 
     log_query(kind="path", question="A -> B", corpus="/g.json", nodes_returned=3)
 
@@ -169,8 +169,8 @@ def test_explicit_nodes_returned_takes_precedence(tmp_path, monkeypatch):
 
 def test_kind_mcp_query(tmp_path, monkeypatch):
     log_file = tmp_path / "q.log"
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(log_file))
-    monkeypatch.delenv("GRAPHIFY_QUERY_LOG_DISABLE", raising=False)
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(log_file))
+    monkeypatch.delenv("ATLAS_QUERY_LOG_DISABLE", raising=False)
 
     log_query(kind="mcp_query", question="q", corpus="/g.json")
 
@@ -183,35 +183,35 @@ def test_kind_mcp_query(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def _clear_log_env(monkeypatch):
-    for k in ("GRAPHIFY_QUERY_LOG", "GRAPHIFY_QUERY_LOG_ENABLE", "GRAPHIFY_QUERY_LOG_DISABLE"):
+    for k in ("ATLAS_QUERY_LOG", "ATLAS_QUERY_LOG_ENABLE", "ATLAS_QUERY_LOG_DISABLE"):
         monkeypatch.delenv(k, raising=False)
 
 
 def test_query_log_off_by_default(monkeypatch):
-    from graphify.querylog import _log_path
+    from monarch_atlas.querylog import _log_path
     _clear_log_env(monkeypatch)
     assert _log_path() is None
 
 
 def test_query_log_enabled_by_explicit_flag(monkeypatch):
-    from graphify.querylog import _log_path
+    from monarch_atlas.querylog import _log_path
     _clear_log_env(monkeypatch)
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG_ENABLE", "1")
-    assert str(_log_path()).endswith("graphify-queries.log")
+    monkeypatch.setenv("ATLAS_QUERY_LOG_ENABLE", "1")
+    assert str(_log_path()).endswith("atlas-queries.log")
 
 
 def test_query_log_enabled_by_explicit_path(monkeypatch, tmp_path):
-    from graphify.querylog import _log_path
+    from monarch_atlas.querylog import _log_path
     _clear_log_env(monkeypatch)
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG", str(tmp_path / "q.log"))
+    monkeypatch.setenv("ATLAS_QUERY_LOG", str(tmp_path / "q.log"))
     assert _log_path() == tmp_path / "q.log"
 
 
 def test_query_log_disable_wins(monkeypatch):
-    from graphify.querylog import _log_path
+    from monarch_atlas.querylog import _log_path
     _clear_log_env(monkeypatch)
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG_ENABLE", "1")
-    monkeypatch.setenv("GRAPHIFY_QUERY_LOG_DISABLE", "1")
+    monkeypatch.setenv("ATLAS_QUERY_LOG_ENABLE", "1")
+    monkeypatch.setenv("ATLAS_QUERY_LOG_DISABLE", "1")
     assert _log_path() is None
 
 
@@ -220,4 +220,4 @@ def test_log_query_writes_nothing_by_default(monkeypatch, tmp_path):
     _clear_log_env(monkeypatch)
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
     log_query(kind="query", question="secret internal ticket TICKET-123", corpus=".", result="1 node found")
-    assert not (tmp_path / ".cache" / "graphify-queries.log").exists()
+    assert not (tmp_path / ".cache" / "atlas-queries.log").exists()

@@ -24,7 +24,7 @@ scan prunes.
 import os
 from pathlib import Path
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _extract_js_dir(tmp_path, files: dict[str, str]):

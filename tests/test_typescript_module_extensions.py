@@ -17,19 +17,19 @@ def _labels(r):
 
 
 def test_mts_cts_registered_as_code():
-    from graphify.detect import CODE_EXTENSIONS
+    from monarch_atlas.detect import CODE_EXTENSIONS
     assert ".mts" in CODE_EXTENSIONS
     assert ".cts" in CODE_EXTENSIONS
 
 
 def test_mts_cts_in_js_language_family():
-    from graphify.analyze import _LANG_FAMILY
+    from monarch_atlas.analyze import _LANG_FAMILY
     assert _LANG_FAMILY.get(".mts") == "js"
     assert _LANG_FAMILY.get(".cts") == "js"
 
 
 def test_mts_cts_in_js_resolution_sets():
-    from graphify.extract import _JS_CACHE_BYPASS_SUFFIXES, _JS_RESOLVE_EXTS
+    from monarch_atlas.extract import _JS_CACHE_BYPASS_SUFFIXES, _JS_RESOLVE_EXTS
     assert ".mts" in _JS_RESOLVE_EXTS
     assert ".cts" in _JS_RESOLVE_EXTS
     assert ".mts" in _JS_CACHE_BYPASS_SUFFIXES
@@ -48,7 +48,7 @@ _TS_SOURCE = (
 
 
 def _extract(tmp_path: Path, ext: str):
-    from graphify.extract import extract_js
+    from monarch_atlas.extract import extract_js
     f = tmp_path / f"widget{ext}"
     f.write_text(_TS_SOURCE, encoding="utf-8")
     return extract_js(f)
@@ -86,6 +86,6 @@ def test_uppercase_typescript_extensions_use_typescript_grammar(tmp_path):
 
 
 def test_mts_cts_route_to_extract_js():
-    from graphify.extract import _DISPATCH, extract_js
+    from monarch_atlas.extract import _DISPATCH, extract_js
     assert _DISPATCH.get(".mts") is extract_js
     assert _DISPATCH.get(".cts") is extract_js

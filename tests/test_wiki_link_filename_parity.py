@@ -17,7 +17,7 @@ import re
 import networkx as nx
 import pytest
 
-from graphify.wiki import _safe_filename, to_wiki
+from monarch_atlas.wiki import _safe_filename, to_wiki
 
 # Deliberately does not decode: the target is compared exactly as written.
 # Key on the `](target)` boundary rather than the whole `[display](target)` so a

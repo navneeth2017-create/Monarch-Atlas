@@ -13,9 +13,9 @@ import json
 from pathlib import Path
 import pytest
 
-import graphify.__main__ as mainmod
-from graphify.build import build_merge, merge_raw_extraction
-import graphify.llm as llmmod
+import monarch_atlas.__main__ as mainmod
+from monarch_atlas.build import build_merge, merge_raw_extraction
+import monarch_atlas.llm as llmmod
 
 
 def _sem_node(sf: str, name: str) -> dict:
@@ -53,7 +53,7 @@ def _write_graph(graph_path: Path, nodes, edges=()) -> None:
 
 def test_build_merge_flags_unverified_semantic_shrink(tmp_path):
     """Semantic source with 3 prior nodes re-extracted with 1 node is flagged on G.graph."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     _write_graph(gp, [_sem_node("doc.md", f"n{i}") for i in range(3)])
 
     chunk = {"nodes": [_sem_node("doc.md", "n0")], "edges": []}
@@ -66,7 +66,7 @@ def test_build_merge_flags_unverified_semantic_shrink(tmp_path):
 
 def test_build_merge_flags_shrink_when_surviving_id_is_renamed(tmp_path):
     """Surviving semantic node renamed (n0 -> renamed_concept) still flags based on count."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     _write_graph(gp, [_sem_node("doc.md", f"sec_{i}") for i in range(3)])
 
     chunk = {"nodes": [_sem_node("doc.md", "renamed_concept")], "edges": []}
@@ -78,7 +78,7 @@ def test_build_merge_flags_shrink_when_surviving_id_is_renamed(tmp_path):
 
 def test_build_merge_own_file_shrink_remains_non_fatal(tmp_path):
     """build_merge must NOT raise an exception on own-file shrink; it returns G."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     _write_graph(gp, [_sem_node("doc.md", f"n{i}") for i in range(10)])
 
     chunk = {"nodes": [_sem_node("doc.md", "n0")], "edges": []}
@@ -88,7 +88,7 @@ def test_build_merge_own_file_shrink_remains_non_fatal(tmp_path):
 
 def test_build_merge_does_not_flag_ast_code_shrink(tmp_path):
     """Deterministic AST/code shrinkage (10 -> 1) is never flagged as unverified semantic shrink."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     _write_graph(gp, [_ast_node("mod.py", f"fn{i}") for i in range(10)])
 
     chunk = {"nodes": [_ast_node("mod.py", "fn0")], "edges": []}
@@ -100,7 +100,7 @@ def test_build_merge_does_not_flag_ast_code_shrink(tmp_path):
 
 def test_build_merge_equal_count_different_ids_not_flagged(tmp_path):
     """10 -> 10 semantic nodes with completely different IDs is not flagged as a shrink."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     _write_graph(gp, [_sem_node("doc.md", f"old_{i}") for i in range(10)])
 
     chunk = {"nodes": [_sem_node("doc.md", f"new_{i}") for i in range(10)], "edges": []}
@@ -112,7 +112,7 @@ def test_build_merge_equal_count_different_ids_not_flagged(tmp_path):
 
 def test_build_merge_semantic_growth_not_flagged(tmp_path):
     """Semantic growth (3 -> 4) is unaffected."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     _write_graph(gp, [_sem_node("doc.md", f"n{i}") for i in range(3)])
 
     chunk = {"nodes": [_sem_node("doc.md", f"n{i}") for i in range(4)], "edges": []}
@@ -124,7 +124,7 @@ def test_build_merge_semantic_growth_not_flagged(tmp_path):
 
 def test_build_merge_aggregates_multiple_chunks_per_source(tmp_path):
     """Multiple chunks for the same source are summed before comparison (2 + 2 = 4 >= 3 -> no shrink)."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     _write_graph(gp, [_sem_node("doc.md", f"n{i}") for i in range(3)])
 
     chunk1 = {"nodes": [_sem_node("doc.md", "c1_a"), _sem_node("doc.md", "c1_b")], "edges": []}
@@ -137,7 +137,7 @@ def test_build_merge_aggregates_multiple_chunks_per_source(tmp_path):
 
 def test_build_merge_source_specific_growth_cannot_mask_shrink(tmp_path):
     """Growth in B (3 -> 20) cannot mask unverified shrink in A (6 -> 2)."""
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     _write_graph(
         gp,
         [_sem_node("a.md", f"a{i}") for i in range(6)]
@@ -184,7 +184,7 @@ def test_3203_e2e_repro_protected_and_manifest_unstamped(tmp_path, monkeypatch, 
     readme.write_text("# Readme\nInitial content\n", encoding="utf-8")
     guide.write_text("# Guide\nGuide content\n", encoding="utf-8")
 
-    out_dir = corpus / "graphify-out"
+    out_dir = corpus / "atlas-out"
 
     # Step 1: Initial build (README: 3 nodes, GUIDE: 2 nodes)
     def _mock_llm_run1(files, **kwargs):
@@ -208,7 +208,7 @@ def test_3203_e2e_repro_protected_and_manifest_unstamped(tmp_path, monkeypatch, 
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-fake")
 
-    monkeypatch.setattr(mainmod.sys, "argv", ["graphify", "extract", str(corpus), "--backend", "claude"])
+    monkeypatch.setattr(mainmod.sys, "argv", ["atlas", "extract", str(corpus), "--backend", "claude"])
     code1 = _run_cli()
     assert code1 == 0
 
@@ -236,7 +236,7 @@ def test_3203_e2e_repro_protected_and_manifest_unstamped(tmp_path, monkeypatch, 
         return res
 
     monkeypatch.setattr(llmmod, "extract_corpus_parallel", _mock_llm_run2)
-    monkeypatch.setattr(mainmod.sys, "argv", ["graphify", "extract", str(corpus), "--backend", "claude"])
+    monkeypatch.setattr(mainmod.sys, "argv", ["atlas", "extract", str(corpus), "--backend", "claude"])
 
     code2 = _run_cli()
     # The shrink guard arms and refuses overwrite because graph shrinks 5 -> 3
@@ -262,7 +262,7 @@ def test_3203_allow_partial_override_permits_intentional_reduction(tmp_path, mon
     readme = corpus / "README.md"
     readme.write_text("# Readme\nInitial content\n", encoding="utf-8")
 
-    out_dir = corpus / "graphify-out"
+    out_dir = corpus / "atlas-out"
 
     def _mock_llm_run1(files, **kwargs):
         on_chunk = kwargs.get("on_chunk_done")
@@ -283,7 +283,7 @@ def test_3203_allow_partial_override_permits_intentional_reduction(tmp_path, mon
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-fake")
 
-    monkeypatch.setattr(mainmod.sys, "argv", ["graphify", "extract", str(corpus), "--backend", "claude"])
+    monkeypatch.setattr(mainmod.sys, "argv", ["atlas", "extract", str(corpus), "--backend", "claude"])
     code1 = _run_cli()
     assert code1 == 0
 
@@ -306,7 +306,7 @@ def test_3203_allow_partial_override_permits_intentional_reduction(tmp_path, mon
     monkeypatch.setattr(llmmod, "extract_corpus_parallel", _mock_llm_run2)
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(corpus), "--backend", "claude", "--allow-partial"],
+        ["atlas", "extract", str(corpus), "--backend", "claude", "--allow-partial"],
     )
 
     code2 = _run_cli()

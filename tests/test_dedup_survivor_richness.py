@@ -9,7 +9,7 @@ were discarded every time the pattern occurred. Richness now decides first
 a loser carried.
 """
 
-from graphify.dedup import _pick_winner, deduplicate_entities
+from monarch_atlas.dedup import _pick_winner, deduplicate_entities
 
 
 def _rich(**over):
@@ -80,7 +80,7 @@ def test_chunk_suffix_still_dominates_richness():
 
 
 def test_richness_counts_content_not_placement():
-    from graphify.dedup import _content_richness
+    from monarch_atlas.dedup import _content_richness
 
     assert _content_richness(_shallow()) == 0
     assert _content_richness(_rich()) > _content_richness(

@@ -19,9 +19,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from graphify.build import build
-from graphify.export import to_json
-from graphify.extract import extract
+from monarch_atlas.build import build
+from monarch_atlas.export import to_json
+from monarch_atlas.extract import extract
 
 
 def _write(path: Path, text: str) -> Path:
@@ -99,7 +99,7 @@ def test_cross_ext_reexport_target_is_the_sibling_node(tmp_path: Path):
 def test_cross_ext_reexport_no_phantom_import_cycle(tmp_path: Path):
     import networkx as nx
 
-    from graphify.analyze import find_import_cycles
+    from monarch_atlas.analyze import find_import_cycles
 
     mjs = _write(tmp_path / "foo.mjs", "export const N = 1;\n")
     ts = _write(tmp_path / "foo.ts", 'export { N } from "./foo.mjs";\n')
@@ -300,7 +300,7 @@ def test_target_file_hint_never_written_to_the_ast_cache(tmp_path: Path):
 
     extract([mjs, ts], cache_root=tmp_path)
 
-    ast_dir = tmp_path / "graphify-out" / "cache" / "ast"
+    ast_dir = tmp_path / "atlas-out" / "cache" / "ast"
     entries = list(ast_dir.rglob("*.json")) if ast_dir.exists() else []
     for entry in entries:
         payload = json.loads(entry.read_text(encoding="utf-8"))

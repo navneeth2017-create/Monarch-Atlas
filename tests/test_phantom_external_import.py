@@ -15,8 +15,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.build import build_from_json
-from graphify.extract import _make_id, _resolve_js_import_target, extract
+from monarch_atlas.build import build_from_json
+from monarch_atlas.extract import _make_id, _resolve_js_import_target, extract
 
 
 def _write(path: Path, text: str) -> Path:
@@ -84,7 +84,7 @@ def test_no_phantom_edge_from_tsx_to_unrelated_python_file(tmp_path: Path):
         "export const CHART_COLOR = colors.blue[500];\n",
     )
 
-    result = extract([py, tsx], cache_root=tmp_path / "graphify-out")
+    result = extract([py, tsx], cache_root=tmp_path / "atlas-out")
     G = build_from_json(result, root=str(tmp_path))
 
     # Find the python file node.
@@ -124,7 +124,7 @@ def test_multiple_tsx_files_do_not_all_alias_onto_one_python_file(tmp_path: Path
         )
 
     paths = list((tmp_path).rglob("*.py")) + list((tmp_path / "frontend").rglob("*.tsx"))
-    result = extract(paths, cache_root=tmp_path / "graphify-out")
+    result = extract(paths, cache_root=tmp_path / "atlas-out")
     G = build_from_json(result, root=str(tmp_path))
 
     py_ids = {
@@ -159,7 +159,7 @@ def test_subpath_import_does_not_dangle_like_a_bare_import(tmp_path: Path):
     )
 
     result = extract(
-        [tmp_path / "package.json", bare, subpath], cache_root=tmp_path / "graphify-out"
+        [tmp_path / "package.json", bare, subpath], cache_root=tmp_path / "atlas-out"
     )
     G = build_from_json(result, root=str(tmp_path))
 

@@ -7,8 +7,8 @@ that file's entry ``partial: True``, and ``load_cached`` then treats a partial
 entry as a cache MISS so the file is re-dispatched instead of served forever.
 """
 
-from graphify import llm
-from graphify.cache import (
+from monarch_atlas import llm
+from monarch_atlas.cache import (
     save_semantic_cache,
     load_cached,
     _group_has_partial_marker,
@@ -120,7 +120,7 @@ def test_clean_slice_does_not_repromote_empty_parse_partial(tmp_path):
 def test_partial_files_carries_empty_parse_truncation():
     """_partial_source_files must surface a file recorded in _partial_files even
     when the result has zero items (the empty-parse case)."""
-    import graphify.llm as llm
+    import monarch_atlas.llm as llm
     result = {"nodes": [], "edges": [], "hyperedges": [], "_partial_files": ["big.md"]}
     assert llm._partial_source_files(result) == ["big.md"]
     # And it unions with intrinsic item markers.
@@ -133,7 +133,7 @@ def test_stamped_manifest_excludes_partial_files():
     """A truncated file produced output this run but is left unstamped in the
     manifest (like a failed chunk) so detect_incremental re-queues it."""
     from pathlib import Path
-    from graphify.cli import _stamped_manifest_files
+    from monarch_atlas.cli import _stamped_manifest_files
 
     files_by_type = {"document": ["a.md", "b.md"], "code": ["x.py"]}
     sem_result = {
@@ -153,7 +153,7 @@ def test_stamped_manifest_excludes_partial_files():
 def test_stamped_manifest_excludes_failed_ast_sources():
     """#2543: code files whose AST extract failed (missing extra) stay unstamped."""
     from pathlib import Path
-    from graphify.cli import _stamped_manifest_files
+    from monarch_atlas.cli import _stamped_manifest_files
 
     files_by_type = {
         "document": ["a.md"],

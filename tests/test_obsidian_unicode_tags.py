@@ -4,7 +4,7 @@ import json
 
 import networkx as nx
 
-from graphify.export import _obsidian_tag, to_obsidian
+from monarch_atlas.export import _obsidian_tag, to_obsidian
 
 
 def _graph(labels: list[str]) -> tuple[nx.Graph, dict[int, list[str]], dict[int, str]]:

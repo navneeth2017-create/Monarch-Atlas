@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-from graphify.extract import extract
-from graphify.extractors.rust import extract_rust
+from monarch_atlas.extract import extract
+from monarch_atlas.extractors.rust import extract_rust
 
 
 def _calls(tmp_path: Path, files: dict[str, str]):
@@ -29,7 +29,7 @@ def _calls(tmp_path: Path, files: dict[str, str]):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding="utf-8")
         paths.append(path)
-    result = extract(paths, cache_root=tmp_path / "graphify-out")
+    result = extract(paths, cache_root=tmp_path / "atlas-out")
     calls = {
         (edge["source"], edge["target"]): edge
         for edge in result["edges"]
@@ -355,8 +355,8 @@ def test_generic_self_call_invalidates_markerless_ast_cache(
     monkeypatch,
 ):
     """A same-version cache from before the marker contract must be missed."""
-    import graphify.cache as cache_mod
-    from graphify.cache import save_cached
+    import monarch_atlas.cache as cache_mod
+    from monarch_atlas.cache import save_cached
 
     files = {
         "state.rs": "pub struct Bucket<T> { value: T }\n",
@@ -457,7 +457,7 @@ def test_resolver_is_not_suppressed_by_an_unrelated_edge_to_the_same_pair(tmp_pa
     must still get its calls edge -- the two relations are not mutually
     exclusive, and an existing non-calls edge says nothing about whether a
     call was resolved."""
-    from graphify.extract import _resolve_rust_self_member_calls
+    from monarch_atlas.extract import _resolve_rust_self_member_calls
 
     all_nodes = [
         {"id": "impl_foo", "label": "Foo", "source_file": "a.rs"},
@@ -494,7 +494,7 @@ def test_resolver_treats_a_duplicate_method_index_key_as_ambiguous(tmp_path: Pat
     """Two DIFFERENT method nodes sharing both a source impl node and a
     stripped label must surface as an ambiguity (no edge), not silently
     keep whichever one a plain dict overwrite happened to see last."""
-    from graphify.extract import _resolve_rust_self_member_calls
+    from monarch_atlas.extract import _resolve_rust_self_member_calls
 
     all_nodes = [
         {"id": "impl_foo", "label": "Foo", "source_file": "a.rs"},

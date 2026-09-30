@@ -1,7 +1,7 @@
-# graphify MCP server as a shared HTTP service (issue #1143).
+# atlas MCP server as a shared HTTP service (issue #1143).
 #
-# Build:  docker build -t graphify .
-# Run:    docker run -p 8080:8080 -v "$(pwd)/graphify-out:/data" graphify \
+# Build:  docker build -t atlas .
+# Run:    docker run -p 8080:8080 -v "$(pwd)/atlas-out:/data" atlas \
 #             /data/graph.json --transport http --host 0.0.0.0 --api-key "$SECRET"
 #
 # Builds from source so the image includes the Streamable HTTP transport even
@@ -16,10 +16,10 @@ COPY . /app
 RUN pip install --no-cache-dir ".[mcp]"
 
 # Run as a non-root user — the server is network-exposed.
-RUN useradd --create-home --uid 10001 graphify
-USER graphify
+RUN useradd --create-home --uid 10001 atlas
+USER atlas
 
 EXPOSE 8080
 
-ENTRYPOINT ["python", "-m", "graphify.serve"]
+ENTRYPOINT ["python", "-m", "monarch_atlas.serve"]
 CMD ["/data/graph.json", "--transport", "http", "--host", "0.0.0.0", "--port", "8080"]

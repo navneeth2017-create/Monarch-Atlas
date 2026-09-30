@@ -6,9 +6,9 @@ from pathlib import Path
 import networkx as nx
 import pytest
 
-from graphify.build import prefix_graph_for_global
-from graphify.cross_repo_calls import CROSS_REPO_CALL_MARKER, link_cross_repo_member_calls
-from graphify.extract import extract
+from monarch_atlas.build import prefix_graph_for_global
+from monarch_atlas.cross_repo_calls import CROSS_REPO_CALL_MARKER, link_cross_repo_member_calls
+from monarch_atlas.extract import extract
 
 
 def _graph(*, using_namespace: str, target_namespace: str) -> nx.Graph:

@@ -8,7 +8,7 @@ edge/hyperedge linkage that a node-only coercion would silently break.
 import networkx as nx
 import pytest
 
-from graphify.build import build, build_from_json
+from monarch_atlas.build import build, build_from_json
 
 
 def _node(nid, label, **kw):
@@ -112,7 +112,7 @@ def test_numeric_endpoint_with_no_matching_node_matches_the_string_case():
 @pytest.mark.parametrize("bad", [None, ["x"], {"k": "v"}])
 def test_non_scalar_ids_are_left_for_validation(bad):
     """Only numeric scalars are coerced; str(None) == 'None' would be a lie."""
-    from graphify.build import _coerce_non_string_ids
+    from monarch_atlas.build import _coerce_non_string_ids
 
     ext = {"nodes": [{"id": bad, "label": "Alpha"}], "edges": []}
     _coerce_non_string_ids(ext)
@@ -120,7 +120,7 @@ def test_non_scalar_ids_are_left_for_validation(bad):
 
 
 def test_bool_id_is_not_coerced():
-    from graphify.build import _coerce_non_string_ids
+    from monarch_atlas.build import _coerce_non_string_ids
 
     ext = {"nodes": [{"id": True, "label": "Alpha"}], "edges": []}
     _coerce_non_string_ids(ext)

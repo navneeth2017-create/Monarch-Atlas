@@ -1,4 +1,4 @@
-"""Tests for graphify query CLI context filtering."""
+"""Tests for atlas query CLI context filtering."""
 from __future__ import annotations
 
 import json
@@ -6,7 +6,7 @@ import json
 import networkx as nx
 from networkx.readwrite import json_graph
 
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 
 
 def _write_graph(tmp_path):
@@ -27,7 +27,7 @@ def test_query_cli_explicit_context_filter(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "query", "extract", "--context", "call", "--graph", str(graph_path)],
+        ["atlas", "query", "extract", "--context", "call", "--graph", str(graph_path)],
     )
     mainmod.main()
     out = capsys.readouterr().out
@@ -42,7 +42,7 @@ def test_query_cli_heuristic_context_filter(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "query", "who calls extract", "--graph", str(graph_path)],
+        ["atlas", "query", "who calls extract", "--graph", str(graph_path)],
     )
     mainmod.main()
     out = capsys.readouterr().out
@@ -54,7 +54,7 @@ def test_query_cli_heuristic_context_filter(monkeypatch, tmp_path, capsys):
 def _write_calls_graph(tmp_path):
     """A single directed `calls` edge on an (on-disk) undirected graph.json,
 
-    the standard `graphify extract`/`update` output shape (`"directed":
+    the standard `atlas extract`/`update` output shape (`"directed":
     false`, direction implied only by each link's source/target).
     """
     G = nx.Graph()
@@ -67,7 +67,7 @@ def _write_calls_graph(tmp_path):
 
 
 def test_query_cli_preserves_calls_direction_when_seeded_on_callee(monkeypatch, tmp_path, capsys):
-    """`graphify query` must render `calls` edges caller->callee regardless of
+    """`atlas query` must render `calls` edges caller->callee regardless of
     which endpoint the query term matches first.
 
     The graph `query` loads is undirected (so BFS/DFS can explore both
@@ -83,7 +83,7 @@ def test_query_cli_preserves_calls_direction_when_seeded_on_callee(monkeypatch, 
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "query", "callee_fn", "--graph", str(graph_path)],
+        ["atlas", "query", "callee_fn", "--graph", str(graph_path)],
     )
     mainmod.main()
     out = capsys.readouterr().out
@@ -98,7 +98,7 @@ def test_query_cli_preserves_calls_direction_when_seeded_on_caller(monkeypatch, 
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "query", "caller_fn", "--graph", str(graph_path)],
+        ["atlas", "query", "caller_fn", "--graph", str(graph_path)],
     )
     mainmod.main()
     out = capsys.readouterr().out
@@ -112,11 +112,11 @@ def test_query_cli_rejects_oversized_graph(monkeypatch, tmp_path, capsys):
 
     graph_path = _write_graph(tmp_path)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 16)
+    monkeypatch.setattr("monarch_atlas.security._MAX_GRAPH_FILE_BYTES", 16)
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "query", "extract", "--graph", str(graph_path)],
+        ["atlas", "query", "extract", "--graph", str(graph_path)],
     )
     with pytest.raises(SystemExit):
         mainmod.main()

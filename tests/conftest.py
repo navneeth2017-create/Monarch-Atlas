@@ -70,7 +70,7 @@ def _isolate_backend_env(monkeypatch):
     any of a dozen others) exported, the backend-detection tests picked that
     backend instead of the one the test set up (#3481). Clear every variable it
     reads before each test; a test that wants one sets it with monkeypatch."""
-    from graphify.llm import backend_detection_env_vars
+    from monarch_atlas.llm import backend_detection_env_vars
 
     for key in backend_detection_env_vars():
         monkeypatch.delenv(key, raising=False)

@@ -17,9 +17,9 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
-from graphify.analyze import find_import_cycles
-from graphify.build import build_from_json
-from graphify.extract import extract
+from monarch_atlas.analyze import find_import_cycles
+from monarch_atlas.build import build_from_json
+from monarch_atlas.extract import extract
 
 
 def _extract(tmp_path, files: dict[str, str]):

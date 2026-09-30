@@ -7,7 +7,7 @@ import textwrap
 from types import SimpleNamespace
 from pathlib import Path
 import pytest
-from graphify.hooks import install, uninstall, status, _hooks_dir, _HOOK_MARKER, _CHECKOUT_MARKER
+from monarch_atlas.hooks import install, uninstall, status, _hooks_dir, _HOOK_MARKER, _CHECKOUT_MARKER
 
 
 def _make_git_repo(tmp_path: Path) -> Path:
@@ -160,19 +160,19 @@ def test_hooks_dir_accepts_absolute_git_hooks_path(tmp_path, monkeypatch):
 
 def test_hook_skips_head_on_exe():
     """Hook script must skip shebang extraction for .exe binaries (Windows)."""
-    from graphify.hooks import _PYTHON_DETECT
+    from monarch_atlas.hooks import _PYTHON_DETECT
     assert "*.exe) _SHEBANG=" in _PYTHON_DETECT or '*.exe)' in _PYTHON_DETECT
 
 
 def test_install_embeds_pinned_interpreter(tmp_path):
     """Hook scripts must embed sys.executable so the hook works without the
-    graphify launcher on PATH (uv tool / pipx isolation, #1127).
+    atlas launcher on PATH (uv tool / pipx isolation, #1127).
 
-    When graphify is installed via `uv tool install graphifyy` or `pipx install
-    graphifyy`, the interpreter lives in an isolated venv and the launcher is in
+    When atlas is installed via `uv tool install monarch-atlas` or `pipx install
+    monarch-atlas`, the interpreter lives in an isolated venv and the launcher is in
     ~/.local/bin.  GUI git clients and CI runners often run with a minimal PATH
-    that omits that directory, so `command -v graphify` fails, the python3/python
-    fallbacks cannot import graphify (wrong venv), and the hook silently exits 0.
+    that omits that directory, so `command -v atlas` fails, the python3/python
+    fallbacks cannot import monarch_atlas (wrong venv), and the hook silently exits 0.
     Pinning sys.executable at install time makes the hook work regardless of PATH.
     """
     import re, sys
@@ -196,21 +196,21 @@ def test_install_fallback_is_loud_not_silent(tmp_path):
     A silent no-op (the pre-fix behaviour) leaves the user with no indication
     that the hook ran but found nothing, making the bug extremely hard to diagnose.
     """
-    from graphify.hooks import _PYTHON_DETECT
+    from monarch_atlas.hooks import _PYTHON_DETECT
     assert "could not locate" in _PYTHON_DETECT, (
         "fallback branch must print a diagnostic message; bare 'exit 0' is silent and unhelpful"
     )
 
 
 def test_hook_check_no_additionalContext(tmp_path):
-    """graphify hook-check must not emit additionalContext — Codex Desktop rejects it."""
+    """atlas hook-check must not emit additionalContext — Codex Desktop rejects it."""
     import sys
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     (out / "graph.json").write_text("{}", encoding="utf-8")
 
     result = subprocess.run(
-        [sys.executable, "-m", "graphify", "hook-check"],
+        [sys.executable, "-m", "monarch_atlas", "hook-check"],
         cwd=tmp_path,
         capture_output=True,
         text=True,
@@ -226,7 +226,7 @@ def test_hook_check_no_additionalContext(tmp_path):
 import ast  # noqa: E402
 import re  # noqa: E402
 
-from graphify.hooks import (  # noqa: E402
+from monarch_atlas.hooks import (  # noqa: E402
     _HOOK_SCRIPT,
     _CHECKOUT_SCRIPT,
     _REBUILD_BODY_COMMIT,
@@ -263,11 +263,11 @@ def test_hooks_limit_windows_workers_by_default(name, script):
     ProcessPoolExecutor children. Hook-triggered rebuilds should default to one
     worker there, while still allowing explicit user overrides."""
     assert '[ -n "${WINDIR:-}" ] || [ -n "${MSYSTEM:-}" ]' in script
-    assert 'export GRAPHIFY_MAX_WORKERS="${GRAPHIFY_MAX_WORKERS:-1}"' in script
+    assert 'export ATLAS_MAX_WORKERS="${ATLAS_MAX_WORKERS:-1}"' in script
 
 
 def _launcher_payload(script: str) -> str:
-    """Extract the `python -c "<payload>"` the hook hands to GRAPHIFY_PYTHON.
+    """Extract the `python -c "<payload>"` the hook hands to ATLAS_PYTHON.
 
     The launcher is the only `-c` invocation whose body begins with
     `import os, subprocess, sys` (the interpreter-detection probes in
@@ -311,14 +311,14 @@ def test_rebuild_bodies_are_shell_quote_safe():
     "name,body",
     [("post-commit", _REBUILD_BODY_COMMIT), ("post-checkout", _REBUILD_BODY_CHECKOUT)],
 )
-def test_rebuild_bodies_read_graphify_root(name, body):
+def test_rebuild_bodies_read_atlas_root(name, body):
     """The rebuild must honour the persisted scan root rather than hardcoding the
-    repo top (#1173). Both bodies read <output-dir>/.graphify_root and pass the
+    repo top (#1173). Both bodies read <output-dir>/.atlas_root and pass the
     recovered root to _rebuild_code instead of the bare Path('.')."""
-    assert ".graphify_root" in body, f"{name} ignores .graphify_root (#1173)"
-    # The output dir is resolved from GRAPHIFY_OUT at hook-run time, not hardcoded
-    # to graphify-out/, so a renamed output dir is still found (#1423).
-    assert "GRAPHIFY_OUT" in body, f"{name} ignores the GRAPHIFY_OUT override (#1423)"
+    assert ".atlas_root" in body, f"{name} ignores .atlas_root (#1173)"
+    # The output dir is resolved from ATLAS_OUT at hook-run time, not hardcoded
+    # to atlas-out/, so a renamed output dir is still found (#1423).
+    assert "ATLAS_OUT" in body, f"{name} ignores the ATLAS_OUT override (#1423)"
     # The recovered root is what gets rebuilt, not a hardcoded cwd.
     assert "_rebuild_code(_root" in body, f"{name} does not pass the recovered root"
     # Quote-safe inside the shell-double-quoted launcher: single quotes only.
@@ -327,15 +327,15 @@ def test_rebuild_bodies_read_graphify_root(name, body):
     assert "read_text(encoding='utf-8-sig')" in body, f"{name} root read is not single-quoted"
 
 
-def test_rebuild_bodies_with_graphify_root_are_valid_python():
-    """The .graphify_root snippet must parse so a quoting slip can't ship a hook
+def test_rebuild_bodies_with_atlas_root_are_valid_python():
+    """The .atlas_root snippet must parse so a quoting slip can't ship a hook
     that crashes the moment git fires it (#1173)."""
     for body in (_REBUILD_BODY_COMMIT, _REBUILD_BODY_CHECKOUT):
         ast.parse(body)
 
 
 def _extract_root_resolution(body: str) -> str:
-    """Pull the `.graphify_root` -> `_root` snippet out of a rebuild body, so a
+    """Pull the `.atlas_root` -> `_root` snippet out of a rebuild body, so a
     test can execute the shipped logic itself rather than a hand copy that could
     quietly drift from it."""
     match = re.search(r"(    _root = Path\('\.'\).*?)\n    _rebuild_code\(", body, re.DOTALL)
@@ -347,20 +347,20 @@ def _extract_root_resolution(body: str) -> str:
     "name,body",
     [("post-commit", _REBUILD_BODY_COMMIT), ("post-checkout", _REBUILD_BODY_CHECKOUT)],
 )
-def test_rebuild_bodies_reject_an_out_of_repo_graphify_root(name, body, tmp_path, monkeypatch):
-    """#3265: `.graphify_root` sits inside graphify-out/, a directory the
+def test_rebuild_bodies_reject_an_out_of_repo_atlas_root(name, body, tmp_path, monkeypatch):
+    """#3265: `.atlas_root` sits inside atlas-out/, a directory the
     documented team workflow says to commit, so its contents are checkout
     controlled. Without a bound, a value planted there by a malicious fork or PR
     (an absolute path outside the repository) would steer the rebuild -- and so
-    what gets read, and what gets written into the same committed graphify-out/
+    what gets read, and what gets written into the same committed atlas-out/
     -- to wherever the checkout names, not the repository the hook was installed
     into. The recovered root must stay inside the working tree the hook actually
     runs from."""
     repo = tmp_path / "repo"
     outside = tmp_path / "outside"
-    (repo / "graphify-out").mkdir(parents=True)
+    (repo / "atlas-out").mkdir(parents=True)
     outside.mkdir()
-    (repo / "graphify-out" / ".graphify_root").write_text(str(outside), encoding="utf-8")
+    (repo / "atlas-out" / ".atlas_root").write_text(str(outside), encoding="utf-8")
     monkeypatch.chdir(repo)
     ns = {"Path": Path, "os": os}
     exec(compile(_extract_root_resolution(body), "<rebuild_body>", "exec"), ns)
@@ -371,13 +371,13 @@ def test_rebuild_bodies_reject_an_out_of_repo_graphify_root(name, body, tmp_path
     "name,body",
     [("post-commit", _REBUILD_BODY_COMMIT), ("post-checkout", _REBUILD_BODY_CHECKOUT)],
 )
-def test_rebuild_bodies_honour_an_in_repo_graphify_root(name, body, tmp_path, monkeypatch):
+def test_rebuild_bodies_honour_an_in_repo_atlas_root(name, body, tmp_path, monkeypatch):
     """The legitimate case the #3265 guard must not break: a subdirectory-scoped
     root (#1173) is still recovered."""
     repo = tmp_path / "repo"
-    (repo / "graphify-out").mkdir(parents=True)
+    (repo / "atlas-out").mkdir(parents=True)
     (repo / "backend").mkdir()
-    (repo / "graphify-out" / ".graphify_root").write_text("backend", encoding="utf-8")
+    (repo / "atlas-out" / ".atlas_root").write_text("backend", encoding="utf-8")
     monkeypatch.chdir(repo)
     ns = {"Path": Path, "os": os}
     exec(compile(_extract_root_resolution(body), "<rebuild_body>", "exec"), ns)
@@ -389,17 +389,17 @@ def test_rebuild_bodies_honour_an_in_repo_graphify_root(name, body, tmp_path, mo
     "name,body",
     [("post-commit", _REBUILD_BODY_COMMIT), ("post-checkout", _REBUILD_BODY_CHECKOUT)],
 )
-def test_rebuild_bodies_survive_a_graphify_root_symlink_loop(name, body, tmp_path, monkeypatch):
-    """A committed `.graphify_root` naming a path that resolves through a
+def test_rebuild_bodies_survive_a_atlas_root_symlink_loop(name, body, tmp_path, monkeypatch):
+    """A committed `.atlas_root` naming a path that resolves through a
     symlink loop (two symlinks pointing at each other) must fall back to the
     repo top rather than let `Path.resolve()`'s RuntimeError escape the #3265
     guard uncaught -- the guard's own `except OSError` doesn't catch it, since
     a symlink loop is a RuntimeError on this platform, not an OSError."""
     repo = tmp_path / "repo"
-    (repo / "graphify-out").mkdir(parents=True)
+    (repo / "atlas-out").mkdir(parents=True)
     (repo / "loop_a").symlink_to(repo / "loop_b")
     (repo / "loop_b").symlink_to(repo / "loop_a")
-    (repo / "graphify-out" / ".graphify_root").write_text("loop_a", encoding="utf-8")
+    (repo / "atlas-out" / ".atlas_root").write_text("loop_a", encoding="utf-8")
     monkeypatch.chdir(repo)
     ns = {"Path": Path, "os": os}
     exec(compile(_extract_root_resolution(body), "<rebuild_body>", "exec"), ns)
@@ -536,11 +536,11 @@ def test_sigalrm_handler_kills_children_before_raising(name, body):
     )
 
 
-def test_detached_launch_targets_graphify_python():
-    """The launcher must run via the resolved $GRAPHIFY_PYTHON, not a bare
+def test_detached_launch_targets_atlas_python():
+    """The launcher must run via the resolved $ATLAS_PYTHON, not a bare
     `python`, so it uses the same interpreter the detection block selected."""
     snippet = _detached_launch(_REBUILD_BODY_COMMIT)
-    assert snippet.startswith('"$GRAPHIFY_PYTHON" -c "')
+    assert snippet.startswith('"$ATLAS_PYTHON" -c "')
     assert "nohup" not in snippet
 
 
@@ -570,7 +570,7 @@ def _set_hookspath(repo: Path, value: str) -> None:
 def test_windows_hookspath_rejected_no_junk_dir_on_posix(tmp_path, monkeypatch, winpath):
     """A Windows-style core.hooksPath must raise (loud failure), not silently
     create a backslash-named junk directory and report success on POSIX/WSL (#1385)."""
-    monkeypatch.setattr("graphify.hooks.os.name", "posix")
+    monkeypatch.setattr("monarch_atlas.hooks.os.name", "posix")
     repo = _make_git_repo(tmp_path)
     _set_hookspath(repo, winpath)
     with pytest.raises(RuntimeError, match="Windows path"):
@@ -599,34 +599,34 @@ def test_default_hooks_dir_unaffected(tmp_path):
 # ── foreground hook cost: probes must be cheap and quiet ─────────────────────
 
 def test_probes_use_find_spec_not_full_import():
-    """`python -c "import graphify"` executes the FULL package import — 10s+ on a
+    """`python -c "import monarch_atlas"` executes the FULL package import — 10s+ on a
     cold cache or AV-scanned site-packages — and could run up to four times
     synchronously before the detached launch even started, so every commit
     stalled for tens of seconds. Probes must locate the package with
     importlib.util.find_spec (no execution); the detached rebuild still reports
     a broken install loudly in its log."""
-    from graphify.hooks import _PYTHON_DETECT
-    assert '-c "import graphify"' not in _PYTHON_DETECT, (
+    from monarch_atlas.hooks import _PYTHON_DETECT
+    assert '-c "import monarch_atlas"' not in _PYTHON_DETECT, (
         "interpreter probe still imports the full package in the hook foreground"
     )
     assert "find_spec" in _PYTHON_DETECT
 
 
 def test_shebang_read_is_null_byte_safe():
-    """On Windows, `command -v graphify` can return the launcher path WITHOUT its
+    """On Windows, `command -v atlas` can return the launcher path WITHOUT its
     .exe suffix, so the `*.exe)` guard misses and the shebang probe reads a
     BINARY: the shell then warns 'ignored null byte in input' on every commit and
     the extracted garbage always falls through to the slow fallbacks. The read
     must strip NULs before the command substitution sees them."""
-    from graphify.hooks import _PYTHON_DETECT
+    from monarch_atlas.hooks import _PYTHON_DETECT
     assert "tr -d '\\000'" in _PYTHON_DETECT, "shebang read is not NUL-safe"
 
 
 def test_probe_prefers_sibling_python_exe_on_windows_layouts():
-    """pip on Windows puts Scripts/graphify(.exe) beside ..\\python.exe (or
+    """pip on Windows puts Scripts/atlas(.exe) beside ..\\python.exe (or
     .\\python.exe in a venv). Resolving that directly beats shebang-parsing a
     binary launcher — and works whether or not command -v kept the suffix."""
-    from graphify.hooks import _PYTHON_DETECT
+    from monarch_atlas.hooks import _PYTHON_DETECT
     assert "/../python.exe" in _PYTHON_DETECT
     assert "/python.exe" in _PYTHON_DETECT
 
@@ -635,15 +635,15 @@ def test_probe_prefers_sibling_python_exe_on_windows_layouts():
 
 def _detect_run(tmp_path, home, stub_bin, env_extra=None):
     """Run the emitted _PYTHON_DETECT under a real sh in a controlled
-    environment — dead pin, no .graphify_python, an unparseable launcher first
-    on PATH, and a python3 that cannot import graphify (#2852's uv-tool
-    Windows machine reproduced on POSIX) — and report what GRAPHIFY_PYTHON
+    environment — dead pin, no .atlas_python, an unparseable launcher first
+    on PATH, and a python3 that cannot import monarch_atlas (#2852's uv-tool
+    Windows machine reproduced on POSIX) — and report what ATLAS_PYTHON
     resolved to. Behavior of the emitted script, not the source string
     (per the #2126/#2641 convention)."""
-    from graphify.hooks import _PYTHON_DETECT
+    from monarch_atlas.hooks import _PYTHON_DETECT
     script = tmp_path / "detect_run.sh"
     script.write_text(
-        _PYTHON_DETECT + '\necho "RESOLVED=$GRAPHIFY_PYTHON"\n',
+        _PYTHON_DETECT + '\necho "RESOLVED=$ATLAS_PYTHON"\n',
         encoding="utf-8", newline="\n",
     )
     env = dict(os.environ)
@@ -659,17 +659,17 @@ def _detect_run(tmp_path, home, stub_bin, env_extra=None):
 
 
 def _broken_uv_machine(tmp_path):
-    """#2852's machine: the only graphify-importable python lives in the uv
+    """#2852's machine: the only atlas-importable python lives in the uv
     tool venv; the launcher on PATH is a binary trampoline reached WITHOUT its
-    .exe suffix (Git-Bash command -v); ambient python3 cannot import graphify.
+    .exe suffix (Git-Bash command -v); ambient python3 cannot import monarch_atlas.
     Returns (home, stub_bin)."""
     home = tmp_path / "home"
     stub_bin = tmp_path / "stubbin"
     stub_bin.mkdir(parents=True)
-    launcher = stub_bin / "graphify"
+    launcher = stub_bin / "atlas"
     launcher.write_bytes(b"MZ\x90\x00\x03" + bytes(range(60)))
     launcher.chmod(0o755)
-    # Ambient pythons answer the probe with "no module named graphify" —
+    # Ambient pythons answer the probe with "no module named atlas" —
     # under uv tool install no system python can see the isolated venv (#2852).
     for name in ("python3", "python"):
         py = stub_bin / name
@@ -680,7 +680,7 @@ def _broken_uv_machine(tmp_path):
 
 def _tool_venv(home, tool, rel, ok):
     """Create a fake uv tool env python under <home>/.local/share/uv/tools;
-    ok=False simulates a venv without graphify (the probe must reject it)."""
+    ok=False simulates a venv without atlas (the probe must reject it)."""
     py = home / ".local" / "share" / "uv" / "tools" / tool / rel
     py.parent.mkdir(parents=True, exist_ok=True)
     py.write_text(
@@ -693,7 +693,7 @@ def _tool_venv(home, tool, rel, ok):
 
 @pytest.mark.skipif(shutil.which("sh") is None, reason="sh required to run emitted probe chain")
 def test_uv_tool_env_rescues_hook_when_pin_and_launcher_fail(tmp_path):
-    """#2852: `uv tool install` puts graphify in an isolated venv no ambient
+    """#2852: `uv tool install` puts atlas in an isolated venv no ambient
     python can import, and on Windows the launcher is a binary trampoline with
     no shebang to parse. With the pin dead (git-template hooks, a pin rejected
     by the allowlist, or a venv moved by an upgrade), every earlier probe
@@ -702,7 +702,7 @@ def test_uv_tool_env_rescues_hook_when_pin_and_launcher_fail(tmp_path):
     sibling tool envs that do not (glob order puts aaa-tool first)."""
     home, stub_bin = _broken_uv_machine(tmp_path)
     other = _tool_venv(home, "aaa-plain-tool", "bin/python", ok=False)
-    mine = _tool_venv(home, "graphifyy", "bin/python", ok=True)
+    mine = _tool_venv(home, "monarch-atlas", "bin/python", ok=True)
     res = _detect_run(tmp_path, home, stub_bin)
     assert res.returncode == 0, res.stderr
     assert f"RESOLVED={mine}" in res.stdout, res.stdout + res.stderr
@@ -718,7 +718,7 @@ def test_uv_tool_env_honors_uv_tool_dir_and_windows_layout(tmp_path):
     machine (#2852)."""
     home, stub_bin = _broken_uv_machine(tmp_path)
     tools = tmp_path / "custom-tools"
-    py = tools / "graphifyy" / "Scripts" / "python.exe"
+    py = tools / "monarch-atlas" / "Scripts" / "python.exe"
     py.parent.mkdir(parents=True)
     py.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8", newline="\n")
     py.chmod(0o755)
@@ -728,8 +728,8 @@ def test_uv_tool_env_honors_uv_tool_dir_and_windows_layout(tmp_path):
 
 
 @pytest.mark.skipif(shutil.which("sh") is None, reason="sh required to run emitted probe chain")
-def test_uv_tool_env_without_graphify_still_fails_loudly(tmp_path):
-    """The scan must not adopt a tool env whose python lacks graphify; the
+def test_uv_tool_env_without_atlas_still_fails_loudly(tmp_path):
+    """The scan must not adopt a tool env whose python lacks atlas; the
     chain still ends in the loud 'could not locate' warning on stderr — never
     a bare silent exit (#2852's diagnosis ask)."""
     home, stub_bin = _broken_uv_machine(tmp_path)
@@ -747,11 +747,11 @@ def test_shebang_parse_requires_leading_hash_bang(tmp_path):
     interpreter. Pre-gate code parsed any first line, so trampoline bytes
     (and here, a decoy path) reached the shebang parse (#2852)."""
     home, stub_bin = _broken_uv_machine(tmp_path)
-    mine = _tool_venv(home, "graphifyy", "bin/python", ok=True)
+    mine = _tool_venv(home, "monarch-atlas", "bin/python", ok=True)
     decoy = stub_bin / "fakepy"
     decoy.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8", newline="\n")
     decoy.chmod(0o755)
-    launcher = stub_bin / "graphify"
+    launcher = stub_bin / "atlas"
     launcher.write_text(
         f"{decoy}\nnot a script — the first line just names a python\n",
         encoding="utf-8", newline="\n",
@@ -767,7 +767,7 @@ def test_uv_tool_probe_present_in_emitted_detect():
     """Static companion to the runtime tests above (same convention as the
     NUL-safe read): the emitted chain must scan uv tool envs and honor
     UV_TOOL_DIR."""
-    from graphify.hooks import _PYTHON_DETECT
+    from monarch_atlas.hooks import _PYTHON_DETECT
     assert "UV_TOOL_DIR" in _PYTHON_DETECT
     assert '"$HOME/.local/share/uv/tools"' in _PYTHON_DETECT
     assert '"$HOME/AppData/Roaming/uv/tools"' in _PYTHON_DETECT
@@ -776,7 +776,7 @@ def test_uv_tool_probe_present_in_emitted_detect():
 def _extract_case_pattern(marker: str) -> str:
     """Pull the `*[!...]*` glob portion of a real case arm out of _PYTHON_DETECT
     by a unique anchor, so tests run against the emitted text, not a copy."""
-    from graphify.hooks import _PYTHON_DETECT
+    from monarch_atlas.hooks import _PYTHON_DETECT
     for line in _PYTHON_DETECT.splitlines():
         if marker in line:
             return line.strip().split(")")[0]
@@ -854,7 +854,7 @@ def _assert_harness_can_reject(pattern: str, tmp_path) -> None:
     r"C:\Python311\python.exe",
 ])
 def test_file_path_allowlist_accepts_windows_backslash_path(winpath, tmp_path):
-    """#2126: the .graphify_python FILE allowlist must accept real Windows paths
+    """#2126: the .atlas_python FILE allowlist must accept real Windows paths
     at actual shell runtime. Old pattern rejected them due to bash bracket-escape."""
     pattern = _extract_case_pattern('_FROM_FILE=""')
     _assert_harness_can_reject(pattern, tmp_path)
@@ -870,7 +870,7 @@ def test_file_path_allowlist_accepts_windows_backslash_path(winpath, tmp_path):
 def test_shebang_allowlist_accepts_windows_backslash_path(shebang_path, tmp_path):
     """#2126: the shebang-parsed launcher allowlist had no `:` or `\\` at all, so
     any Windows-style shebang path was unconditionally emptied. Must ACCEPT now."""
-    pattern = _extract_case_pattern('GRAPHIFY_PYTHON="" ;;')
+    pattern = _extract_case_pattern('ATLAS_PYTHON="" ;;')
     _assert_harness_can_reject(pattern, tmp_path)
     assert _shell_verdict(pattern, shebang_path, tmp_path) == "ACCEPTED", (
         f"Windows shebang path {shebang_path!r} rejected by launcher allowlist"
@@ -882,7 +882,7 @@ def test_shebang_allowlist_accepts_windows_backslash_path(shebang_path, tmp_path
 def test_python_detect_allowlists_still_reject_shell_metacharacters(dangerous, tmp_path):
     """Guard against a naive fix (backslash right before `]`) that forms a
     `:`-to-`\\` range admitting `;`, backtick, `$`. Both allowlists must reject."""
-    for marker in ('_FROM_FILE=""', 'GRAPHIFY_PYTHON="" ;;'):
+    for marker in ('_FROM_FILE=""', 'ATLAS_PYTHON="" ;;'):
         pattern = _extract_case_pattern(marker)
         assert _shell_verdict(pattern, dangerous, tmp_path) == "REJECTED", (
             f"{marker} allowlist wrongly accepted dangerous input {dangerous!r}"
@@ -929,11 +929,11 @@ def test_hooks_reuse_git_dir_from_env(name, script):
 
 @pytest.mark.parametrize("name,script", _HOOK_SCRIPTS)
 def test_hooks_honor_skip_env(name, script):
-    """GRAPHIFY_SKIP_HOOK=1 must suppress BOTH hooks. post-checkout previously
+    """ATLAS_SKIP_HOOK=1 must suppress BOTH hooks. post-checkout previously
     lacked the check, so the var stopped commit rebuilds but not branch-switch
     ones (#1809)."""
-    assert '[ "${GRAPHIFY_SKIP_HOOK:-0}" = "1" ] && exit 0' in script, (
-        f"{name} does not honor GRAPHIFY_SKIP_HOOK"
+    assert '[ "${ATLAS_SKIP_HOOK:-0}" = "1" ] && exit 0' in script, (
+        f"{name} does not honor ATLAS_SKIP_HOOK"
     )
 
 
@@ -943,11 +943,11 @@ def test_checkout_hook_skips_same_head_noop_at_runtime():
     Prove BEHAVIOR by running the real emitted script under sh up to the guard
     with a sentinel, not by matching the source string (per the #2126/#2641
     convention that static assertions provided zero coverage)."""
-    from graphify.hooks import _CHECKOUT_SCRIPT
+    from monarch_atlas.hooks import _CHECKOUT_SCRIPT
     guard = '[ "$PREV_HEAD" = "$NEW_HEAD" ] && exit 0'
     assert guard in _CHECKOUT_SCRIPT, "guard missing from the checkout script"
     # Real script through the same-head guard, then a sentinel — stops before the
-    # graphify-out check / detached launch so nothing is actually rebuilt.
+    # atlas-out check / detached launch so nothing is actually rebuilt.
     # The block runs inside a subshell (#2986); close it after the sentinel.
     prefix = _CHECKOUT_SCRIPT.split(guard)[0] + guard + "\necho RAN\n)\n"
 
@@ -977,7 +977,7 @@ def test_hooks_skip_linked_worktrees(name, script):
 
 
 def _worktree_guard_snippet() -> str:
-    from graphify.hooks import _WORKTREE_GUARD
+    from monarch_atlas.hooks import _WORKTREE_GUARD
     return _WORKTREE_GUARD + "echo RAN\n"
 
 
@@ -1096,7 +1096,7 @@ def test_install_preserves_existing_gitattributes(tmp_path):
 
 
 def test_uninstall_removes_merge_driver_keeps_other_attrs(tmp_path):
-    """uninstall() must unset merge.atlas.* and remove only the graphify
+    """uninstall() must unset merge.atlas.* and remove only the atlas
     .gitattributes line, keeping the file when other entries exist."""
     repo = _make_git_repo(tmp_path)
     (repo / ".gitattributes").write_text("*.png binary\n", encoding="utf-8")
@@ -1113,9 +1113,9 @@ def test_uninstall_removes_merge_driver_keeps_other_attrs(tmp_path):
 
 
 @pytest.mark.parametrize("exe", [
-    r"C:\Users\First Last\AppData\Roaming\uv\tools\graphifyy\Scripts\python.exe",
+    r"C:\Users\First Last\AppData\Roaming\uv\tools\monarch-atlas\Scripts\python.exe",
     r"C:\Program Files\Python312\python.exe",
-    "/home/first last/.local/share/uv/tools/graphifyy/bin/python",
+    "/home/first last/.local/share/uv/tools/monarch-atlas/bin/python",
 ])
 def test_pinned_python_accepts_paths_containing_spaces(exe, monkeypatch):
     """#2166: a space must not empty the pin.
@@ -1128,7 +1128,7 @@ def test_pinned_python_accepts_paths_containing_spaces(exe, monkeypatch):
     """
     import sys as _sys
 
-    from graphify.hooks import _pinned_python
+    from monarch_atlas.hooks import _pinned_python
 
     monkeypatch.setattr(_sys, "executable", exe)
     assert _pinned_python() == exe, "a path containing a space must still be pinned"
@@ -1147,7 +1147,7 @@ def test_pinned_python_still_rejects_shell_metacharacters(exe, monkeypatch):
     start a substitution, end the single-quoted assignment, or chain a command."""
     import sys as _sys
 
-    from graphify.hooks import _pinned_python
+    from monarch_atlas.hooks import _pinned_python
 
     monkeypatch.setattr(_sys, "executable", exe)
     assert _pinned_python() == "", f"dangerous interpreter path accepted: {exe!r}"
@@ -1159,9 +1159,9 @@ def test_merge_driver_quotes_interpreter_with_spaces(tmp_path, monkeypatch):
     import subprocess
     import sys as _sys
 
-    from graphify.hooks import install
+    from monarch_atlas.hooks import install
 
-    exe = r"C:\Users\First Last\AppData\Roaming\uv\tools\graphifyy\Scripts\python.exe"
+    exe = r"C:\Users\First Last\AppData\Roaming\uv\tools\monarch-atlas\Scripts\python.exe"
     repo = _make_git_repo(tmp_path)
     monkeypatch.setattr(_sys, "executable", exe)
     install(repo)
@@ -1171,16 +1171,16 @@ def test_merge_driver_quotes_interpreter_with_spaces(tmp_path, monkeypatch):
         capture_output=True, text=True, check=True,
     ).stdout.strip()
     assert driver.startswith(f'"{exe}"'), f"interpreter not quoted in merge driver: {driver!r}"
-    assert driver.endswith("-m graphify merge-driver %O %A %B")
+    assert driver.endswith("-m monarch_atlas merge-driver %O %A %B")
 
 
 def test_install_pins_interpreter_path_with_spaces(tmp_path, monkeypatch):
     """#2166 end to end: the emitted hooks must carry the real interpreter, not ''."""
     import sys as _sys
 
-    from graphify.hooks import install
+    from monarch_atlas.hooks import install
 
-    exe = r"C:\Users\First Last\AppData\Roaming\uv\tools\graphifyy\Scripts\python.exe"
+    exe = r"C:\Users\First Last\AppData\Roaming\uv\tools\monarch-atlas\Scripts\python.exe"
     repo = _make_git_repo(tmp_path)
     monkeypatch.setattr(_sys, "executable", exe)
     install(repo)
@@ -1191,79 +1191,79 @@ def test_install_pins_interpreter_path_with_spaces(tmp_path, monkeypatch):
         assert "_PINNED=''" not in script, f"{name} pinned an empty interpreter (#2166)"
 
 
-def test_graphifyrc_parsing(tmp_path):
-    """Test 1: .graphifyrc parsing for valid and invalid values."""
-    from graphify.hooks import _load_graphifyrc
+def test_atlasrc_parsing(tmp_path):
+    """Test 1: .atlasrc parsing for valid and invalid values."""
+    from monarch_atlas.hooks import _load_atlasrc
 
-    rc = tmp_path / ".graphifyrc"
+    rc = tmp_path / ".atlasrc"
     rc.write_text("# comment\nviz_node_limit=0\n", encoding="utf-8")
-    cfg = _load_graphifyrc(tmp_path)
+    cfg = _load_atlasrc(tmp_path)
     assert cfg.get("viz_node_limit") == 0
 
     rc.write_text("viz_node_limit=invalid\n", encoding="utf-8")
     with pytest.raises(ValueError, match="Invalid viz_node_limit"):
-        _load_graphifyrc(tmp_path)
+        _load_atlasrc(tmp_path)
 
 
 def test_no_config_preserves_existing_hook(tmp_path):
-    """Test 2: Without .graphifyrc, generated hooks omit GRAPHIFY_VIZ_NODE_LIMIT export."""
+    """Test 2: Without .atlasrc, generated hooks omit ATLAS_VIZ_NODE_LIMIT export."""
     repo = _make_git_repo(tmp_path)
     install(repo)
     commit_hook = (repo / ".git" / "hooks" / "post-commit").read_text()
     checkout_hook = (repo / ".git" / "hooks" / "post-checkout").read_text()
-    assert "GRAPHIFY_VIZ_NODE_LIMIT" not in commit_hook
-    assert "GRAPHIFY_VIZ_NODE_LIMIT" not in checkout_hook
+    assert "ATLAS_VIZ_NODE_LIMIT" not in commit_hook
+    assert "ATLAS_VIZ_NODE_LIMIT" not in checkout_hook
 
 
 def test_config_baked_into_generated_hook(tmp_path):
-    """Test 3: viz_node_limit from .graphifyrc is baked into both hooks."""
+    """Test 3: viz_node_limit from .atlasrc is baked into both hooks."""
     repo = _make_git_repo(tmp_path)
-    (repo / ".graphifyrc").write_text("viz_node_limit=0\n", encoding="utf-8")
+    (repo / ".atlasrc").write_text("viz_node_limit=0\n", encoding="utf-8")
     install(repo)
 
     commit_hook = (repo / ".git" / "hooks" / "post-commit").read_text()
     checkout_hook = (repo / ".git" / "hooks" / "post-checkout").read_text()
 
-    assert 'export GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-0}"' in commit_hook
-    assert 'export GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-0}"' in checkout_hook
+    assert 'export ATLAS_VIZ_NODE_LIMIT="${ATLAS_VIZ_NODE_LIMIT:-0}"' in commit_hook
+    assert 'export ATLAS_VIZ_NODE_LIMIT="${ATLAS_VIZ_NODE_LIMIT:-0}"' in checkout_hook
 
 
 def test_baked_viz_limit_yields_to_an_explicit_per_run_override(tmp_path):
     """Persisting the project default must not clobber an explicit per-run
-    GRAPHIFY_VIZ_NODE_LIMIT: the baked line uses the `${VAR:-<n>}` default form,
-    so an already-set env value wins (mirrors GRAPHIFY_MAX_WORKERS)."""
+    ATLAS_VIZ_NODE_LIMIT: the baked line uses the `${VAR:-<n>}` default form,
+    so an already-set env value wins (mirrors ATLAS_MAX_WORKERS)."""
     repo = _make_git_repo(tmp_path)
-    (repo / ".graphifyrc").write_text("viz_node_limit=100\n", encoding="utf-8")
+    (repo / ".atlasrc").write_text("viz_node_limit=100\n", encoding="utf-8")
     install(repo)
     commit_hook = (repo / ".git" / "hooks" / "post-commit").read_text()
 
     # default form, not an unconditional assignment that would override the env
-    assert 'export GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-100}"' in commit_hook
-    assert 'export GRAPHIFY_VIZ_NODE_LIMIT="100"' not in commit_hook
+    assert 'export ATLAS_VIZ_NODE_LIMIT="${ATLAS_VIZ_NODE_LIMIT:-100}"' in commit_hook
+    assert 'export ATLAS_VIZ_NODE_LIMIT="100"' not in commit_hook
     # prove the shell semantics: an explicit env value survives the export line
-    line = 'export GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-100}"'
+    line = 'export ATLAS_VIZ_NODE_LIMIT="${ATLAS_VIZ_NODE_LIMIT:-100}"'
     out = subprocess.run(
-        ["sh", "-c", f'GRAPHIFY_VIZ_NODE_LIMIT=7; {line}; echo "$GRAPHIFY_VIZ_NODE_LIMIT"'],
+        ["sh", "-c", f'ATLAS_VIZ_NODE_LIMIT=7; {line}; echo "$ATLAS_VIZ_NODE_LIMIT"'],
         capture_output=True, text=True, check=True,
     )
     assert out.stdout.strip() == "7"
 
 
-def test_status_survives_a_malformed_graphifyrc(tmp_path):
-    """A typo in the committed .graphifyrc must not turn the read-only `status`
+def test_status_survives_a_malformed_atlasrc(tmp_path):
+    """A typo in the committed .atlasrc must not turn the read-only `status`
     diagnostic into a traceback; it reports the problem and continues."""
     repo = _make_git_repo(tmp_path)
     install(repo)
-    (repo / ".graphifyrc").write_text("viz_node_limit=not-an-int\n", encoding="utf-8")
+    (repo / ".atlasrc").write_text("viz_node_limit=not-an-int\n", encoding="utf-8")
 
     result = status(repo)  # must not raise
     assert "installed" in result
 
 
 def test_changing_config_updates_existing_hook(tmp_path):
-    """Test 4: Re-running install updates existing Graphify hook block with new config."""
+    """Test 4: Re-running install updates existing Atlas hook block with new config."""
     repo = _make_git_repo(tmp_path)
-    rc = repo / ".graphifyrc"
+    rc = repo / ".atlasrc"
     rc.write_text("viz_node_limit=5000\n", encoding="utf-8")
     install(repo)
 
@@ -1272,38 +1272,38 @@ def test_changing_config_updates_existing_hook(tmp_path):
 
     assert "updated existing" in result
     commit_hook = (repo / ".git" / "hooks" / "post-commit").read_text()
-    assert 'export GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-0}"' in commit_hook
-    assert 'export GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-5000}"' not in commit_hook
-    assert commit_hook.count("# graphify-hook-start") == 1
+    assert 'export ATLAS_VIZ_NODE_LIMIT="${ATLAS_VIZ_NODE_LIMIT:-0}"' in commit_hook
+    assert 'export ATLAS_VIZ_NODE_LIMIT="${ATLAS_VIZ_NODE_LIMIT:-5000}"' not in commit_hook
+    assert commit_hook.count("# atlas-hook-start") == 1
 
 
 def test_user_hook_content_survives_update(tmp_path):
-    """Test 5: User hook content outside graphify markers survives hook update."""
+    """Test 5: User hook content outside atlas markers survives hook update."""
     repo = _make_git_repo(tmp_path)
     hooks_dir = repo / ".git" / "hooks"
     hooks_dir.mkdir(parents=True, exist_ok=True)
     post_commit = hooks_dir / "post-commit"
     post_commit.write_text(
         "#!/bin/sh\necho 'user content before'\n"
-        "# graphify-hook-start\nold block\n# graphify-hook-end\n"
+        "# atlas-hook-start\nold block\n# atlas-hook-end\n"
         "echo 'user content after'\n",
         encoding="utf-8",
     )
 
-    (repo / ".graphifyrc").write_text("viz_node_limit=0\n", encoding="utf-8")
+    (repo / ".atlasrc").write_text("viz_node_limit=0\n", encoding="utf-8")
     install(repo)
 
     content = post_commit.read_text()
     assert "echo 'user content before'" in content
     assert "echo 'user content after'" in content
-    assert 'export GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-0}"' in content
+    assert 'export ATLAS_VIZ_NODE_LIMIT="${ATLAS_VIZ_NODE_LIMIT:-0}"' in content
     assert "old block" not in content
 
 
 def test_status_reports_configuration(tmp_path):
-    """Test 6: graphify hook status exposes configured viz node limit and detects out-of-date hooks."""
+    """Test 6: atlas hook status exposes configured viz node limit and detects out-of-date hooks."""
     repo = _make_git_repo(tmp_path)
-    rc = repo / ".graphifyrc"
+    rc = repo / ".atlasrc"
     rc.write_text("viz_node_limit=0\n", encoding="utf-8")
     install(repo)
 
@@ -1320,19 +1320,19 @@ def test_status_reports_configuration(tmp_path):
 def test_both_hooks_configured(tmp_path):
     """Test 7: Verify both post-commit and post-checkout hooks receive the setting."""
     repo = _make_git_repo(tmp_path)
-    (repo / ".graphifyrc").write_text("viz_node_limit=42\n", encoding="utf-8")
+    (repo / ".atlasrc").write_text("viz_node_limit=42\n", encoding="utf-8")
     install(repo)
 
     for name in ("post-commit", "post-checkout"):
         hook_text = (repo / ".git" / "hooks" / name).read_text()
-        assert 'export GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-42}"' in hook_text
+        assert 'export ATLAS_VIZ_NODE_LIMIT="${ATLAS_VIZ_NODE_LIMIT:-42}"' in hook_text
 
 
 @pytest.mark.parametrize(
     "name,body",
     [("post-commit", _REBUILD_BODY_COMMIT), ("post-checkout", _REBUILD_BODY_CHECKOUT)],
 )
-def test_rebuild_bodies_tolerate_a_bom_in_graphify_root(name, body):
+def test_rebuild_bodies_tolerate_a_bom_in_atlas_root(name, body):
     """The rebuild must survive a marker written by Windows PowerShell 5.1 (#3028).
 
     `Out-File -Encoding utf8` on 5.1 always writes a UTF-8 BOM, so the path the
@@ -1342,7 +1342,7 @@ def test_rebuild_bodies_tolerate_a_bom_in_graphify_root(name, body):
     `utf-8-sig` drops an optional BOM and is a no-op on a clean file.
     """
     assert "encoding='utf-8-sig'" in body, (
-        f"{name} rebuild body must read .graphify_root BOM-tolerantly"
+        f"{name} rebuild body must read .atlas_root BOM-tolerantly"
     )
     assert "encoding='utf-8')" not in body, (
         f"{name} rebuild body still has a BOM-intolerant read"
@@ -1350,18 +1350,18 @@ def test_rebuild_bodies_tolerate_a_bom_in_graphify_root(name, body):
 
 
 @pytest.mark.parametrize("exe", [
-    "/home/dev/snap/code/259/.local/share/uv/tools/graphifyy/bin/python",
-    "/home/dev/snap/code/current/.local/share/uv/tools/graphifyy/bin/python",
-    "/root/snap/pycharm-community/42/.local/share/uv/tools/graphifyy/bin/python",
+    "/home/dev/snap/code/259/.local/share/uv/tools/monarch-atlas/bin/python",
+    "/home/dev/snap/code/current/.local/share/uv/tools/monarch-atlas/bin/python",
+    "/root/snap/pycharm-community/42/.local/share/uv/tools/monarch-atlas/bin/python",
 ])
 def test_pinned_python_refuses_a_rotating_snap_revision(exe, monkeypatch):
     """A pin is only worth writing if it still resolves tomorrow.
 
-    graphify installed from inside a snap-confined editor lives under
+    atlas installed from inside a snap-confined editor lives under
     ``~/snap/<app>/<revision>/``. Snap swaps that revision on update and prunes the
     old tree, so the pin dies silently — observed across 15 repositories at once
     when an editor snap moved past revision 259. Every commit then printed "could
-    not locate a Python with graphify installed" and the graphs quietly stopped
+    not locate a Python with atlas installed" and the graphs quietly stopped
     tracking the code.
 
     Empty is the documented safe degradation: the hook falls through to its other
@@ -1369,7 +1369,7 @@ def test_pinned_python_refuses_a_rotating_snap_revision(exe, monkeypatch):
     """
     import sys as _sys
 
-    from graphify.hooks import _pinned_python
+    from monarch_atlas.hooks import _pinned_python
 
     monkeypatch.setattr(_sys, "executable", exe)
     assert _pinned_python() == "", "a path under a rotating snap revision must not be pinned"
@@ -1383,10 +1383,10 @@ def test_pinned_python_still_pins_a_stable_path(monkeypatch):
     """
     import sys as _sys
 
-    from graphify.hooks import _pinned_python
+    from monarch_atlas.hooks import _pinned_python
 
     for exe in (
-        "/home/dev/.local/share/uv/tools/graphifyy/bin/python",
+        "/home/dev/.local/share/uv/tools/monarch-atlas/bin/python",
         "/usr/bin/python3",
         "/home/snap/projects/venv/bin/python",
     ):
@@ -1402,18 +1402,18 @@ def test_hook_probes_snap_confined_uv_tool_dirs():
     roots never see it — which is what left the pin as the only thing that could
     ever find such an install.
     """
-    from graphify.hooks import _HOOK_SCRIPT
+    from monarch_atlas.hooks import _HOOK_SCRIPT
 
     assert '"$HOME"/snap/*/[0-9]*/.local/share/uv/tools' in _HOOK_SCRIPT
     assert '"$HOME"/snap/*/current/.local/share/uv/tools' in _HOOK_SCRIPT
 
 
-# ── GRAPHIFY_OUT: the shell gates in front of the rebuild must honour it ─────
+# ── ATLAS_OUT: the shell gates in front of the rebuild must honour it ─────
 #
-# #1423 moved the Python rebuild bodies onto GRAPHIFY_OUT, but the sh that runs
-# BEFORE them still hardcoded graphify-out/: post-checkout exited unless a
-# literal graphify-out/ directory existed, and post-commit's "only graph
-# artifacts changed" filter only recognised graphify-out/ paths. With the
+# #1423 moved the Python rebuild bodies onto ATLAS_OUT, but the sh that runs
+# BEFORE them still hardcoded atlas-out/: post-checkout exited unless a
+# literal atlas-out/ directory existed, and post-commit's "only graph
+# artifacts changed" filter only recognised atlas-out/ paths. With the
 # documented override (#686) the branch-switch rebuild therefore never launched
 # and a commit touching only the renamed output dir triggered a full rebuild.
 # Behaviour of the emitted script under a real sh, per the #2126/#2641
@@ -1438,7 +1438,7 @@ def _emitted_hook_run(repo: Path, script: str, args: list[str], env_extra: dict[
     hook.write_text(rendered, encoding="utf-8", newline="\n")
     env = dict(os.environ)
     env["HOME"] = str(repo.parent / "home")
-    for key in ("GIT_DIR", "GRAPHIFY_OUT", "GRAPHIFY_SKIP_HOOK"):
+    for key in ("GIT_DIR", "ATLAS_OUT", "ATLAS_SKIP_HOOK"):
         env.pop(key, None)
     env.update(env_extra)
     return subprocess.run(
@@ -1476,16 +1476,16 @@ _SH_ONLY = pytest.mark.skipif(
 
 
 @_SH_ONLY
-def test_checkout_hook_rebuilds_when_graphify_out_is_renamed(tmp_path):
+def test_checkout_hook_rebuilds_when_atlas_out_is_renamed(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q")
-    (repo / "custom-out").mkdir()  # the configured output dir; no graphify-out/
-    result = _emitted_hook_run(repo, _CHECKOUT_SCRIPT, ["aaa", "bbb", "1"], {"GRAPHIFY_OUT": "custom-out"})
+    (repo / "custom-out").mkdir()  # the configured output dir; no atlas-out/
+    result = _emitted_hook_run(repo, _CHECKOUT_SCRIPT, ["aaa", "bbb", "1"], {"ATLAS_OUT": "custom-out"})
     assert result.returncode == 0, result.stderr
     assert _LAUNCH_LINE in result.stdout, (
-        "post-checkout exited before the launch: it gates on a literal graphify-out/ "
-        f"instead of $GRAPHIFY_OUT\nstdout={result.stdout!r}\nstderr={result.stderr!r}"
+        "post-checkout exited before the launch: it gates on a literal atlas-out/ "
+        f"instead of $ATLAS_OUT\nstdout={result.stdout!r}\nstderr={result.stderr!r}"
     )
 
 
@@ -1496,15 +1496,15 @@ def test_checkout_hook_still_skips_when_no_graph_was_built(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q")
-    result = _emitted_hook_run(repo, _CHECKOUT_SCRIPT, ["aaa", "bbb", "1"], {"GRAPHIFY_OUT": "custom-out"})
+    result = _emitted_hook_run(repo, _CHECKOUT_SCRIPT, ["aaa", "bbb", "1"], {"ATLAS_OUT": "custom-out"})
     assert result.returncode == 0, result.stderr
     assert _LAUNCH_LINE not in result.stdout
 
 
 @_SH_ONLY
-def test_commit_hook_skips_graph_only_commit_when_graphify_out_is_renamed(tmp_path):
+def test_commit_hook_skips_graph_only_commit_when_atlas_out_is_renamed(tmp_path):
     repo = _repo_with_graph_only_commit(tmp_path, "custom-out")
-    result = _emitted_hook_run(repo, _HOOK_SCRIPT, [], {"GRAPHIFY_OUT": "custom-out"})
+    result = _emitted_hook_run(repo, _HOOK_SCRIPT, [], {"ATLAS_OUT": "custom-out"})
     assert result.returncode == 0, result.stderr
     assert _LAUNCH_LINE not in result.stdout, (
         "post-commit launched a rebuild for a commit that only touched the configured "
@@ -1515,7 +1515,7 @@ def test_commit_hook_skips_graph_only_commit_when_graphify_out_is_renamed(tmp_pa
 @_SH_ONLY
 def test_commit_hook_skips_graph_only_commit_under_default_dir(tmp_path):
     """Control: the default-name case the filter always handled keeps working."""
-    repo = _repo_with_graph_only_commit(tmp_path, "graphify-out")
+    repo = _repo_with_graph_only_commit(tmp_path, "atlas-out")
     result = _emitted_hook_run(repo, _HOOK_SCRIPT, [], {})
     assert result.returncode == 0, result.stderr
     assert _LAUNCH_LINE not in result.stdout
@@ -1530,6 +1530,6 @@ def test_commit_hook_still_rebuilds_for_a_source_change(tmp_path):
     (repo / "custom-out" / "graph.json").write_text("{\"n\": 1}", encoding="utf-8")
     _git(repo, "add", "b.py", "custom-out/graph.json")
     _git(repo, "commit", "-q", "-m", "src+graph")
-    result = _emitted_hook_run(repo, _HOOK_SCRIPT, [], {"GRAPHIFY_OUT": "custom-out"})
+    result = _emitted_hook_run(repo, _HOOK_SCRIPT, [], {"ATLAS_OUT": "custom-out"})
     assert result.returncode == 0, result.stderr
     assert _LAUNCH_LINE in result.stdout, result.stdout

@@ -8,7 +8,7 @@ raw-text fallback captured `Get<int>` verbatim and the call never matched the
 field is the same `generic_name`.
 """
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 SETTINGS_CS = (
     "namespace Demo\n{\n    public class Settings\n    {\n"

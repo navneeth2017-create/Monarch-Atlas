@@ -2,8 +2,8 @@ import json
 import sys
 import networkx as nx
 from pathlib import Path
-from graphify.build import build_from_json
-from graphify.cluster import cluster, cohesion_score, remap_communities_to_previous, score_all
+from monarch_atlas.build import build_from_json
+from monarch_atlas.cluster import cluster, cohesion_score, remap_communities_to_previous, score_all
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -99,7 +99,7 @@ def test_cluster_does_not_write_to_stderr(capsys):
     G = make_graph()
     cluster(G)
     captured = capsys.readouterr()
-    # Allow logging output (starts with [graphify]) but no raw ANSI codes
+    # Allow logging output (starts with [atlas]) but no raw ANSI codes
     for line in captured.err.splitlines():
         assert "\x1b" not in line, f"cluster() wrote ANSI to stderr: {line!r}"
 
@@ -148,7 +148,7 @@ def test_native_leiden_matches_graspologic_wrapper(monkeypatch):
     if not (importlib.util.find_spec("graspologic_native")
             and importlib.util.find_spec("graspologic")):
         pytest.skip("graspologic / graspologic_native not installed")
-    import graphify.cluster as cl
+    import monarch_atlas.cluster as cl
 
     # Two triangles joined by a single edge: an unambiguous 2-community split.
     G = nx.Graph()
@@ -172,7 +172,7 @@ def test_native_leiden_returns_complete_partition():
     if sys.version_info < (3, 13):
         pytest.skip("graspologic-native is required directly on Python 3.13+")
     pytest.importorskip("graspologic_native")
-    import graphify.cluster as cl
+    import monarch_atlas.cluster as cl
 
     G = nx.Graph()
     G.add_node("isolated")
@@ -194,7 +194,7 @@ def test_native_leiden_returns_complete_partition():
 def test_native_leiden_returns_none_when_binding_absent(monkeypatch):
     """When graspologic_native cannot be imported, _native_leiden must return
     None so _partition falls through to the wrapper / Louvain, not crash."""
-    import graphify.cluster as cl
+    import monarch_atlas.cluster as cl
     monkeypatch.setitem(sys.modules, "graspologic_native", None)  # import → ImportError
     stable = nx.Graph()
     stable.add_edge("x", "y")
@@ -227,7 +227,7 @@ def test_partition_is_invariant_to_edge_endpoint_orientation():
     random.Random(0).shuffle(shuffled)
     flipped = build(shuffled, flip=True)
 
-    from graphify.cluster import _partition
+    from monarch_atlas.cluster import _partition
     assert _grouping(_partition(forward, 1.0)) == _grouping(_partition(flipped, 1.0)), (
         "partition drifted with edge-endpoint orientation / insertion order"
     )

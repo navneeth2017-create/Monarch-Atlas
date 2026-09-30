@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify import extract
+from monarch_atlas import extract
 
 
 def _capture_cpp_argv(monkeypatch):

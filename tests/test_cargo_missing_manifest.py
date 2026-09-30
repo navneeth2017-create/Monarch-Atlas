@@ -1,4 +1,4 @@
-"""`graphify extract --cargo` must degrade, not abort, when no Cargo.toml
+"""`atlas extract --cargo` must degrade, not abort, when no Cargo.toml
 exists at the scan root (#3677).
 
 A missing root manifest is an ordinary condition (e.g. a Tauri app keeps its
@@ -22,9 +22,9 @@ _KEY_VARS = ("GEMINI_API_KEY", "GOOGLE_API_KEY", "OPENAI_API_KEY", "OPENAI_BASE_
 
 def _run(repo: Path, *extra: str):
     env = {k: v for k, v in os.environ.items() if k not in _KEY_VARS}
-    env["GRAPHIFY_OUT"] = str(repo / "graphify-out")
+    env["ATLAS_OUT"] = str(repo / "atlas-out")
     return subprocess.run(
-        [PYTHON, "-m", "graphify", "extract", ".", "--code-only", "--cargo", *extra],
+        [PYTHON, "-m", "monarch_atlas", "extract", ".", "--code-only", "--cargo", *extra],
         cwd=repo, capture_output=True, text=True, env=env,
     )
 
@@ -43,7 +43,7 @@ def test_cargo_flag_without_a_manifest_still_writes_the_graph(tmp_path):
     assert "no Cargo.toml at scan root" in out, (
         f"the missing manifest should be reported as a skip, not silently dropped: {out}"
     )
-    graph = repo / "graphify-out" / "graph.json"
+    graph = repo / "atlas-out" / "graph.json"
     assert graph.exists(), "the AST work already done must still be written to graph.json"
     g = json.loads(graph.read_text(encoding="utf-8"))
     labels = [n.get("label") for n in g["nodes"]]
@@ -62,7 +62,7 @@ def test_cargo_flag_with_a_manifest_still_adds_crate_nodes(tmp_path):
     r = _run(repo)
 
     assert r.returncode == 0, f"a valid manifest must extract cleanly: {r.stderr}"
-    graph = repo / "graphify-out" / "graph.json"
+    graph = repo / "atlas-out" / "graph.json"
     assert graph.exists()
     g = json.loads(graph.read_text(encoding="utf-8"))
     node_ids = {n.get("id") for n in g["nodes"]}

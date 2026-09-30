@@ -13,8 +13,8 @@ which is why they do not cover this.
 """
 import pytest
 
-from graphify.build import build
-from graphify.dedup import _remap_hyperedge_members
+from monarch_atlas.build import build
+from monarch_atlas.dedup import _remap_hyperedge_members
 
 
 def _node(nid, label):

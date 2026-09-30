@@ -1,17 +1,17 @@
 """Corrupt graph.json produces an actionable error, not a raw traceback (#1536/#1537).
 
 Three load paths call json.loads on graph.json — build_merge (`--update`),
-affected.load_graph (`graphify prs`), and diagnostics._read_json_file
-(`graphify diagnose`). A truncated / invalid file (incomplete write, power loss,
+affected.load_graph (`atlas prs`), and diagnostics._read_json_file
+(`atlas diagnose`). A truncated / invalid file (incomplete write, power loss,
 manual edit) must raise a clear RuntimeError with recovery guidance at each.
 """
 from __future__ import annotations
 
 import pytest
 
-from graphify.build import build_merge
-from graphify.affected import load_graph
-from graphify.diagnostics import _read_json_file
+from monarch_atlas.build import build_merge
+from monarch_atlas.affected import load_graph
+from monarch_atlas.diagnostics import _read_json_file
 
 _CORRUPT = '{"nodes": [{"id": "a", "labe'   # truncated mid-object
 

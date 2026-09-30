@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify.llm import (
+from monarch_atlas.llm import (
     _FILE_CHAR_CAP,
     _estimate_file_tokens,
     _file_to_text,

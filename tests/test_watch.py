@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 import pytest
 
-from graphify.watch import (
+from monarch_atlas.watch import (
     _notify_only,
     _rebuild_code,
     _WATCHED_EXTENSIONS,
@@ -22,20 +22,20 @@ from graphify.watch import (
 
 def test_notify_only_creates_flag(tmp_path):
     _notify_only(tmp_path)
-    flag = tmp_path / "graphify-out" / "needs_update"
+    flag = tmp_path / "atlas-out" / "needs_update"
     assert flag.exists()
     assert flag.read_text() == "1"
 
 def test_notify_only_creates_flag_dir(tmp_path):
-    # graphify-out dir does not exist yet
-    assert not (tmp_path / "graphify-out").exists()
+    # atlas-out dir does not exist yet
+    assert not (tmp_path / "atlas-out").exists()
     _notify_only(tmp_path)
-    assert (tmp_path / "graphify-out").is_dir()
+    assert (tmp_path / "atlas-out").is_dir()
 
 def test_notify_only_idempotent(tmp_path):
     _notify_only(tmp_path)
     _notify_only(tmp_path)
-    flag = tmp_path / "graphify-out" / "needs_update"
+    flag = tmp_path / "atlas-out" / "needs_update"
     assert flag.read_text() == "1"
 
 
@@ -67,7 +67,7 @@ def test_watched_extensions_excludes_noise():
 # --- _batch_triggers_rebuild / _batch_needs_llm_flag: watch dispatch gating ---
 
 def test_batch_doc_only_deletion_triggers_rebuild(tmp_path):
-    """#2580: deleting ONLY doc files while `graphify watch` runs must trigger
+    """#2580: deleting ONLY doc files while `atlas watch` runs must trigger
     an immediate full rebuild (eviction needs no LLM), not just the
     needs_update flag deferred to the next code event."""
     gone = tmp_path / "docs" / "x.md"
@@ -111,7 +111,7 @@ def test_batch_mixed_deletion_and_modified_doc(tmp_path):
 def test_doc_only_deletion_full_rebuild_evicts_md_nodes(tmp_path):
     """End-to-end pin for #2580: the full rebuild the watcher now triggers on
     a doc-only deletion actually evicts the deleted .md's nodes."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -120,7 +120,7 @@ def test_doc_only_deletion_full_rebuild_evicts_md_nodes(tmp_path):
     doc.write_text("# Notes\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     labels = {n["label"] for n in json.loads(graph_path.read_text(encoding="utf-8"))["nodes"]}
     assert "notes.md" in labels
 
@@ -134,7 +134,7 @@ def test_doc_only_deletion_full_rebuild_evicts_md_nodes(tmp_path):
 
 
 def test_rebuild_code_reports_unclassified_files(tmp_path, capsys):
-    """#3511: `graphify extract` has surfaced files it saw but could not
+    """#3511: `atlas extract` has surfaced files it saw but could not
     classify (no supported extension/shebang) since #1692; the update/watch
     rebuild path never did, so a corpus mostly in an unsupported language
     (e.g. Lean, per the report) rebuilt "successfully" with those files
@@ -156,26 +156,26 @@ def test_rebuild_code_reports_unclassified_files(tmp_path, capsys):
 
 def test_check_update_no_flag_returns_true(tmp_path):
     """check_update returns True and is silent when needs_update flag is absent."""
-    from graphify.watch import check_update
+    from monarch_atlas.watch import check_update
     assert check_update(tmp_path) is True
 
 
 def test_check_update_with_flag_returns_true_and_prints(tmp_path, capsys):
     """check_update returns True and prints notification when flag exists."""
-    from graphify.watch import check_update
-    flag = tmp_path / "graphify-out" / "needs_update"
+    from monarch_atlas.watch import check_update
+    flag = tmp_path / "atlas-out" / "needs_update"
     flag.parent.mkdir(parents=True, exist_ok=True)
     flag.write_text("1")
     result = check_update(tmp_path)
     assert result is True
     out = capsys.readouterr().out
-    assert "graphify --update" in out
+    assert "atlas --update" in out
 
 
 def test_check_update_does_not_clear_flag(tmp_path):
     """check_update never removes the needs_update flag (clearing is LLM's job)."""
-    from graphify.watch import check_update
-    flag = tmp_path / "graphify-out" / "needs_update"
+    from monarch_atlas.watch import check_update
+    flag = tmp_path / "atlas-out" / "needs_update"
     flag.parent.mkdir(parents=True, exist_ok=True)
     flag.write_text("1")
     check_update(tmp_path)
@@ -197,7 +197,7 @@ def test_code_rebuild_preserves_semantic_update_flag(
         tmp_path, no_cluster=no_cluster, acquire_lock=False
     ) is True
 
-    flag = tmp_path / "graphify-out" / "needs_update"
+    flag = tmp_path / "atlas-out" / "needs_update"
     flag.write_text("docs/PRD.md\n", encoding="utf-8")
     if change_topology:
         source.write_text("def after(): pass\n", encoding="utf-8")
@@ -219,7 +219,7 @@ def test_watch_raises_without_watchdog(tmp_path, monkeypatch):
 
     monkeypatch.setattr(builtins, "__import__", mock_import)
 
-    from graphify.watch import watch
+    from monarch_atlas.watch import watch
     with pytest.raises(ImportError, match="watchdog not installed"):
         watch(tmp_path)
 
@@ -229,7 +229,7 @@ def test_watch_raises_without_watchdog(tmp_path, monkeypatch):
 
 @pytest.mark.skipif(sys.platform == "win32", reason="fcntl-only (POSIX)")
 def test_rebuild_lock_writes_pid_with_newline(tmp_path):
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     lock_path = out / ".rebuild.lock"
     with _rebuild_lock(out) as got:
         assert got is True
@@ -242,7 +242,7 @@ def test_rebuild_lock_writes_pid_with_newline(tmp_path):
 def test_rebuild_lock_removed_after_release(tmp_path):
     """GH-858: lock file must be unlinked once the rebuild completes so
     downstream waiters that poll for its absence unblock promptly."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     lock_path = out / ".rebuild.lock"
     with _rebuild_lock(out) as got:
         assert got is True
@@ -253,7 +253,7 @@ def test_rebuild_lock_removed_after_release(tmp_path):
 def test_rebuild_lock_does_not_accumulate_pids_across_runs(tmp_path):
     """GH-858: each acquisition truncates and rewrites the PID line rather
     than appending, so the file never grows into a digit-concatenation."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     lock_path = out / ".rebuild.lock"
     expected = f"{os.getpid()}\n"
     for _ in range(5):
@@ -263,11 +263,11 @@ def test_rebuild_lock_does_not_accumulate_pids_across_runs(tmp_path):
         assert not lock_path.exists()
 
 
-def test_graphify_root_preserves_relative_when_invoked_with_relative_path(tmp_path, monkeypatch):
-    """#777: ``.graphify_root`` stores the user-supplied path (``.``), not the
-    resolved absolute, so a committed ``graphify-out/.graphify_root`` is
+def test_atlas_root_preserves_relative_when_invoked_with_relative_path(tmp_path, monkeypatch):
+    """#777: ``.atlas_root`` stores the user-supplied path (``.``), not the
+    resolved absolute, so a committed ``atlas-out/.atlas_root`` is
     portable across clones and CI runners."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -276,48 +276,48 @@ def test_graphify_root_preserves_relative_when_invoked_with_relative_path(tmp_pa
     monkeypatch.chdir(corpus)
     assert _rebuild_code(Path("."), acquire_lock=False) is True
 
-    saved = (corpus / "graphify-out" / ".graphify_root").read_text(encoding="utf-8")
+    saved = (corpus / "atlas-out" / ".atlas_root").read_text(encoding="utf-8")
     assert saved == ".", (
-        f".graphify_root must preserve the user-supplied path; got {saved!r}"
+        f".atlas_root must preserve the user-supplied path; got {saved!r}"
     )
 
 
-def test_graphify_root_is_resolved_when_graphify_out_is_shared_and_absolute(
+def test_atlas_root_is_resolved_when_atlas_out_is_shared_and_absolute(
     tmp_path, monkeypatch
 ):
-    """#3375: when GRAPHIFY_OUT is an absolute, shared location (the
+    """#3375: when ATLAS_OUT is an absolute, shared location (the
     multi worktree setup from #686), the same marker file is reachable from
     any worktree's CWD, not just the one that wrote it. Preserving a raw
     relative value there, as #777 does for the default, git portable case,
     would make the marker resolve against whichever worktree happens to read
     it later instead of the one that was actually scanned. It must be
     written as an absolute path in this case."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / "lib.py").write_text("def f(): pass\n", encoding="utf-8")
 
-    shared_out = tmp_path / "shared-graphify-out"
-    monkeypatch.setattr("graphify.watch._GRAPHIFY_OUT", str(shared_out))
+    shared_out = tmp_path / "shared-atlas-out"
+    monkeypatch.setattr("monarch_atlas.watch._ATLAS_OUT", str(shared_out))
     monkeypatch.chdir(corpus)
 
     assert _rebuild_code(Path("."), acquire_lock=False) is True
 
-    saved = (shared_out / ".graphify_root").read_text(encoding="utf-8")
+    saved = (shared_out / ".atlas_root").read_text(encoding="utf-8")
     assert saved == str(corpus.resolve()), (
-        f".graphify_root must be resolved when GRAPHIFY_OUT is absolute; got {saved!r}"
+        f".atlas_root must be resolved when ATLAS_OUT is absolute; got {saved!r}"
     )
 
 
-def test_graphify_root_still_preserves_relative_when_graphify_out_is_relative(
+def test_atlas_root_still_preserves_relative_when_atlas_out_is_relative(
     tmp_path, monkeypatch
 ):
-    """Companion to the fix above: an ordinary, relative GRAPHIFY_OUT (the
+    """Companion to the fix above: an ordinary, relative ATLAS_OUT (the
     default, no #686 shared output configured) must keep the #777 behaviour
     of preserving the caller supplied relative path, so this fix only
     changes the shared output case and does not regress the common one."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -326,21 +326,21 @@ def test_graphify_root_still_preserves_relative_when_graphify_out_is_relative(
     monkeypatch.chdir(corpus)
     assert _rebuild_code(Path("."), acquire_lock=False) is True
 
-    saved = (corpus / "graphify-out" / ".graphify_root").read_text(encoding="utf-8")
+    saved = (corpus / "atlas-out" / ".atlas_root").read_text(encoding="utf-8")
     assert saved == ".", (
-        f"a relative GRAPHIFY_OUT must still preserve the caller supplied "
+        f"a relative ATLAS_OUT must still preserve the caller supplied "
         f"path; got {saved!r}"
     )
 
 
 def test_rebuild_code_writes_community_name(tmp_path):
-    """#1808: `graphify update` / _rebuild_code must forward community_labels to
+    """#1808: `atlas update` / _rebuild_code must forward community_labels to
     to_json, so graph.json nodes carry a human-readable community_name (hub-derived
     for a code-only rebuild) — not just a numeric community id. Before the fix,
     _rebuild_code called to_json without community_labels, so the labels a
     cluster-only pass writes were stripped again on every incremental rebuild."""
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -352,7 +352,7 @@ def test_rebuild_code_writes_community_name(tmp_path):
     )
     assert _rebuild_code(corpus, acquire_lock=False) is True
 
-    graph = json.loads((corpus / "graphify-out" / "graph.json").read_text(encoding="utf-8"))
+    graph = json.loads((corpus / "atlas-out" / "graph.json").read_text(encoding="utf-8"))
     clustered = [n for n in graph["nodes"] if n.get("community") is not None]
     assert clustered, "expected clustered nodes in the rebuilt graph"
     assert all(n.get("community_name") for n in clustered), (
@@ -369,7 +369,7 @@ def test_rebuild_code_drops_labels_whose_community_changed(tmp_path):
     fingerprints; _rebuild_code ignored them and hub-filled only *missing* labels,
     so stale names survived and were written back to labels.json as if current."""
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -378,9 +378,9 @@ def test_rebuild_code_drops_labels_whose_community_changed(tmp_path):
     )
     assert _rebuild_code(corpus, acquire_lock=False) is True
 
-    out = corpus / "graphify-out"
-    labels_file = out / ".graphify_labels.json"
-    sig_file = out / ".graphify_labels.json.sig"
+    out = corpus / "atlas-out"
+    labels_file = out / ".atlas_labels.json"
+    sig_file = out / ".atlas_labels.json.sig"
     assert sig_file.exists(), "rebuild must persist membership signatures beside labels"
 
     # Stand in for an LLM naming pass: give every community a distinctive name,
@@ -410,7 +410,7 @@ def test_rebuild_code_drops_labels_whose_community_changed(tmp_path):
         if cid is not None:
             communities.setdefault(str(cid), []).append(node["id"])
 
-    from graphify.cluster import community_member_sigs
+    from monarch_atlas.cluster import community_member_sigs
     expected = {
         str(cid): sig
         for cid, sig in community_member_sigs(
@@ -448,7 +448,7 @@ def test_rebuild_code_keeps_a_visualization_when_over_the_viz_cap(tmp_path, monk
     back to the community-aggregation view in exactly this case; the incremental
     path should too, so the artifact stays both current and present."""
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -464,18 +464,18 @@ def test_rebuild_code_keeps_a_visualization_when_over_the_viz_cap(tmp_path, monk
                 encoding="utf-8",
             )
     assert _rebuild_code(corpus, acquire_lock=False) is True
-    html = corpus / "graphify-out" / "graph.html"
+    html = corpus / "atlas-out" / "graph.html"
     assert html.exists(), "expected a normal (under-cap) rebuild to write graph.html"
     before = html.read_text(encoding="utf-8")
 
     # Drop the cap below the graph's size but above its community count — the
     # real shape of this bug. (A cap under the community count would make the
     # aggregated meta-graph breach it too, which is a different situation.)
-    graph = json.loads((corpus / "graphify-out" / "graph.json").read_text(encoding="utf-8"))
+    graph = json.loads((corpus / "atlas-out" / "graph.json").read_text(encoding="utf-8"))
     communities = {n.get("community") for n in graph["nodes"] if n.get("community") is not None}
     cap = (len(communities) + len(graph["nodes"])) // 2
     assert len(communities) < cap < len(graph["nodes"]), "test corpus cannot exercise the cap"
-    monkeypatch.setenv("GRAPHIFY_VIZ_NODE_LIMIT", str(cap))
+    monkeypatch.setenv("ATLAS_VIZ_NODE_LIMIT", str(cap))
     (corpus / "g9_extra.py").write_text("def extra():\n    return 1\n", encoding="utf-8")
 
     real_replace = os.replace
@@ -486,13 +486,13 @@ def test_rebuild_code_keeps_a_visualization_when_over_the_viz_cap(tmp_path, monk
         return real_replace(src, dst)
 
     with monkeypatch.context() as failed_render:
-        failed_render.setattr("graphify.paths.os.replace", fail_html_publish)
+        failed_render.setattr("monarch_atlas.paths.os.replace", fail_html_publish)
         assert _rebuild_code(corpus, acquire_lock=False) is True
 
     assert html.read_text(encoding="utf-8") == before, (
         "a failed aggregate publish must preserve the previous complete HTML"
     )
-    assert (corpus / "graphify-out" / ".graph.html.stale").exists()
+    assert (corpus / "atlas-out" / ".graph.html.stale").exists()
 
     # With no further code change, the fast path consumes the stale marker and
     # retries the current aggregate rather than trusting the preserved old file.
@@ -504,16 +504,16 @@ def test_rebuild_code_keeps_a_visualization_when_over_the_viz_cap(tmp_path, monk
     )
     after = html.read_text(encoding="utf-8")
     assert after != before, "graph.html must be re-rendered, not left stale"
-    assert not (corpus / "graphify-out" / ".graph.html.stale").exists()
+    assert not (corpus / "atlas-out" / ".graph.html.stale").exists()
 
     # Missing derived output must be repaired by the unchanged-topology path.
     # The repair must reuse persisted communities rather than reclustering or
     # rewriting the graph, report, or label sidecars.
     stable_paths = [
-        corpus / "graphify-out" / "graph.json",
-        corpus / "graphify-out" / "GRAPH_REPORT.md",
-        corpus / "graphify-out" / ".graphify_labels.json",
-        corpus / "graphify-out" / ".graphify_labels.json.sig",
+        corpus / "atlas-out" / "graph.json",
+        corpus / "atlas-out" / "GRAPH_REPORT.md",
+        corpus / "atlas-out" / ".atlas_labels.json",
+        corpus / "atlas-out" / ".atlas_labels.json.sig",
     ]
     stable_bytes = {path: path.read_bytes() for path in stable_paths if path.exists()}
     html.unlink()
@@ -522,7 +522,7 @@ def test_rebuild_code_keeps_a_visualization_when_over_the_viz_cap(tmp_path, monk
         raise AssertionError("unchanged update must not recluster to restore graph.html")
 
     with monkeypatch.context() as recovery_patch:
-        recovery_patch.setattr("graphify.cluster.cluster", fail_cluster)
+        recovery_patch.setattr("monarch_atlas.cluster.cluster", fail_cluster)
         assert _rebuild_code(corpus, acquire_lock=False) is True
 
     assert html.exists(), "unchanged update did not restore missing graph.html"
@@ -531,16 +531,16 @@ def test_rebuild_code_keeps_a_visualization_when_over_the_viz_cap(tmp_path, monk
         assert path.read_bytes() == expected, f"recovery rewrote stable artifact {path.name}"
 
     # The documented kill switch also applies on the unchanged-topology path.
-    monkeypatch.setenv("GRAPHIFY_VIZ_NODE_LIMIT", "0")
+    monkeypatch.setenv("ATLAS_VIZ_NODE_LIMIT", "0")
     assert _rebuild_code(corpus, acquire_lock=False) is True
-    assert not html.exists(), "GRAPHIFY_VIZ_NODE_LIMIT=0 must disable the HTML viz outright"
+    assert not html.exists(), "ATLAS_VIZ_NODE_LIMIT=0 must disable the HTML viz outright"
 
 
 def test_missing_html_recovery_preserves_multigraph_edge_counts(tmp_path, monkeypatch):
     """Aggregated recovery must count every parallel edge in persisted graphs."""
-    from graphify.watch import _reconcile_graph_html
+    from monarch_atlas.watch import _reconcile_graph_html
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     graph = {
         "directed": True,
@@ -556,7 +556,7 @@ def test_missing_html_recovery_preserves_multigraph_edge_counts(tmp_path, monkey
             {"source": "a", "target": "b", "key": "imports", "relation": "imports"},
         ],
     }
-    monkeypatch.setenv("GRAPHIFY_VIZ_NODE_LIMIT", "3")
+    monkeypatch.setenv("ATLAS_VIZ_NODE_LIMIT", "3")
     original_touch = Path.touch
 
     with monkeypatch.context() as failed_render:
@@ -568,7 +568,7 @@ def test_missing_html_recovery_preserves_multigraph_edge_counts(tmp_path, monkey
                 raise PermissionError("simulated marker write failure")
             return original_touch(path, *args, **kwargs)
 
-        failed_render.setattr("graphify.paths.os.replace", fail_replace)
+        failed_render.setattr("monarch_atlas.paths.os.replace", fail_replace)
         failed_render.setattr(Path, "touch", fail_marker_touch)
         assert _reconcile_graph_html(out, graph) is None
 
@@ -587,9 +587,9 @@ def test_html_recovery_succeeds_when_stale_marker_cleanup_fails(
     tmp_path, monkeypatch, capsys,
 ):
     """A current atomic HTML write must not be reported as a rebuild failure."""
-    from graphify.watch import _reconcile_graph_html
+    from monarch_atlas.watch import _reconcile_graph_html
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     html = out / "graph.html"
     html.write_text("stale visualization", encoding="utf-8")
@@ -613,7 +613,7 @@ def test_html_recovery_succeeds_when_stale_marker_cleanup_fails(
             raise PermissionError("simulated marker cleanup failure")
         return original_unlink(path, *args, **kwargs)
 
-    monkeypatch.setenv("GRAPHIFY_VIZ_NODE_LIMIT", "3")
+    monkeypatch.setenv("ATLAS_VIZ_NODE_LIMIT", "3")
     monkeypatch.setattr(Path, "unlink", reject_marker_unlink)
 
     assert _reconcile_graph_html(out, graph) == "rendered"
@@ -623,13 +623,13 @@ def test_html_recovery_succeeds_when_stale_marker_cleanup_fails(
 
 
 def test_update_rebuilds_with_nested_star_gitignore(tmp_path):
-    """#1880: `graphify update` must not emit 0 nodes (and then refuse to
+    """#1880: `atlas update` must not emit 0 nodes (and then refuse to
     overwrite) just because the source tree has a nested `.gitignore` with a
     broad pattern. This was the 0.9.15 symptom of the #1847/#1873 subtree-scoping
     bug: a nested bare `*` zeroed the re-scan, update built 0 nodes, and the
     shrink-guard refused. With scoping fixed the rebuild sees the real files."""
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     (corpus / "src").mkdir(parents=True)
@@ -645,7 +645,7 @@ def test_update_rebuilds_with_nested_star_gitignore(tmp_path):
 
     assert _rebuild_code(corpus, acquire_lock=False) is True
 
-    graph = json.loads((corpus / "graphify-out" / "graph.json").read_text(encoding="utf-8"))
+    graph = json.loads((corpus / "atlas-out" / "graph.json").read_text(encoding="utf-8"))
     sources = {n.get("source_file", "") for n in graph["nodes"]}
     assert graph["nodes"], "update produced 0 nodes on a tree with a nested '*' gitignore (#1880)"
     assert any("src/a.py" in s for s in sources) and any("main.py" in s for s in sources)
@@ -654,13 +654,13 @@ def test_update_rebuilds_with_nested_star_gitignore(tmp_path):
 
 
 def test_update_discovers_newly_added_files_and_dirs(tmp_path):
-    """#1837: after an initial build, a plain `graphify update` (full re-scan, no
+    """#1837: after an initial build, a plain `atlas update` (full re-scan, no
     change-list) must discover brand-new files AND new directories. The reported
     silent no-op was the #1873 nested-gitignore scoping bug zeroing the re-scan;
     this pins the build -> add -> update -> discovered sequence the earlier test
     (single build) did not cover, with a nested `*` scratch dir as a guard."""
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     (corpus / "src").mkdir(parents=True)
@@ -679,7 +679,7 @@ def test_update_discovers_newly_added_files_and_dirs(tmp_path):
     assert _rebuild_code(corpus, acquire_lock=False) is True
 
     sources = {n.get("source_file", "") for n in
-               json.loads((corpus / "graphify-out" / "graph.json").read_text())["nodes"]}
+               json.loads((corpus / "atlas-out" / "graph.json").read_text())["nodes"]}
     assert any("src/new.py" in s for s in sources), "new file not discovered by update (#1837)"
     assert any("monitor/dash.py" in s for s in sources), "new directory not discovered (#1837)"
     assert not any("scratch/junk.py" in s for s in sources)
@@ -691,7 +691,7 @@ def test_rebuild_honors_persisted_excludes(tmp_path):
     the first rebuild silently re-indexed the excluded paths. _rebuild_code now
     reads the persisted build config and re-applies them."""
     import json
-    from graphify.watch import _rebuild_code, _write_build_config
+    from monarch_atlas.watch import _rebuild_code, _write_build_config
 
     corpus = tmp_path / "corpus"
     (corpus / "src").mkdir(parents=True)
@@ -699,11 +699,11 @@ def test_rebuild_honors_persisted_excludes(tmp_path):
     (corpus / "src" / "app.py").write_text("def keep(): return 1\n", encoding="utf-8")
     (corpus / "main.py").write_text("def top(): return 2\n", encoding="utf-8")
     (corpus / "vendor" / "lib.py").write_text("def vendored(): pass\n", encoding="utf-8")
-    _write_build_config(corpus / "graphify-out", excludes=["vendor"])
+    _write_build_config(corpus / "atlas-out", excludes=["vendor"])
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
 
-    graph = json.loads((corpus / "graphify-out" / "graph.json").read_text(encoding="utf-8"))
+    graph = json.loads((corpus / "atlas-out" / "graph.json").read_text(encoding="utf-8"))
     sources = {n.get("source_file", "") for n in graph["nodes"]}
     assert any("src/app.py" in s for s in sources) and any("main.py" in s for s in sources)
     assert not any("vendor/lib.py" in s for s in sources), (
@@ -713,7 +713,7 @@ def test_rebuild_honors_persisted_excludes(tmp_path):
 
 def test_rebuild_honors_persisted_no_gitignore(tmp_path):
     import json
-    from graphify.watch import _rebuild_code, _write_build_config
+    from monarch_atlas.watch import _rebuild_code, _write_build_config
 
     corpus = tmp_path / "corpus"
     generated = corpus / "generated"
@@ -721,12 +721,12 @@ def test_rebuild_honors_persisted_no_gitignore(tmp_path):
     (corpus / ".gitignore").write_text("generated/\n")
     (generated / "gen.py").write_text("def generated(): return 1\n")
     _write_build_config(
-        corpus / "graphify-out", excludes=None, gitignore=False
+        corpus / "atlas-out", excludes=None, gitignore=False
     )
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
 
-    graph = json.loads((corpus / "graphify-out" / "graph.json").read_text())
+    graph = json.loads((corpus / "atlas-out" / "graph.json").read_text())
     sources = {Path(str(node.get("source_file", ""))).as_posix() for node in graph["nodes"]}
     assert any(source.endswith("generated/gen.py") for source in sources)
 
@@ -738,7 +738,7 @@ def test_no_cluster_rebuild_disambiguates_colliding_file_labels(tmp_path):
     including after an incremental no-cluster rebuild.
     """
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     (corpus / "pkg_a").mkdir(parents=True)
@@ -758,7 +758,7 @@ def test_no_cluster_rebuild_disambiguates_colliding_file_labels(tmp_path):
     )
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     graph = json.loads(graph_path.read_text(encoding="utf-8"))
     labels = {
         node["label"]
@@ -786,17 +786,17 @@ def test_no_cluster_rebuild_disambiguates_colliding_file_labels(tmp_path):
     assert labels == {"pkg_a/errors.ts", "pkg_b/errors.ts"}
 
 
-def test_graphify_root_preserves_absolute_when_user_supplied(tmp_path):
-    """When the caller supplies an absolute path, ``.graphify_root`` stores
+def test_atlas_root_preserves_absolute_when_user_supplied(tmp_path):
+    """When the caller supplies an absolute path, ``.atlas_root`` stores
     that absolute form verbatim — preserving explicit-absolute intent."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / "lib.py").write_text("def f(): pass\n", encoding="utf-8")
     assert _rebuild_code(corpus, acquire_lock=False) is True
 
-    saved = (corpus / "graphify-out" / ".graphify_root").read_text(encoding="utf-8")
+    saved = (corpus / "atlas-out" / ".atlas_root").read_text(encoding="utf-8")
     assert saved == str(corpus), (
         f"absolute caller path must be preserved as-is; got {saved!r}"
     )
@@ -805,15 +805,15 @@ def test_graphify_root_preserves_absolute_when_user_supplied(tmp_path):
 def test_rebuild_code_deleted_cwd_without_repo_root_returns_false(tmp_path, monkeypatch, capsys):
     """Detached hooks can inherit a CWD that no longer exists.
 
-    Without GRAPHIFY_REPO_ROOT, the rebuild should fail cleanly before creating
-    relative graphify-out queue/lock files.
+    Without ATLAS_REPO_ROOT, the rebuild should fail cleanly before creating
+    relative atlas-out queue/lock files.
     """
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     old_cwd = Path.cwd()
     gone = tmp_path / "gone"
     gone.mkdir()
-    monkeypatch.delenv("GRAPHIFY_REPO_ROOT", raising=False)
+    monkeypatch.delenv("ATLAS_REPO_ROOT", raising=False)
 
     os.chdir(gone)
     gone.rmdir()
@@ -826,9 +826,9 @@ def test_rebuild_code_deleted_cwd_without_repo_root_returns_false(tmp_path, monk
     assert "current working directory no longer exists" in out
 
 
-def test_rebuild_code_deleted_cwd_uses_graphify_repo_root(tmp_path, monkeypatch):
-    """GRAPHIFY_REPO_ROOT lets detached hook rebuilds recover from a deleted CWD."""
-    from graphify.watch import _rebuild_code
+def test_rebuild_code_deleted_cwd_uses_atlas_repo_root(tmp_path, monkeypatch):
+    """ATLAS_REPO_ROOT lets detached hook rebuilds recover from a deleted CWD."""
+    from monarch_atlas.watch import _rebuild_code
 
     old_cwd = Path.cwd()
     corpus = tmp_path / "corpus"
@@ -836,7 +836,7 @@ def test_rebuild_code_deleted_cwd_uses_graphify_repo_root(tmp_path, monkeypatch)
     (corpus / "lib.py").write_text("def f(): pass\n", encoding="utf-8")
     gone = tmp_path / "gone"
     gone.mkdir()
-    monkeypatch.setenv("GRAPHIFY_REPO_ROOT", str(corpus))
+    monkeypatch.setenv("ATLAS_REPO_ROOT", str(corpus))
 
     os.chdir(gone)
     gone.rmdir()
@@ -847,16 +847,16 @@ def test_rebuild_code_deleted_cwd_uses_graphify_repo_root(tmp_path, monkeypatch)
             no_cluster=True,
         ) is True
         assert Path.cwd().resolve() == corpus.resolve()
-        assert (corpus / "graphify-out" / "graph.json").exists()
+        assert (corpus / "atlas-out" / "graph.json").exists()
     finally:
         os.chdir(old_cwd)
 
 
 def test_rebuild_code_evicts_nodes_from_deleted_files(tmp_path):
-    """#1007: graphify update (_rebuild_code with no changed_paths) must remove
+    """#1007: atlas update (_rebuild_code with no changed_paths) must remove
     nodes and edges from files deleted since the last run."""
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -869,7 +869,7 @@ def test_rebuild_code_evicts_nodes_from_deleted_files(tmp_path):
     )
 
     assert _rebuild_code(corpus, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     node_labels_before = {n["label"] for n in data.get("nodes", [])}
     assert "format_date()" in node_labels_before
@@ -911,7 +911,7 @@ def test_rebuild_code_preserves_hyperedges_for_rebuilt_surviving_source(
     tmp_path, changed_paths
 ):
     """#1755: AST-only updates must not drop semantic hyperedges whose members survive."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -920,7 +920,7 @@ def test_rebuild_code_preserves_hyperedges_for_rebuilt_surviving_source(
     )
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     assert {"doc", "doc_design"} <= {node["id"] for node in data["nodes"]}
     data["hyperedges"] = [{
@@ -963,7 +963,7 @@ def test_rebuild_code_preserves_semantic_edges_from_reextracted_doc(
 ):
     """#1865: AST-only updates must not evict semantic edges whose source_file
     is a re-extracted document; only that source's AST-tier edges are replaced."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -975,7 +975,7 @@ def test_rebuild_code_preserves_semantic_edges_from_reextracted_doc(
     )
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     node_ids = {n["id"] for n in data["nodes"]}
     assert {"auth_token_validation", "login_session_verification"} <= node_ids
@@ -1026,7 +1026,7 @@ def test_rebuild_code_preserves_semantic_edges_from_reextracted_doc(
 )
 def test_rebuild_code_prunes_final_deleted_file(tmp_path, changed_paths):
     """Deleting the final code file must reconcile the existing graph."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -1034,7 +1034,7 @@ def test_rebuild_code_prunes_final_deleted_file(tmp_path, changed_paths):
     only.write_text("def only_fn():\n    return 1\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     _add_unrelated_semantic_pair(graph_path)
     before = json.loads(graph_path.read_text(encoding="utf-8"))
     code_node_id = next(n["id"] for n in before["nodes"] if n.get("source_file") == "only.py")
@@ -1073,7 +1073,7 @@ def test_rebuild_code_prunes_final_deleted_file(tmp_path, changed_paths):
 
 def test_rebuild_code_prunes_renamed_source_not_listed_by_hook(tmp_path):
     """A hook-style rename list may contain only the destination path."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -1081,7 +1081,7 @@ def test_rebuild_code_prunes_renamed_source_not_listed_by_hook(tmp_path):
     old.write_text("def old_fn():\n    return 1\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     _add_unrelated_semantic_pair(graph_path)
 
     renamed = corpus / "renamed.py"
@@ -1106,7 +1106,7 @@ def test_rebuild_code_prunes_renamed_source_not_listed_by_hook(tmp_path):
 
 def test_rebuild_code_normalizes_preserved_source_paths(tmp_path):
     """An incremental rebuild must not treat ./foo.py as a deleted live source."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -1116,7 +1116,7 @@ def test_rebuild_code_normalizes_preserved_source_paths(tmp_path):
     bar.write_text("def bar_fn():\n    return 1\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     for item in data["nodes"] + data["links"]:
         if item.get("source_file") == "foo.py":
@@ -1137,7 +1137,7 @@ def test_rebuild_code_normalizes_preserved_source_paths(tmp_path):
 
 def test_rebuild_code_prunes_renamed_ast_backed_document(tmp_path):
     """Destination-only rename reconciliation also covers AST-backed docs."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -1145,7 +1145,7 @@ def test_rebuild_code_prunes_renamed_ast_backed_document(tmp_path):
     old.write_text("# Old heading\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     renamed = corpus / "renamed.md"
     old.rename(renamed)
     assert _rebuild_code(
@@ -1162,11 +1162,11 @@ def test_rebuild_code_prunes_renamed_ast_backed_document(tmp_path):
 
 
 def test_rebuild_code_evicts_removed_symbol_from_surviving_file(tmp_path):
-    """#1116: graphify update (_rebuild_code with no changed_paths) must prune a
+    """#1116: atlas update (_rebuild_code with no changed_paths) must prune a
     symbol removed from a file that still exists — and its inbound call edge —
     without dropping genuine semantic nodes that share the surviving file."""
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -1179,7 +1179,7 @@ def test_rebuild_code_evicts_removed_symbol_from_surviving_file(tmp_path):
     )
 
     assert _rebuild_code(corpus, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
 
     def labels(d):
@@ -1215,7 +1215,7 @@ def test_rebuild_code_evicts_removed_symbol_from_surviving_file(tmp_path):
     (corpus / "a.py").write_text("def bar(): pass\n", encoding="utf-8")
 
     # No force=True: a symbol removed from a re-extracted file is a legitimate
-    # shrink, so the shrink-guard must let `graphify update` refresh the graph
+    # shrink, so the shrink-guard must let `atlas update` refresh the graph
     # without --force (the lost node belongs to a rebuilt source).
     assert _rebuild_code(corpus, acquire_lock=False) is True
     after_data = json.loads(graph_path.read_text(encoding="utf-8"))
@@ -1233,20 +1233,20 @@ def test_rebuild_code_evicts_removed_symbol_from_surviving_file(tmp_path):
 
 def test_rebuild_code_preupgrade_marker_less_node_one_cycle_lag(tmp_path):
     """#1118 backward-compat: a graph.json built before #1116 has no `_origin`
-    markers. On the first `graphify update` after upgrading, a symbol removed
+    markers. On the first `atlas update` after upgrading, a symbol removed
     from a surviving file is NOT pruned that cycle — its old node carries no
     marker, so the new drop-rule skips it. This is a deliberate one-cycle lag
     (no data loss); it self-heals once the node has been stamped `_origin="ast"`
     (which a full re-extraction does for every surviving symbol)."""
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / "a.py").write_text("def bar(): pass\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
 
     def labels(d):
@@ -1294,7 +1294,7 @@ def test_rebuild_code_preupgrade_marker_less_node_one_cycle_lag(tmp_path):
 def test_rebuild_lock_non_blocking_does_not_clobber_holder(tmp_path):
     """GH-858: a non-blocking caller that fails to acquire the lock must not
     truncate the holder's PID payload."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     lock_path = out / ".rebuild.lock"
     with _rebuild_lock(out) as outer:
         assert outer is True
@@ -1306,8 +1306,8 @@ def test_rebuild_lock_non_blocking_does_not_clobber_holder(tmp_path):
 
 
 def test_rebuild_code_is_idempotent_when_cluster_ids_flap(tmp_path, monkeypatch):
-    from graphify import cluster as cluster_mod
-    from graphify.watch import _rebuild_code
+    from monarch_atlas import cluster as cluster_mod
+    from monarch_atlas.watch import _rebuild_code
 
     src = tmp_path / "app.py"
     src.write_text("def alpha():\n    return 1\n\ndef beta():\n    return alpha()\n", encoding="utf-8")
@@ -1325,8 +1325,8 @@ def test_rebuild_code_is_idempotent_when_cluster_ids_flap(tmp_path, monkeypatch)
     monkeypatch.setattr(cluster_mod, "score_all", lambda _G, comm: {cid: 1.0 for cid in comm})
 
     assert _rebuild_code(tmp_path)
-    graph_path = tmp_path / "graphify-out" / "graph.json"
-    report_path = tmp_path / "graphify-out" / "GRAPH_REPORT.md"
+    graph_path = tmp_path / "atlas-out" / "graph.json"
+    report_path = tmp_path / "atlas-out" / "GRAPH_REPORT.md"
     first_graph = graph_path.read_text(encoding="utf-8")
     first_report = report_path.read_text(encoding="utf-8")
 
@@ -1339,8 +1339,8 @@ def test_rebuild_code_is_idempotent_when_cluster_ids_flap(tmp_path, monkeypatch)
 
 
 def test_rebuild_code_skips_cluster_when_topology_unchanged(tmp_path, monkeypatch):
-    from graphify import cluster as cluster_mod
-    from graphify.watch import _rebuild_code
+    from monarch_atlas import cluster as cluster_mod
+    from monarch_atlas.watch import _rebuild_code
 
     src = tmp_path / "app.py"
     src.write_text("def alpha():\n    return 1\n\ndef beta():\n    return alpha()\n", encoding="utf-8")
@@ -1361,7 +1361,7 @@ def test_rebuild_code_skips_cluster_when_topology_unchanged(tmp_path, monkeypatc
     assert calls["n"] == 1
 
 
-# --- .graphifyignore honored in watch handler (gh-928) ---
+# --- .atlasignore honored in watch handler (gh-928) ---
 
 
 def _watchdog_available() -> bool:
@@ -1373,17 +1373,17 @@ def _watchdog_available() -> bool:
 
 
 @pytest.mark.skipif(not _watchdog_available(), reason="watchdog not installed")
-def test_watch_handler_honors_graphifyignore(tmp_path, monkeypatch):
+def test_watch_handler_honors_atlasignore(tmp_path, monkeypatch):
     """gh-928: the watch Handler must short-circuit paths matching
-    .graphifyignore so busy volumes (node_modules churn, build artefacts,
+    .atlasignore so busy volumes (node_modules churn, build artefacts,
     Time Machine writes, …) don't wake the rebuild pipeline.
     """
     import threading
-    from graphify import watch as watch_mod
+    from monarch_atlas import watch as watch_mod
 
     watch_root = tmp_path / ".hidden-parent" / "corpus"
     watch_root.mkdir(parents=True)
-    (watch_root / ".graphifyignore").write_text("node_modules/\nbuild/\n", encoding="utf-8")
+    (watch_root / ".atlasignore").write_text("node_modules/\nbuild/\n", encoding="utf-8")
     (watch_root / "node_modules").mkdir()
     (watch_root / "build").mkdir()
 
@@ -1419,27 +1419,27 @@ def test_watch_handler_honors_graphifyignore(tmp_path, monkeypatch):
 
 
 @pytest.mark.skipif(not _watchdog_available(), reason="watchdog not installed")
-def test_watch_loads_graphifyignore_once(tmp_path, monkeypatch):
-    """gh-928: .graphifyignore must be parsed exactly once at watch() startup,
+def test_watch_loads_atlasignore_once(tmp_path, monkeypatch):
+    """gh-928: .atlasignore must be parsed exactly once at watch() startup,
     not per filesystem event. Otherwise busy volumes re-read the file
     thousands of times per second.
     """
     import threading
-    from graphify import watch as watch_mod
-    from graphify import detect as detect_mod
+    from monarch_atlas import watch as watch_mod
+    from monarch_atlas import detect as detect_mod
 
-    (tmp_path / ".graphifyignore").write_text("ignored/\n", encoding="utf-8")
+    (tmp_path / ".atlasignore").write_text("ignored/\n", encoding="utf-8")
     (tmp_path / "ignored").mkdir()
 
     calls = {"n": 0}
-    real_loader = detect_mod._load_graphifyignore
+    real_loader = detect_mod._load_atlasignore
 
     def counting_loader(root, **kwargs):
         calls["n"] += 1
         return real_loader(root, **kwargs)
 
     # Patch the symbol the watch module imported at module-load time.
-    monkeypatch.setattr(watch_mod, "_load_graphifyignore", counting_loader)
+    monkeypatch.setattr(watch_mod, "_load_atlasignore", counting_loader)
     monkeypatch.setattr(watch_mod, "_rebuild_code", lambda p, **kw: True)
     monkeypatch.setattr(watch_mod, "_notify_only", lambda p: None)
 
@@ -1451,7 +1451,7 @@ def test_watch_loads_graphifyignore_once(tmp_path, monkeypatch):
     for i in range(50):
         (tmp_path / "ignored" / f"f{i}.py").write_text("x\n", encoding="utf-8")
     time.sleep(0.7)
-    assert calls["n"] == 1, f"_load_graphifyignore called {calls['n']} times; expected 1"
+    assert calls["n"] == 1, f"_load_atlasignore called {calls['n']} times; expected 1"
 
 
 # --- _check_shrink: silent-corruption guard with explicit-deletion bypass ---
@@ -1569,7 +1569,7 @@ def test_rebuild_refuses_loss_from_failed_source(tmp_path, monkeypatch, no_clust
         "create table cliente (id int primary key);\n",
         encoding="utf-8",
     )
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     graph_path = out / "graph.json"
     existing_nodes = [
@@ -1645,7 +1645,7 @@ def test_rebuild_code_prunes_deleted_file_nodes(tmp_path):
     shrink guard and refuses to write; with the fix the deleted file's nodes
     are pruned and graph.json is rewritten.
     """
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     # Set up a minimal "project" with two Python files in a git repo so detect
     # treats it as a real corpus.
@@ -1670,7 +1670,7 @@ def test_rebuild_code_prunes_deleted_file_nodes(tmp_path):
         os.chdir(tmp_path)
         ok = _rebuild_code(tmp_path, no_cluster=True)
         assert ok is True
-        graph_path = tmp_path / "graphify-out" / "graph.json"
+        graph_path = tmp_path / "atlas-out" / "graph.json"
         assert graph_path.exists()
         before = json.loads(graph_path.read_text(encoding="utf-8"))
         before_sources = {n.get("source_file") for n in before.get("nodes", [])}
@@ -1698,7 +1698,7 @@ def test_rebuild_code_prunes_deleted_file_nodes(tmp_path):
 
 def test_rebuild_code_accepts_repo_relative_changed_path_for_subdir_root(tmp_path):
     """#1348: git-hook paths are repo-root-relative even when the graph root is a subdir."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     src = tmp_path / "src"
     src.mkdir()
@@ -1709,7 +1709,7 @@ def test_rebuild_code_accepts_repo_relative_changed_path_for_subdir_root(tmp_pat
     try:
         os.chdir(tmp_path)
         assert _rebuild_code(Path("src"), no_cluster=True, acquire_lock=False) is True
-        graph_path = src / "graphify-out" / "graph.json"
+        graph_path = src / "atlas-out" / "graph.json"
         before = json.loads(graph_path.read_text(encoding="utf-8"))
         assert "old_name()" in {n.get("label") for n in before.get("nodes", [])}
 
@@ -1737,7 +1737,7 @@ def test_rebuild_code_accepts_repo_relative_changed_path_for_subdir_root(tmp_pat
 )
 def test_rebuild_code_subdir_preserves_outside_ast_nodes(tmp_path, changed_paths):
     """A full rebuild of a subdirectory must not prune graph data outside it."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     src = tmp_path / "src"
     src.mkdir()
@@ -1748,7 +1748,7 @@ def test_rebuild_code_subdir_preserves_outside_ast_nodes(tmp_path, changed_paths
     try:
         os.chdir(tmp_path)
         assert _rebuild_code(Path("src"), no_cluster=True, acquire_lock=False) is True
-        graph_path = src / "graphify-out" / "graph.json"
+        graph_path = src / "atlas-out" / "graph.json"
         data = json.loads(graph_path.read_text(encoding="utf-8"))
         inside_id = next(n["id"] for n in data["nodes"] if n.get("label") == "inside_fn()")
         outside_source = "app.py"
@@ -1800,7 +1800,7 @@ def test_rebuild_code_subdir_preserves_outside_ast_nodes(tmp_path, changed_paths
 
 def test_rebuild_code_subdir_survives_absolute_to_relative_invocation(tmp_path):
     """Persisted source paths keep their meaning when invocation style changes."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     src = tmp_path / "src"
     src.mkdir()
@@ -1811,7 +1811,7 @@ def test_rebuild_code_subdir_survives_absolute_to_relative_invocation(tmp_path):
     try:
         os.chdir(tmp_path)
         assert _rebuild_code(src, no_cluster=True, acquire_lock=False) is True
-        graph_path = src / "graphify-out" / "graph.json"
+        graph_path = src / "atlas-out" / "graph.json"
         data = json.loads(graph_path.read_text(encoding="utf-8"))
         data["nodes"].append({
             "id": "local_semantic",
@@ -1839,7 +1839,7 @@ def test_rebuild_code_subdir_survives_absolute_to_relative_invocation(tmp_path):
 
 def test_rebuild_code_prunes_legacy_watch_relative_subdir_source(tmp_path):
     """Pre-rebase subdirectory graphs stored source_file relative to watch_root."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     src = tmp_path / "src"
     src.mkdir()
@@ -1850,7 +1850,7 @@ def test_rebuild_code_prunes_legacy_watch_relative_subdir_source(tmp_path):
     try:
         os.chdir(tmp_path)
         assert _rebuild_code(Path("src"), no_cluster=True, acquire_lock=False) is True
-        graph_path = src / "graphify-out" / "graph.json"
+        graph_path = src / "atlas-out" / "graph.json"
         data = json.loads(graph_path.read_text(encoding="utf-8"))
         for item in data["nodes"] + data["links"]:
             source = item.get("source_file")
@@ -1876,7 +1876,7 @@ def test_rebuild_code_prunes_legacy_watch_relative_subdir_source(tmp_path):
 
 def test_rebuild_code_does_not_update_root_marker_when_write_is_refused(tmp_path, monkeypatch):
     """A rejected candidate keeps the marker paired with the existing graph."""
-    from graphify import watch as watch_mod
+    from monarch_atlas import watch as watch_mod
 
     src = tmp_path / "src"
     src.mkdir()
@@ -1887,7 +1887,7 @@ def test_rebuild_code_does_not_update_root_marker_when_write_is_refused(tmp_path
     try:
         os.chdir(tmp_path)
         assert watch_mod._rebuild_code(src, no_cluster=True, acquire_lock=False) is True
-        marker = src / "graphify-out" / ".graphify_root"
+        marker = src / "atlas-out" / ".atlas_root"
         assert marker.read_text(encoding="utf-8") == str(src)
 
         app.write_text("def after():\n    return 2\n", encoding="utf-8")
@@ -1903,13 +1903,13 @@ def test_rebuild_code_does_not_update_root_marker_when_write_is_refused(tmp_path
 @pytest.mark.skipif(sys.platform == "win32", reason="symlink setup differs on Windows")
 def test_rebuild_code_incremental_rename_preserves_symlink_source_path(tmp_path):
     """Changed files under followed symlinks retain their watched lexical path."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     real = corpus / "real"
     real.mkdir()
-    (corpus / ".graphifyignore").write_text("real/\n", encoding="utf-8")
+    (corpus / ".atlasignore").write_text("real/\n", encoding="utf-8")
     old = real / "old.py"
     old.write_text("def linked_fn():\n    return 1\n", encoding="utf-8")
     (corpus / "linked").symlink_to(real, target_is_directory=True)
@@ -1920,7 +1920,7 @@ def test_rebuild_code_incremental_rename_preserves_symlink_source_path(tmp_path)
         no_cluster=True,
         acquire_lock=False,
     ) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
 
     first = real / "first.py"
     old.rename(first)
@@ -1955,9 +1955,9 @@ def test_rebuild_code_incremental_rename_preserves_symlink_source_path(tmp_path)
 def test_queue_and_drain_pending_round_trip(tmp_path):
     """_queue_pending writes one path per line; _drain_pending reads + unlinks
     and returns the same set of paths."""
-    from graphify.watch import _queue_pending, _drain_pending, _PENDING_FILENAME
+    from monarch_atlas.watch import _queue_pending, _drain_pending, _PENDING_FILENAME
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     paths = [Path("a.py"), Path("sub/b.py"), Path("c.md")]
     _queue_pending(out, paths)
 
@@ -1980,9 +1980,9 @@ def test_queue_and_drain_pending_round_trip(tmp_path):
 def test_drain_pending_dedupes_and_skips_blank_lines(tmp_path):
     """Repeated appends across concurrent contenders must dedupe; partial
     writes leaving blank lines must not poison the merge."""
-    from graphify.watch import _queue_pending, _drain_pending
+    from monarch_atlas.watch import _queue_pending, _drain_pending
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     _queue_pending(out, [Path("a.py"), Path("b.py")])
     _queue_pending(out, [Path("b.py"), Path("c.py")])
     # Simulate a torn write leaving an empty line.
@@ -1995,9 +1995,9 @@ def test_drain_pending_dedupes_and_skips_blank_lines(tmp_path):
 
 def test_queue_pending_noop_on_empty_list(tmp_path):
     """Empty change set must not create an empty .pending_changes file."""
-    from graphify.watch import _queue_pending, _PENDING_FILENAME
+    from monarch_atlas.watch import _queue_pending, _PENDING_FILENAME
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     _queue_pending(out, [])
     assert not (out / _PENDING_FILENAME).exists()
 
@@ -2007,9 +2007,9 @@ def test_rebuild_code_queues_on_lock_contention(tmp_path, monkeypatch, capsys):
     """#1059: when the rebuild lock is held, an incremental hook must queue
     its changed_paths to .pending_changes and print 'queued' instead of
     silently dropping the change set."""
-    from graphify.watch import _rebuild_code, _rebuild_lock, _PENDING_FILENAME
+    from monarch_atlas.watch import _rebuild_code, _rebuild_lock, _PENDING_FILENAME
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
 
     # Hold the lock so the next non-blocking attempt fails. Use a real
@@ -2041,9 +2041,9 @@ def test_rebuild_code_queues_on_lock_contention(tmp_path, monkeypatch, capsys):
 def test_rebuild_code_merges_pending_on_acquire(tmp_path, monkeypatch):
     """#1059: the process that acquires the lock must drain .pending_changes
     and pass the merged change set to the inner rebuild call."""
-    from graphify import watch as watch_mod
+    from monarch_atlas import watch as watch_mod
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     # Pre-populate the queue as if an earlier contender had dropped its paths.
     watch_mod._queue_pending(out, [Path("queued1.py"), Path("queued2.py")])
@@ -2081,10 +2081,10 @@ def test_rebuild_code_merges_pending_on_acquire(tmp_path, monkeypatch):
 def test_rebuild_code_drains_late_arrivals(tmp_path, monkeypatch):
     """#1059: after the primary rebuild, the lock-holder must loop and drain
     any paths queued by hooks that arrived mid-rebuild."""
-    from graphify import watch as watch_mod
-    from graphify.watch import _rebuild_code as orig_rebuild
+    from monarch_atlas import watch as watch_mod
+    from monarch_atlas.watch import _rebuild_code as orig_rebuild
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
 
     inner_calls: list[list[str]] = []
@@ -2119,10 +2119,10 @@ def test_rebuild_code_full_corpus_skips_pending_queue(tmp_path, monkeypatch):
     """#1059: changed_paths=None means a full-corpus rebuild — the queue
     must not be touched on the failure path because there is nothing
     incremental to preserve."""
-    from graphify import watch as watch_mod
-    from graphify.watch import _rebuild_code as orig_rebuild
+    from monarch_atlas import watch as watch_mod
+    from monarch_atlas.watch import _rebuild_code as orig_rebuild
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
 
     # Pre-existing queued paths from an earlier incremental hook.
@@ -2150,7 +2150,7 @@ def test_rebuild_code_full_corpus_skips_pending_queue(tmp_path, monkeypatch):
 
 def test_merge_changed_paths_dedupes_in_order():
     """_merge_changed_paths preserves first-seen order and drops dupes."""
-    from graphify.watch import _merge_changed_paths
+    from monarch_atlas.watch import _merge_changed_paths
 
     merged = _merge_changed_paths(
         [Path("a.py"), Path("b.py")],
@@ -2168,10 +2168,10 @@ def test_rebuild_code_preserves_nodes_from_excluded_but_alive_file(tmp_path, cap
     silently mass-evicted as stale sources (the docs/brainstorms incident: an
     upgrade started honoring .gitignore and evicted 655 nodes whose files were
     present). .gitignore-driven eviction is deliberately gated on a full rebuild
-    (#2495): only .graphifyignore/--exclude matches evict on the hook path.
+    (#2495): only .atlasignore/--exclude matches evict on the hook path.
     """
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     (corpus / "notes").mkdir(parents=True)
@@ -2181,7 +2181,7 @@ def test_rebuild_code_preserves_nodes_from_excluded_but_alive_file(tmp_path, cap
     )
 
     assert _rebuild_code(corpus, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     labels = {n["label"] for n in json.loads(graph_path.read_text(encoding="utf-8"))["nodes"]}
     assert "brainstorm.md" in labels
 
@@ -2201,7 +2201,7 @@ def test_rebuild_code_still_evicts_when_excluded_file_is_also_deleted(tmp_path):
     """The fail-closed preserve must not weaken true-deletion eviction: once the
     excluded file is actually gone from disk, its nodes are evicted as before."""
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     (corpus / "notes").mkdir(parents=True)
@@ -2209,7 +2209,7 @@ def test_rebuild_code_still_evicts_when_excluded_file_is_also_deleted(tmp_path):
     (corpus / "notes" / "brainstorm.md").write_text("# Brainstorm\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
 
     (corpus / "notes" / "brainstorm.md").unlink()
 
@@ -2219,26 +2219,26 @@ def test_rebuild_code_still_evicts_when_excluded_file_is_also_deleted(tmp_path):
     assert "login()" in labels
 
 
-# ── #2495: `graphify update` purges newly-ignored files that still exist ───────
+# ── #2495: `atlas update` purges newly-ignored files that still exist ───────
 
 
-def test_update_prunes_newly_graphifyignored_file(tmp_path, monkeypatch, capsys):
-    """#2495: a file added to .graphifyignore while still on disk must be purged
-    from the graph by a full `graphify update` — nodes, edges, and hyperedges —
+def test_update_prunes_newly_atlasignored_file(tmp_path, monkeypatch, capsys):
+    """#2495: a file added to .atlasignore while still on disk must be purged
+    from the graph by a full `atlas update` — nodes, edges, and hyperedges —
     instead of being preserved forever by the fail-closed keep. The legitimate
-    shrink passes without --force/GRAPHIFY_FORCE, unchanged in-corpus files stay
+    shrink passes without --force/ATLAS_FORCE, unchanged in-corpus files stay
     byte-identical, and the prune is reported distinctly from the fail-closed
     keep line."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
-    monkeypatch.delenv("GRAPHIFY_FORCE", raising=False)
+    monkeypatch.delenv("ATLAS_FORCE", raising=False)
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / "a.py").write_text("def alpha():\n    return 1\n", encoding="utf-8")
     (corpus / "b.py").write_text("def helper():\n    return 2\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     assert any(n.get("source_file") == "b.py" for n in data["nodes"])
     # Inject a hyperedge OWNED by b.py whose members all live in a.py, so only
@@ -2261,7 +2261,7 @@ def test_update_prunes_newly_graphifyignored_file(tmp_path, monkeypatch, capsys)
         )
 
     a_before = _a_items(data)
-    (corpus / ".graphifyignore").write_text("b.py\n", encoding="utf-8")
+    (corpus / ".atlasignore").write_text("b.py\n", encoding="utf-8")
     capsys.readouterr()
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
@@ -2284,16 +2284,16 @@ def test_update_still_prunes_deleted_file_with_ignore_rules_present(tmp_path):
     """Regression guard for #2495: routing ignore-rule evidence through the
     corpus sweep must not weaken plain deletion eviction while unrelated ignore
     rules exist."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
-    (corpus / ".graphifyignore").write_text("unrelated/\n", encoding="utf-8")
+    (corpus / ".atlasignore").write_text("unrelated/\n", encoding="utf-8")
     (corpus / "a.py").write_text("def alpha():\n    return 1\n", encoding="utf-8")
     (corpus / "b.py").write_text("def helper():\n    return 2\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
 
     (corpus / "b.py").unlink()
 
@@ -2310,8 +2310,8 @@ def test_update_keeps_alive_file_dropped_from_corpus_without_ignore_rule(
     evidence — a live ignore rule matching it. A file that leaves the corpus for
     any other reason (filter regression, extractor loss) stays preserved, with
     the fail-closed message."""
-    from graphify import detect as detect_mod
-    from graphify.watch import _rebuild_code
+    from monarch_atlas import detect as detect_mod
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -2319,7 +2319,7 @@ def test_update_keeps_alive_file_dropped_from_corpus_without_ignore_rule(
     (corpus / "b.py").write_text("def helper():\n    return 2\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
 
     real_detect = detect_mod.detect
 
@@ -2346,8 +2346,8 @@ def test_update_keeps_alive_file_dropped_from_corpus_without_ignore_rule(
 def test_update_evicts_semantic_nodes_from_newly_ignored_non_ast_source(tmp_path, capsys):
     """#2495 extends #2051: a non-AST source (.txt) whose semantic nodes evict on
     disk absence must also evict when the file is alive but newly matched by a
-    .graphifyignore rule."""
-    from graphify.watch import _rebuild_code
+    .atlasignore rule."""
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -2356,7 +2356,7 @@ def test_update_evicts_semantic_nodes_from_newly_ignored_non_ast_source(tmp_path
     (corpus / "kept.txt").write_text("Rationale that stays.\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     # No LLM in tests, so inject the semantic layer these .txt files would carry.
     data["nodes"].extend([
@@ -2367,7 +2367,7 @@ def test_update_evicts_semantic_nodes_from_newly_ignored_non_ast_source(tmp_path
     ])
     graph_path.write_text(json.dumps(data), encoding="utf-8")
 
-    (corpus / ".graphifyignore").write_text("notes.txt\n", encoding="utf-8")
+    (corpus / ".atlasignore").write_text("notes.txt\n", encoding="utf-8")
     capsys.readouterr()
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
@@ -2383,8 +2383,8 @@ def test_gitignore_eviction_gated_on_full_rebuild(tmp_path, capsys):
     """#2495 policy split: a .gitignore-only match is preserved fail-closed on an
     incremental rebuild (#1795's motivating case — a deliberately-graphed
     .gitignore'd tree survives the hook path), but an explicit full
-    `graphify update` honors it and purges the file."""
-    from graphify.watch import _rebuild_code
+    `atlas update` honors it and purges the file."""
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     generated = corpus / "generated"
@@ -2393,7 +2393,7 @@ def test_gitignore_eviction_gated_on_full_rebuild(tmp_path, capsys):
     (generated / "gen.py").write_text("def generated():\n    return 2\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     sources = {n.get("source_file") for n in json.loads(graph_path.read_text(encoding="utf-8"))["nodes"]}
     assert "generated/gen.py" in sources
 
@@ -2419,10 +2419,10 @@ def test_gitignore_eviction_gated_on_full_rebuild(tmp_path, capsys):
     assert "newly-ignored file(s)" in capsys.readouterr().out
 
 
-def test_graphifyignore_eviction_applies_to_incremental_rebuilds(tmp_path, capsys):
-    """#2495 policy split, other half: a .graphifyignore match is unambiguous
+def test_atlasignore_eviction_applies_to_incremental_rebuilds(tmp_path, capsys):
+    """#2495 policy split, other half: a .atlasignore match is unambiguous
     graph-level intent and evicts on the incremental (hook) path too."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -2430,9 +2430,9 @@ def test_graphifyignore_eviction_applies_to_incremental_rebuilds(tmp_path, capsy
     (corpus / "vendor.py").write_text("def vendored():\n    return 2\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
 
-    (corpus / ".graphifyignore").write_text("vendor.py\n", encoding="utf-8")
+    (corpus / ".atlasignore").write_text("vendor.py\n", encoding="utf-8")
     capsys.readouterr()
 
     assert _rebuild_code(
@@ -2440,7 +2440,7 @@ def test_graphifyignore_eviction_applies_to_incremental_rebuilds(tmp_path, capsy
     ) is True
     sources = {n.get("source_file") for n in json.loads(graph_path.read_text(encoding="utf-8"))["nodes"]}
     assert "vendor.py" not in sources, (
-        ".graphifyignore match must evict on an incremental rebuild too (#2495)"
+        ".atlasignore match must evict on an incremental rebuild too (#2495)"
     )
     assert "app.py" in sources
     assert "newly-ignored file(s)" in capsys.readouterr().out
@@ -2456,12 +2456,12 @@ _AST_GUIDE_IDS = {"guide", "guide_overview", "guide_setup", "guide_usage"}
 def _seed_semantic_doc_graph(corpus):
     """Build a code-only graph, then add guide.md represented ONLY semantically.
 
-    Mimics a graph produced by the CLI ``graphify . --update`` path: code AST
+    Mimics a graph produced by the CLI ``atlas . --update`` path: code AST
     nodes plus a semantic (LLM) layer for the document — a ``<slug>_doc`` node
     and concept nodes, none carrying the ``_origin`` marker — and NO AST
     heading nodes for the doc.
     """
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus.mkdir()
     (corpus / "app.py").write_text(
@@ -2473,7 +2473,7 @@ def _seed_semantic_doc_graph(corpus):
         "# Overview\n\nIntro.\n\n## Setup\n\nSteps.\n\n## Usage\n\nMore.\n",
         encoding="utf-8",
     )
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     code_node_id = next(
         n["id"] for n in data["nodes"] if n.get("source_file") == "app.py"
@@ -2505,7 +2505,7 @@ def _seed_semantic_doc_graph_concept_only(corpus):
     ONLY concept/rationale nodes (no ``file_type=="document"`` node) — the
     extraction spec's preferred shape for a doc full of named concepts (#1954).
     """
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus.mkdir()
     (corpus / "app.py").write_text(
@@ -2517,7 +2517,7 @@ def _seed_semantic_doc_graph_concept_only(corpus):
         "# Overview\n\nIntro.\n\n## Setup\n\nSteps.\n\n## Usage\n\nMore.\n",
         encoding="utf-8",
     )
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     code_node_id = next(
         n["id"] for n in data["nodes"] if n.get("source_file") == "app.py"
@@ -2544,7 +2544,7 @@ def test_rebuild_code_semantic_doc_not_double_represented_on_full_rebuild(tmp_pa
     (LLM) nodes already represent it. Before the fix the quick-scan minted
     heading nodes ON TOP of the preserved semantic nodes, representing every
     doc twice (~4x bloated graph vs the CLI update path)."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     graph_path = _seed_semantic_doc_graph(corpus)
@@ -2569,7 +2569,7 @@ def test_rebuild_code_concept_only_semantic_doc_not_double_represented_on_full_r
     """#1954: a doc represented ONLY by concept/rationale nodes (no
     file_type=="document" node) must also be recognized as semantic-backed
     and skipped by the AST quick-scan — not just docs with a "document" node."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     graph_path = _seed_semantic_doc_graph_concept_only(corpus)
@@ -2599,7 +2599,7 @@ def test_rebuild_code_incremental_preserves_semantic_doc_nodes_and_edges(
     """#1915: an incremental rebuild whose change set includes a semantic-backed
     doc must not wipe the doc's semantic nodes or their edges — re-extraction
     owns only a source's AST tier (node-level mirror of #1865's edge rule)."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     graph_path = _seed_semantic_doc_graph(corpus)
@@ -2640,7 +2640,7 @@ def test_rebuild_code_incremental_preserves_concept_only_semantic_doc_nodes_and_
     """#1954: incremental analogue — a concept/rationale-only semantic doc
     must not lose its nodes/edges nor get AST-quick-scanned on an incremental
     rebuild, mirroring the #1915 doc-node case above."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     graph_path = _seed_semantic_doc_graph_concept_only(corpus)
@@ -2674,7 +2674,7 @@ def test_rebuild_code_quick_scans_doc_without_semantic_nodes(tmp_path):
     """#09b33b7 guard: a doc with NO semantic layer still gets the AST
     quick-scan so no-LLM corpora keep their heading structure — #1915's
     semantic-supersedes-AST rule must not regress the fallback."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -2682,7 +2682,7 @@ def test_rebuild_code_quick_scans_doc_without_semantic_nodes(tmp_path):
     (corpus / "notes.md").write_text("# Alpha\n\n## Beta\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     ids = {n["id"] for n in json.loads(graph_path.read_text(encoding="utf-8"))["nodes"]}
     assert {"notes", "notes_alpha", "notes_beta"} <= ids
 
@@ -2700,7 +2700,7 @@ def test_full_rebuild_preserves_semantic_backed_doc_ast_layer(tmp_path):
     regenerated this run — the full-rebuild ownership rule must therefore not
     drop them (it owns only rebuilt sources, not everything in watch_root).
     Supersedes the pre-COEXIST #1915 self-heal, which deleted the AST layer."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -2712,7 +2712,7 @@ def test_full_rebuild_preserves_semantic_backed_doc_ast_layer(tmp_path):
     )
     # Initial build quick-scans guide.md (no semantic layer yet): AST nodes.
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     assert _AST_GUIDE_IDS <= {n["id"] for n in data["nodes"]}
     doc_nodes_before = sum(
@@ -2752,7 +2752,7 @@ def test_full_rebuild_regenerates_docs_with_legacy_unstamped_nodes(tmp_path):
     graph) must not fake a semantic layer — _is_ast_tier's shape fallback
     (source_location "L<n>") classifies it as AST, so the doc stays in
     extract_targets, is re-quick-scanned, and comes back fully re-stamped."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -2763,7 +2763,7 @@ def test_full_rebuild_regenerates_docs_with_legacy_unstamped_nodes(tmp_path):
         "# Overview\n\n## Setup\n\n## Usage\n", encoding="utf-8"
     )
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     assert _AST_GUIDE_IDS <= {n["id"] for n in data["nodes"]}
 
@@ -2792,7 +2792,7 @@ def test_full_rebuild_drops_stale_ast_for_reextracted_code(tmp_path):
     """#1116 guard: tier-scoping the full-rebuild ownership rule (#2333) must
     not stop a genuinely re-extracted code file from shedding its stale AST
     nodes — a renamed function's old symbol node still disappears."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -2800,7 +2800,7 @@ def test_full_rebuild_drops_stale_ast_for_reextracted_code(tmp_path):
         "def old_name():\n    return 1\n", encoding="utf-8"
     )
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     ids = {n["id"] for n in json.loads(graph_path.read_text(encoding="utf-8"))["nodes"]}
     assert "app_old_name" in ids
 
@@ -2827,7 +2827,7 @@ def _seed_semantic_doc_graph_code_only(corpus):
     """Like ``_seed_semantic_doc_graph``, but guide.md's semantic layer is ONLY
     code-typed nodes — symbols the LLM surfaced from WITHIN the doc (llm.py
     ``_bind_node_evidence``), with no document/concept node at all (#2014)."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus.mkdir()
     (corpus / "app.py").write_text(
@@ -2839,7 +2839,7 @@ def _seed_semantic_doc_graph_code_only(corpus):
         "# Overview\n\nIntro.\n\n## Setup\n\nSteps.\n\n## Usage\n\nMore.\n",
         encoding="utf-8",
     )
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     code_node_id = next(
         n["id"] for n in data["nodes"] if n.get("source_file") == "app.py"
@@ -2868,7 +2868,7 @@ def test_rebuild_code_code_only_semantic_doc_not_double_represented_on_full_rebu
     file_type gate, so the doc was re-AST-scanned — minting heading nodes AND
     dropping the code-typed semantic nodes (they belonged to a now-rebuilt
     source), silently losing them."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     graph_path = _seed_semantic_doc_graph_code_only(corpus)
@@ -2888,12 +2888,12 @@ def test_rebuild_code_code_only_semantic_doc_not_double_represented_on_full_rebu
 # ── #2051: deleted non-AST sources (docs/papers/images) get evicted ────────────
 
 def test_rebuild_code_evicts_semantic_nodes_from_deleted_non_ast_source(tmp_path):
-    """#2051: a full `graphify update` must evict semantic nodes whose non-AST
+    """#2051: a full `atlas update` must evict semantic nodes whose non-AST
     source file (a .txt/.pdf/.png with no code extractor) was deleted from disk.
     The corpus sweep used to skip every sourceless-of-extractor node, so those
     nodes survived forever and were served as authoritative long after the file
     was gone. Disk absence is the only deletion evidence for such sources."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -2903,7 +2903,7 @@ def test_rebuild_code_evicts_semantic_nodes_from_deleted_non_ast_source(tmp_path
     (corpus / "gone.txt").write_text("Rationale that will be deleted.\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     # No LLM in tests, so inject the semantic layer these .txt files would carry.
     data["nodes"].extend([
@@ -2929,14 +2929,14 @@ def test_rebuild_code_evicts_semantic_nodes_from_deleted_non_ast_source(tmp_path
 
 def test_rebuild_code_preserves_remote_source_across_repeated_updates(tmp_path):
     """#2051 follow-up: a node whose source_file is a URL/virtual scheme
-    (gdoc://, s3://, http://) must survive REPEATED `graphify update`s. Path
+    (gdoc://, s3://, http://) must survive REPEATED `atlas update`s. Path
     normalization on the write side collapses the double slash (`gdoc://x` ->
     `gdoc:/x`), so a literal `"://"` guard matched on the first update but missed
     on the second, dropping the node into the disk-absence eviction branch
     (Path('gdoc:/x').exists() is False) — a data-loss regression from the #2051
     disk-absence sweep. The scheme is now matched with a regex tolerant of the
     collapse."""
-    from graphify.watch import _rebuild_code, _is_remote_source
+    from monarch_atlas.watch import _rebuild_code, _is_remote_source
 
     # unit-level: the guard tolerates the slash collapse and rejects local paths
     assert _is_remote_source("gdoc://abc")
@@ -2951,7 +2951,7 @@ def test_rebuild_code_preserves_remote_source_across_repeated_updates(tmp_path):
     corpus.mkdir()
     (corpus / "app.py").write_text("def handle():\n    return 1\n", encoding="utf-8")
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     data["nodes"].append(
         {"id": "remote_doc", "label": "Remote Spec", "file_type": "document",
@@ -2976,7 +2976,7 @@ def test_rebuild_code_incremental_preserves_present_non_ast_source(tmp_path):
     it as deleted. The old change-set loop routed any present-but-untracked file
     to _add_deleted_source, evicting its semantic nodes AND flipping
     had_explicit_deletions so the shrink guard waved the loss through."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -2984,7 +2984,7 @@ def test_rebuild_code_incremental_preserves_present_non_ast_source(tmp_path):
     (corpus / "spec.txt").write_text("A spec with a semantic layer.\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     data["nodes"].append(
         {"id": "spec_concept", "label": "Spec Concept", "file_type": "concept",
@@ -3011,14 +3011,14 @@ def _seed_graph_with_semantic_layer(corpus: Path) -> Path:
     """Build a real graph for one code file, then inject two semantic nodes
     (no _origin marker) sourced from a non-AST notes.txt, plus a semantic link.
     Returns the graph.json path."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus.mkdir()
     (corpus / "a.py").write_text("def alpha():\n    return 1\n", encoding="utf-8")
     (corpus / "notes.txt").write_text("Design notes with a semantic layer.\n",
                                       encoding="utf-8")
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     assert data["nodes"], "seed rebuild must produce AST code nodes"
     data["nodes"].extend([
@@ -3039,18 +3039,18 @@ def _seed_graph_with_semantic_layer(corpus: Path) -> Path:
 def test_rebuild_refuses_overwrite_when_existing_graph_over_size_cap(
     tmp_path, monkeypatch, capsys
 ):
-    """#2251: an existing graph.json over GRAPHIFY_MAX_GRAPH_BYTES could not be
+    """#2251: an existing graph.json over ATLAS_MAX_GRAPH_BYTES could not be
     READ, which is not license to overwrite it. The old code swallowed the cap
     ValueError, treated the baseline as empty, and collapsed the graph to
     code-only output."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     graph_path = _seed_graph_with_semantic_layer(corpus)
     before = graph_path.read_bytes()
     assert len(before) > 100
 
-    monkeypatch.setenv("GRAPHIFY_MAX_GRAPH_BYTES", "100")
+    monkeypatch.setenv("ATLAS_MAX_GRAPH_BYTES", "100")
     assert _rebuild_code(
         corpus, changed_paths=[Path("a.py")], no_cluster=True, acquire_lock=False,
     ) is False
@@ -3067,7 +3067,7 @@ def test_rebuild_refuses_overwrite_when_existing_graph_corrupt(
 ):
     """#2251: unparseable graph.json (e.g. truncated by a crash) must fail the
     rebuild closed on both write paths, not be overwritten as if absent."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     graph_path = _seed_graph_with_semantic_layer(corpus)
@@ -3087,7 +3087,7 @@ def test_rebuild_refuses_overwrite_when_existing_graph_corrupt(
 def test_rebuild_force_does_not_clobber_unreadable_graph(tmp_path, capsys):
     """#2251: --force means \"accept a shrink\", not \"overwrite a graph that
     could not be read\"."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     graph_path = _seed_graph_with_semantic_layer(corpus)
@@ -3106,7 +3106,7 @@ def test_rebuild_readable_graph_still_preserves_semantic_nodes(tmp_path):
     """Happy-path regression for the #2251 fix: a valid existing graph under the
     default cap still reconciles — the rebuild succeeds and the semantic layer
     survives an incremental code-only update."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     graph_path = _seed_graph_with_semantic_layer(corpus)
@@ -3125,14 +3125,14 @@ def test_rebuild_readable_graph_still_preserves_semantic_nodes(tmp_path):
     ), "semantic link must survive an incremental rebuild"
 
 
-# --- #2342: `graphify update` rebuild must inherit the on-disk directed flag ---
+# --- #2342: `atlas update` rebuild must inherit the on-disk directed flag ---
 
 def test_rebuild_code_inherits_directed_flag_clustered(tmp_path):
-    """#2342: the clustered `graphify update` rebuild path built the graph via
+    """#2342: the clustered `atlas update` rebuild path built the graph via
     build_from_json(result) with no directed= argument, so it always took the
     directed=False default and silently downgraded an existing directed graph.
     """
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -3141,7 +3141,7 @@ def test_rebuild_code_inherits_directed_flag_clustered(tmp_path):
     )
     assert _rebuild_code(corpus, acquire_lock=False) is True
 
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     data["directed"] = True
     graph_path.write_text(json.dumps(data), encoding="utf-8")
@@ -3165,7 +3165,7 @@ def test_rebuild_code_inherits_directed_flag_clustered(tmp_path):
         "directed assertion below is vacuous"
     )
     assert after.get("directed") is True, (
-        "graphify update (clustered) must preserve an existing directed=True graph"
+        "atlas update (clustered) must preserve an existing directed=True graph"
     )
     edge = next(
         e for e in after["links"]
@@ -3180,14 +3180,14 @@ def test_rebuild_code_inherits_directed_flag_no_cluster(tmp_path):
     """#2342, --no-cluster path: candidate_graph_data was built straight from the
     raw merged extraction (`result`), which never carries a directed key, so the
     written graph.json silently lost the flag on every no-cluster update."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / "a.py").write_text("def f(): pass\n", encoding="utf-8")
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
 
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     data["directed"] = True
     graph_path.write_text(json.dumps(data), encoding="utf-8")
@@ -3205,21 +3205,21 @@ def test_rebuild_code_inherits_directed_flag_no_cluster(tmp_path):
         "directed assertion below is vacuous"
     )
     assert after.get("directed") is True, (
-        "graphify update --no-cluster must preserve an existing directed=True graph"
+        "atlas update --no-cluster must preserve an existing directed=True graph"
     )
 
 
 def test_rebuild_code_keeps_undirected_graph_undirected(tmp_path):
     """An existing undirected graph (no directed key, the on-disk default) must
     not be spuriously flipped to directed=True by an update rebuild."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / "a.py").write_text("def f(): pass\n", encoding="utf-8")
     assert _rebuild_code(corpus, acquire_lock=False) is True
 
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     before = json.loads(graph_path.read_text(encoding="utf-8"))
     assert before.get("directed", False) is False
 
@@ -3235,14 +3235,14 @@ def test_rebuild_code_keeps_undirected_graph_undirected(tmp_path):
 def test_rebuild_code_fresh_build_defaults_undirected(tmp_path):
     """No existing graph at all (first build via _rebuild_code) must still
     default to directed=False - #2342's fix only inherits, never invents True."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / "a.py").write_text("def f(): pass\n", encoding="utf-8")
     assert _rebuild_code(corpus, acquire_lock=False) is True
 
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     assert data.get("directed", False) is False
 
@@ -3259,7 +3259,7 @@ def test_incremental_rebuild_preserves_call_to_unchanged_typescript_target(tmp_p
     """
     import json
 
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -3286,7 +3286,7 @@ export function run(): number {
         encoding="utf-8",
     )
 
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
 
     def load_graph():
         return json.loads(graph_path.read_text(encoding="utf-8"))
@@ -3370,7 +3370,7 @@ export function run(): number {
 def _2406_graph(corpus):
     import json
     return json.loads(
-        (corpus / "graphify-out" / "graph.json").read_text(encoding="utf-8")
+        (corpus / "atlas-out" / "graph.json").read_text(encoding="utf-8")
     )
 
 
@@ -3396,7 +3396,7 @@ def _2406_calls(graph):
 
 def _2406_seed(tmp_path, caller_src, target_src="export function shared(): number {\n  return 1;\n}\n"):
     """Build a two-file TS corpus and do the initial full rebuild."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir(parents=True)
@@ -3417,7 +3417,7 @@ _2406_CALLER = (
 
 def test_incremental_rebuild_drops_call_when_import_is_removed(tmp_path):
     """#2406: no import evidence => the persisted target must not be resolved."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2406_seed(tmp_path, _2406_CALLER)
     caller = corpus / "A.ts"
@@ -3442,7 +3442,7 @@ def test_incremental_rebuild_drops_call_when_import_is_removed(tmp_path):
 
 def test_incremental_rebuild_uses_fresh_nodes_when_target_also_changed(tmp_path):
     """#2406: a changed target's persisted symbols must never win over fresh ones."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2406_seed(tmp_path, _2406_CALLER)
     caller, target = corpus / "A.ts", corpus / "B.ts"
@@ -3474,7 +3474,7 @@ def test_incremental_rebuild_uses_fresh_nodes_when_target_also_changed(tmp_path)
 
 def test_incremental_rebuild_context_excludes_deleted_target(tmp_path):
     """#2406: a deleted file cannot remain a resolver target."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2406_seed(tmp_path, _2406_CALLER)
     caller, target = corpus / "A.ts", corpus / "B.ts"
@@ -3496,8 +3496,8 @@ def test_incremental_rebuild_context_excludes_deleted_target(tmp_path):
 
 def test_incremental_rebuild_does_not_reparse_unchanged_targets(tmp_path, monkeypatch):
     """#2406 keeps the incremental contract: only changed files are extracted."""
-    import graphify.extract as extract_mod
-    from graphify.watch import _rebuild_code
+    import monarch_atlas.extract as extract_mod
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2406_seed(tmp_path, _2406_CALLER)
     caller = corpus / "A.ts"
@@ -3520,7 +3520,7 @@ def test_incremental_rebuild_does_not_reparse_unchanged_targets(tmp_path, monkey
 
 def test_incremental_rebuild_matches_full_rebuild_and_does_not_duplicate(tmp_path):
     """#2406: full/incremental parity for edges sourced by the changed file."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2406_seed(tmp_path, _2406_CALLER)
     caller = corpus / "A.ts"
@@ -3542,7 +3542,7 @@ def test_incremental_rebuild_matches_full_rebuild_and_does_not_duplicate(tmp_pat
 
 def test_incremental_rebuild_preserves_python_call_to_unchanged_target(tmp_path):
     """#2406 is language-agnostic: the shared DIRECT cross-file call pass carries it."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -3582,7 +3582,7 @@ _RUST_GENERIC_CALLER = (
 
 
 def _rust_generic_seed(tmp_path):
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir(parents=True)
@@ -3603,7 +3603,7 @@ def _rust_generic_call(graph):
 
 def test_incremental_rust_generic_self_call_uses_unchanged_impl_context(tmp_path):
     """A changed generic caller retains its call into an unchanged impl block."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _rust_generic_seed(tmp_path)
     assert _rust_generic_call(_2406_graph(corpus))
@@ -3621,10 +3621,10 @@ def test_incremental_rust_generic_self_call_uses_unchanged_impl_context(tmp_path
 
 def test_incremental_rust_generic_self_call_legacy_marker_fails_closed(tmp_path):
     """A pre-marker graph does not guess; re-extraction restores the edge."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _rust_generic_seed(tmp_path)
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     legacy = _2406_graph(corpus)
     assert any(node.get("_rust_impl_key") for node in legacy["nodes"])
     for node in legacy["nodes"]:
@@ -3656,7 +3656,7 @@ def test_incremental_rust_generic_self_call_legacy_marker_fails_closed(tmp_path)
 
 def test_incremental_rust_generic_self_call_keeps_module_ambiguity(tmp_path):
     """A collapsed same-file declaration count survives context projection."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -3707,7 +3707,7 @@ def test_incremental_rust_generic_self_call_keeps_module_ambiguity(tmp_path):
 
 
 def _3567_seed(tmp_path, *, singleton=False, grandparent=False):
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir(parents=True)
@@ -3758,7 +3758,7 @@ def test_incremental_ruby_inherited_call_matches_full_build(
     tmp_path, singleton, grandparent, target_file
 ):
     """A changed caller keeps the full-build confidence and target."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _3567_seed(
         tmp_path, singleton=singleton, grandparent=grandparent
@@ -3801,7 +3801,7 @@ _2437_CALLER = (
 
 def _2437_seed(tmp_path, caller_suffix=""):
     """Build the member-call corpus (TS receiver-typed call) and full-rebuild it."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir(parents=True)
@@ -3818,7 +3818,7 @@ _2438_CALLER = (
 
 def _2438_seed(tmp_path, caller_prefix="", target_src="def handler():\n    return 1\n"):
     """Build the indirect-call corpus (py callback into b.py) and full-rebuild it."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir(parents=True)
@@ -3839,7 +3839,7 @@ def _2438_indirects(graph):
 
 def test_incremental_rebuild_preserves_member_call_to_unchanged_target(tmp_path):
     """#2437: a changed caller keeps its `service.ping()` edge into an unchanged file."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2437_seed(tmp_path)
     full = _2406_calls(_2406_graph(corpus))
@@ -3855,7 +3855,7 @@ def test_incremental_rebuild_preserves_member_call_to_unchanged_target(tmp_path)
 
 def test_incremental_rebuild_preserves_indirect_call_to_unchanged_target(tmp_path):
     """#2438: the persisted `_callable` marker keeps `pool.submit(handler)` resolving."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2438_seed(tmp_path)
     full = _2438_indirects(_2406_graph(corpus))
@@ -3872,7 +3872,7 @@ def test_incremental_rebuild_preserves_indirect_call_to_unchanged_target(tmp_pat
 def test_incremental_rebuild_evicts_removed_member_call(tmp_path):
     """#2437: removing the member call from the caller must remove the edge —
     the fix regenerates edges from fresh raw_calls, it never preserves stale ones."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2437_seed(tmp_path)
     assert _2406_calls(_2406_graph(corpus)), "member-call baseline missing"
@@ -3889,7 +3889,7 @@ def test_incremental_rebuild_evicts_removed_member_call(tmp_path):
 
 def test_incremental_rebuild_evicts_member_call_when_target_deleted(tmp_path):
     """#2437: a deleted callee file must not resurrect through the context edges."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2437_seed(tmp_path)
     caller, target = corpus / "A.ts", corpus / "B.ts"
@@ -3910,7 +3910,7 @@ def test_incremental_rebuild_evicts_member_call_when_target_deleted(tmp_path):
 
 def test_incremental_rebuild_evicts_indirect_call_when_target_deleted(tmp_path):
     """#2438: a deleted callback target must not resurrect through the context nodes."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2438_seed(tmp_path)
     caller, target = corpus / "a.py", corpus / "b.py"
@@ -3933,7 +3933,7 @@ def test_incremental_rebuild_callable_guard_excludes_unchanged_data_symbol(tmp_p
     """#2438 keeps the #1566/#2137 guard: a same-named DATA symbol in an unchanged
     file (`handler = 1`) is not `_callable`, so `pool.submit(handler)` must emit no
     indirect_call on the full build or the incremental one."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2438_seed(tmp_path, target_src="handler = 1\n")
     assert _2438_indirects(_2406_graph(corpus)) == []
@@ -3952,10 +3952,10 @@ def test_incremental_rebuild_legacy_graph_without_callable_markers(tmp_path):
     indirect_call, pre-fix behavior) and the next full rebuild self-heals."""
     import json
 
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2438_seed(tmp_path)
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     assert _2438_indirects(_2406_graph(corpus)), "indirect-call baseline missing"
 
     # Simulate a pre-#2438 graph: strip the persisted callability markers.
@@ -3980,7 +3980,7 @@ def test_incremental_rebuild_legacy_graph_without_callable_markers(tmp_path):
 def test_incremental_member_call_parity_and_idempotency(tmp_path):
     """#2437: repeated incremental rebuilds neither duplicate the member-call edge
     nor diverge from a from-scratch build of the same corpus."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2437_seed(tmp_path)
     caller = corpus / "A.ts"
@@ -4000,7 +4000,7 @@ def test_incremental_member_call_parity_and_idempotency(tmp_path):
 def test_incremental_indirect_call_parity_and_idempotency(tmp_path):
     """#2438: repeated incremental rebuilds neither duplicate the indirect_call edge
     nor diverge from a from-scratch build of the same corpus."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = _2438_seed(tmp_path)
     caller = corpus / "a.py"
@@ -4017,17 +4017,17 @@ def test_incremental_indirect_call_parity_and_idempotency(tmp_path):
     assert sorted(_2438_indirects(_2406_graph(fresh))) == sorted(incremental)
 
 
-# --- #2603: absolute .graphify_root must not re-anchor cwd-relative sources ---
+# --- #2603: absolute .atlas_root must not re-anchor cwd-relative sources ---
 
 def test_subfolder_root_marker_preserves_unchanged_nodes(tmp_path, monkeypatch):
     """End-to-end pin for #2603: a graph built from the repo root scoped to a
     subfolder stores source_file relative to the repo root ("src/mod0.py"),
-    while the skill writes an ABSOLUTE subfolder path into .graphify_root.
+    while the skill writes an ABSOLUTE subfolder path into .atlas_root.
     _StoredSourcePaths then anchored the stored paths to the subfolder,
     doubling them (src/src/...), judging every unchanged source deleted, and
     collapsing the graph. The marker must be validated against the stored
     paths before it is trusted as their anchor."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     repo = tmp_path / "repo"
     src = repo / "src"
@@ -4042,7 +4042,7 @@ def test_subfolder_root_marker_preserves_unchanged_nodes(tmp_path, monkeypatch):
     # Build from the repo root scoped to the subfolder (the skill's shape):
     # stored source_file values come out relative to the repo root.
     assert _rebuild_code(Path("src"), acquire_lock=False) is True
-    out = src / "graphify-out"
+    out = src / "atlas-out"
     graph_path = out / "graph.json"
     baseline = json.loads(graph_path.read_text(encoding="utf-8"))
     baseline_ids = {n["id"] for n in baseline["nodes"]}
@@ -4053,7 +4053,7 @@ def test_subfolder_root_marker_preserves_unchanged_nodes(tmp_path, monkeypatch):
     # The skill's Step 1 marker: an absolute path to the SUBFOLDER. The build
     # above wrote the safe relative form; overwrite with the absolute form
     # that reproduces #2603.
-    (out / ".graphify_root").write_text(str(src.resolve()), encoding="utf-8")
+    (out / ".atlas_root").write_text(str(src.resolve()), encoding="utf-8")
 
     # Incremental rebuild the way the post-commit hook calls it: absolute
     # watch_path read from the marker, one changed file.
@@ -4079,7 +4079,7 @@ def test_subfolder_root_marker_preserves_unchanged_nodes(tmp_path, monkeypatch):
 def test_subfolder_marker_still_evicts_a_deleted_file(tmp_path, monkeypatch):
     """The anchor validation must not over-preserve (#2603): once the correct
     anchor is chosen, a genuinely deleted source is still evicted."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     repo = tmp_path / "repo"
     src = repo / "src"
@@ -4090,9 +4090,9 @@ def test_subfolder_marker_still_evicts_a_deleted_file(tmp_path, monkeypatch):
         )
     monkeypatch.chdir(repo)
     assert _rebuild_code(Path("src"), acquire_lock=False) is True
-    out = src / "graphify-out"
+    out = src / "atlas-out"
     graph_path = out / "graph.json"
-    (out / ".graphify_root").write_text(str(src.resolve()), encoding="utf-8")
+    (out / ".atlas_root").write_text(str(src.resolve()), encoding="utf-8")
 
     (src / "mod1.py").unlink()  # a genuine deletion
     assert _rebuild_code(
@@ -4107,7 +4107,7 @@ def test_subfolder_marker_still_evicts_a_deleted_file(tmp_path, monkeypatch):
 def test_subfolder_marker_incremental_matches_cold_build(tmp_path, monkeypatch):
     """Incremental rebuild with the validated anchor produces the same node-id
     set as a cold rebuild of the identical on-disk state (id parity, #2603)."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     repo = tmp_path / "repo"
     src = repo / "src"
@@ -4118,9 +4118,9 @@ def test_subfolder_marker_incremental_matches_cold_build(tmp_path, monkeypatch):
         )
     monkeypatch.chdir(repo)
     assert _rebuild_code(Path("src"), acquire_lock=False) is True
-    out = src / "graphify-out"
+    out = src / "atlas-out"
     graph_path = out / "graph.json"
-    (out / ".graphify_root").write_text(str(src.resolve()), encoding="utf-8")
+    (out / ".atlas_root").write_text(str(src.resolve()), encoding="utf-8")
 
     (src / "mod0.py").write_text(
         "class Thing0:\n    def run(self):\n        return 100\n", encoding="utf-8"
@@ -4145,7 +4145,7 @@ def test_subfolder_marker_incremental_matches_cold_build(tmp_path, monkeypatch):
 
 def test_read_only_events_are_ignored():
     """``opened`` / ``closed_no_write`` mean a file was read, not changed."""
-    from graphify.watch import _is_read_only_event
+    from monarch_atlas.watch import _is_read_only_event
 
     class E:
         def __init__(self, t):
@@ -4160,7 +4160,7 @@ def test_read_only_events_are_ignored():
 def test_read_only_events_with_real_watchdog_classes():
     pytest.importorskip("watchdog.events")
     from watchdog import events as we
-    from graphify.watch import _is_read_only_event
+    from monarch_atlas.watch import _is_read_only_event
 
     assert _is_read_only_event(we.FileOpenedEvent("/tmp/x.py"))
     if hasattr(we, "FileClosedNoWriteEvent"):
@@ -4177,7 +4177,7 @@ def _markdown_reconcile_fixture(tmp_path, files, nodes, links):
         path = corpus / relative_path
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
-    output = corpus / "graphify-out"
+    output = corpus / "atlas-out"
     output.mkdir()
     graph_path = output / "graph.json"
     graph_path.write_text(
@@ -4334,7 +4334,7 @@ def test_markdown_reconcile_preserves_links_on_extraction_error(
     tmp_path, monkeypatch, suffix
 ):
     """A failed parse cannot claim ownership of persisted authored links."""
-    import graphify.extract as extract_module
+    import monarch_atlas.extract as extract_module
 
     source_file = f"a{suffix}"
     corpus, graph_path = _markdown_reconcile_fixture(
@@ -4669,7 +4669,7 @@ def test_relativize_source_files_relativizes_definition_file(tmp_path):
     decl/def pair merges) names a file in the scanned tree exactly like
     `source_file`, so it must be relativized too. Left absolute, the graph
     carries the build machine's paths and cannot be read on another checkout."""
-    from graphify.watch import _relativize_source_files
+    from monarch_atlas.watch import _relativize_source_files
 
     root = tmp_path.resolve()
     payload = {"nodes": [{
@@ -4686,7 +4686,7 @@ def test_relativize_source_files_relativizes_definition_file(tmp_path):
 def test_relativize_source_files_leaves_an_outside_definition_file_alone(tmp_path):
     """The scope guard applies to the new key as well: a path outside the
     watched tree is left as-is rather than being forced under the root."""
-    from graphify.watch import _relativize_source_files
+    from monarch_atlas.watch import _relativize_source_files
 
     root = (tmp_path / "repo").resolve()
     (root).mkdir()
@@ -4706,7 +4706,7 @@ def test_rebase_relative_source_files_rebases_definition_file(tmp_path):
     """Cache-root-relative rebasing moves both keys, so a decl/def node built
     under a cache root keeps a definition site that resolves from the project
     root instead of pointing one directory level off."""
-    from graphify.watch import _rebase_relative_source_files
+    from monarch_atlas.watch import _rebase_relative_source_files
 
     source_root = tmp_path / "cache" / "pkg"
     target_root = tmp_path / "cache"
@@ -4726,7 +4726,7 @@ def test_no_cluster_rebuild_survives_a_permission_error_on_replace(tmp_path, mon
     read earlier in the same process raises PermissionError even on the same
     drive. The no_cluster incremental rebuild path must fall back instead of
     aborting the whole run."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -4740,7 +4740,7 @@ def test_no_cluster_rebuild_survives_a_permission_error_on_replace(tmp_path, mon
     ))
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
 
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     labels = {n["label"] for n in json.loads(graph_path.read_text(encoding="utf-8"))["nodes"]}
     assert "added()" in labels, "the fallback must still land the new content"
 
@@ -4748,7 +4748,7 @@ def test_no_cluster_rebuild_survives_a_permission_error_on_replace(tmp_path, mon
 def test_clustered_rebuild_survives_a_permission_error_on_replace(tmp_path, monkeypatch):
     """Same #2689 fallback requirement for the default (clustered) rebuild
     path, the second of the two watch.py call sites."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -4762,7 +4762,7 @@ def test_clustered_rebuild_survives_a_permission_error_on_replace(tmp_path, monk
     ))
     assert _rebuild_code(corpus, acquire_lock=False) is True
 
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     labels = {n["label"] for n in json.loads(graph_path.read_text(encoding="utf-8"))["nodes"]}
     assert "added()" in labels, "the fallback must still land the new content"
 
@@ -4775,8 +4775,8 @@ def test_full_rebuild_preserves_alive_source_removed_from_detected_corpus(
 ):
     """#3695 invariant 1: An alive source removed from the detected corpus survives
     a full rebuild under fail-closed preservation."""
-    from graphify import detect as detect_mod
-    from graphify.watch import _rebuild_code
+    from monarch_atlas import detect as detect_mod
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -4784,7 +4784,7 @@ def test_full_rebuild_preserves_alive_source_removed_from_detected_corpus(
     (corpus / "b.py").write_text("def beta():\n    return 2\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     nodes_before = {n["id"]: n for n in data["nodes"]}
     assert any(n.get("source_file") == "b.py" for n in nodes_before.values())
@@ -4820,9 +4820,9 @@ def test_ast_ownership_does_not_evict_fail_closed_preserved_node(
     """#3695 invariant 1 & 2: AST ownership pass must not evict AST-tier nodes
     belonging to a source that fail-closed explicitly preserved, even when full_rebuild
     is True and AST ownership filtering evaluates."""
-    from graphify import detect as detect_mod
-    from graphify.watch import _rebuild_code
-    import graphify.watch as watch_mod
+    from monarch_atlas import detect as detect_mod
+    from monarch_atlas.watch import _rebuild_code
+    import monarch_atlas.watch as watch_mod
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -4833,7 +4833,7 @@ def test_ast_ownership_does_not_evict_fail_closed_preserved_node(
     (corpus / "main.py").write_text("def start():\n    pass\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     worker_ast_ids = {
         n["id"] for n in data["nodes"] if n.get("source_file") == "worker.py"
@@ -4878,7 +4878,7 @@ def test_ast_ownership_does_not_evict_fail_closed_preserved_node(
 def test_reextracted_source_still_evicts_stale_ast_nodes(tmp_path):
     """#3695 invariant 2: Genuine re-extracted sources must retain existing AST
     ownership behavior (#1116/#2333), evicting stale AST nodes."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -4887,7 +4887,7 @@ def test_reextracted_source_still_evicts_stale_ast_nodes(tmp_path):
         encoding="utf-8",
     )
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     ids_before = {
         n["id"] for n in json.loads(graph_path.read_text(encoding="utf-8"))["nodes"]
     }
@@ -4915,8 +4915,8 @@ def test_shrink_involving_fail_closed_sources_does_not_deadlock_shrink_guard(
 ):
     """#3695 invariant 3: When a shrink occurs on a rebuild that also has fail-closed
     sources, the shrink guard does not deadlock with 'Refusing to overwrite'."""
-    from graphify import detect as detect_mod
-    from graphify.watch import _rebuild_code
+    from monarch_atlas import detect as detect_mod
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -4927,7 +4927,7 @@ def test_shrink_involving_fail_closed_sources_does_not_deadlock_shrink_guard(
     (corpus / "b.py").write_text("def helper(): pass\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     initial_count = len(json.loads(graph_path.read_text(encoding="utf-8"))["nodes"])
 
     # Now shrink a.py: remove 2 functions (net shrink from initial_count)
@@ -4960,7 +4960,7 @@ def test_shrink_involving_fail_closed_sources_does_not_deadlock_shrink_guard(
 
 def test_requires_symlinks_rebuild_symlink_worker(requires_symlinks, tmp_path, capsys):
     """Exercise true OS symlinks for #3695 on platforms supporting them."""
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
@@ -4979,7 +4979,7 @@ def test_requires_symlinks_rebuild_symlink_worker(requires_symlinks, tmp_path, c
     app.write_text("def main():\n    pass\n", encoding="utf-8")
 
     assert _rebuild_code(corpus, no_cluster=True, acquire_lock=False) is True
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
     data = json.loads(graph_path.read_text(encoding="utf-8"))
     labels = {n.get("label") for n in data["nodes"]}
     assert "run_worker()" in labels

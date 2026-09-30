@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _extract(root: Path) -> dict:

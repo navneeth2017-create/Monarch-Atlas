@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate docs/demo-path.svg: the animated 'path lights up' README hero-companion.
 
-Concept 1 ("The Path Lights Up"): a terminal types `graphify path ...` on the
+Concept 1 ("The Path Lights Up"): a terminal types `atlas path ...` on the
 left; on the right the same answer draws itself as a graph, a pulse igniting
 each hop while the rest of the constellation stays dim.
 
@@ -71,7 +71,7 @@ def e(s): out.append(s)
 # ---------------------------------------------------------------- svg header
 e(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
   f'font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" role="img" '
-  f'aria-label="graphify path query lighting up a knowledge graph">')
+  f'aria-label="atlas path query lighting up a knowledge graph">')
 e('<defs>')
 e(f'<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">'
   f'<stop offset="0" stop-color="{BG}"/><stop offset="1" stop-color="{BG2}"/></linearGradient>')
@@ -87,14 +87,14 @@ e(f'<line x1="{PANEL}" y1="18" x2="{PANEL}" y2="{H-18}" stroke="{DIVIDER}" strok
 # window dots (muted)
 for i in range(3):
     e(f'<circle cx="{28+i*18}" cy="30" r="4.5" fill="{DOTS[i]}"/>')
-e(f'<text x="{PANEL-16}" y="34" text-anchor="end" font-size="10" fill="{TXT_DIM}">graphify</text>')
+e(f'<text x="{PANEL-16}" y="34" text-anchor="end" font-size="10" fill="{TXT_DIM}">atlas</text>')
 
 # ---------------------------------------------------------------- terminal
 line_y = 74
 prompt_x = LX
 # static prompt "$"
 e(f'<text x="{prompt_x}" y="{line_y}" font-size="{FS}" fill="{PROMPT}" font-weight="600">$</text>')
-cmd = 'graphify path "FastAPI" "ModelField"'
+cmd = 'atlas path "FastAPI" "ModelField"'
 cmd_x0 = prompt_x + CHARW * 2
 type_start = 0.35
 type_iv = 0.058

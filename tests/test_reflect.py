@@ -1,8 +1,8 @@
-"""Tests for `graphify reflect` and the work-memory reflection layer.
+"""Tests for `atlas reflect` and the work-memory reflection layer.
 
-`graphify reflect` reads the outcome-tagged Q&A docs that `graphify save-result`
-files into graphify-out/memory/ and writes a deterministic lessons artifact
-(graphify-out/reflections/LESSONS.md) an agent can load next session: preferred
+`atlas reflect` reads the outcome-tagged Q&A docs that `atlas save-result`
+files into atlas-out/memory/ and writes a deterministic lessons artifact
+(atlas-out/reflections/LESSONS.md) an agent can load next session: preferred
 sources, known dead ends, and corrections — optionally grouped by community.
 
 Covers the pure aggregation/rendering helpers (deterministic, no LLM, no graph
@@ -19,8 +19,8 @@ from pathlib import Path
 
 import pytest
 
-from graphify.ingest import save_query_result
-from graphify.reflect import (
+from monarch_atlas.ingest import save_query_result
+from monarch_atlas.reflect import (
     aggregate_lessons,
     lessons_fresh,
     load_memory_docs,
@@ -42,7 +42,7 @@ def _days_before(n: int) -> str:
 
 def _run(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [PYTHON, "-m", "graphify"] + args,
+        [PYTHON, "-m", "monarch_atlas"] + args,
         cwd=cwd, capture_output=True, text=True,
     )
 
@@ -117,7 +117,7 @@ def _write_raw_doc(mem: Path, filename: str, date: str, *, outcome="dead_end",
     mem.mkdir(parents=True, exist_ok=True)
     nodes = nodes or []
     lines = ["---", 'type: "query"', f'date: "{date}"', f'question: "{question}"',
-             'contributor: "graphify"', f'outcome: "{outcome}"']
+             'contributor: "atlas"', f'outcome: "{outcome}"']
     if nodes:
         lines.append("source_nodes: [" + ", ".join(f'"{n}"' for n in nodes) + "]")
     lines += ["---", "", f"# Q: {question}", ""]
@@ -433,7 +433,7 @@ def test_reflect_writes_lessons_file(tmp_path):
 def test_second_session_benefits_from_the_first(tmp_path):
     """The issue's worked example: session 1 records a win and a dead end; session 2
     loads LESSONS.md and sees both."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     mem = out / "memory"
 
     # Session 1: one useful answer, one dead end.
@@ -465,7 +465,7 @@ def test_cli_reflect_end_to_end(tmp_path):
     r2 = _run(["reflect"], cwd)
     assert r2.returncode == 0, r2.stderr
     assert "Reflected 1 memories" in r2.stdout
-    lessons = cwd / "graphify-out" / "reflections" / "LESSONS.md"
+    lessons = cwd / "atlas-out" / "reflections" / "LESSONS.md"
     assert lessons.exists()
     assert "`AuthMiddleware`" in lessons.read_text(encoding="utf-8")
 
@@ -486,7 +486,7 @@ def test_cli_save_result_reads_answer_from_file(tmp_path):
     r = _run(["save-result", "--question", "how does auth work?",
               "--answer-file", str(ans), "--outcome", "useful"], tmp_path)
     assert r.returncode == 0, r.stderr
-    docs = list((tmp_path / "graphify-out" / "memory").glob("*.md"))
+    docs = list((tmp_path / "atlas-out" / "memory").glob("*.md"))
     assert docs, "save-result wrote no memory doc"
     body = docs[0].read_text(encoding="utf-8")
     assert "line one" in body and "line two" in body
@@ -500,11 +500,11 @@ def test_cli_save_result_requires_answer_or_answer_file(tmp_path):
 
 
 def test_cli_reflect_cold_start_writes_empty_lessons(tmp_path):
-    """First run with no graphify-out/memory/ still succeeds and writes a valid doc."""
+    """First run with no atlas-out/memory/ still succeeds and writes a valid doc."""
     r = _run(["reflect"], tmp_path)
     assert r.returncode == 0, r.stderr
     assert "Reflected 0 memories" in r.stdout
-    lessons = tmp_path / "graphify-out" / "reflections" / "LESSONS.md"
+    lessons = tmp_path / "atlas-out" / "reflections" / "LESSONS.md"
     assert lessons.exists()
     assert "from 0 session memories" in lessons.read_text(encoding="utf-8")
 
@@ -558,18 +558,18 @@ def test_cli_node_existence_gate_drops_stale_node_end_to_end(tmp_path):
 
 
 def _make_graph(tmp_path: Path) -> Path:
-    """Build a minimal graph.json + analysis/labels in tmp_path/graphify-out/.
+    """Build a minimal graph.json + analysis/labels in tmp_path/atlas-out/.
 
     Mirrors tests/test_cli_export.py::_make_graph so reflect can be exercised with a
     real community structure.
     """
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     extraction = json.loads((FIXTURES / "extraction.json").read_text())
-    from graphify.build import build_from_json
-    from graphify.cluster import cluster, score_all
-    from graphify.analyze import god_nodes, surprising_connections
-    from graphify.export import to_json
+    from monarch_atlas.build import build_from_json
+    from monarch_atlas.cluster import cluster, score_all
+    from monarch_atlas.analyze import god_nodes, surprising_connections
+    from monarch_atlas.export import to_json
 
     G = build_from_json(extraction)
     communities = cluster(G)
@@ -577,12 +577,12 @@ def _make_graph(tmp_path: Path) -> Path:
     gods = god_nodes(G)
     surprises = surprising_connections(G, communities)
     to_json(G, communities, str(out / "graph.json"))
-    (out / ".graphify_analysis.json").write_text(json.dumps({
+    (out / ".atlas_analysis.json").write_text(json.dumps({
         "communities": {str(k): v for k, v in communities.items()},
         "cohesion": {str(k): v for k, v in cohesion.items()},
         "gods": gods, "surprises": surprises,
     }))
-    (out / ".graphify_labels.json").write_text(
+    (out / ".atlas_labels.json").write_text(
         json.dumps({str(cid): f"Community {cid}" for cid in communities})
     )
     return out
@@ -628,15 +628,15 @@ def test_lessons_fresh_false_when_graph_newer(tmp_path):
     assert lessons_fresh(out, mem, graph) is False
 
 
-@pytest.mark.parametrize("sidecar_name", [".graphify_analysis.json", ".graphify_labels.json"])
+@pytest.mark.parametrize("sidecar_name", [".atlas_analysis.json", ".atlas_labels.json"])
 def test_lessons_fresh_false_when_graph_sidecar_newer(tmp_path, sidecar_name):
     import os
     mem = tmp_path / "memory"; mem.mkdir()
     (mem / "q.md").write_text("x", encoding="utf-8")
     out = tmp_path / "LESSONS.md"; out.write_text("y", encoding="utf-8")
     graph = tmp_path / "graph.json"; graph.write_text("{}", encoding="utf-8")
-    analysis = tmp_path / ".graphify_analysis.json"; analysis.write_text("{}", encoding="utf-8")
-    labels = tmp_path / ".graphify_labels.json"; labels.write_text("{}", encoding="utf-8")
+    analysis = tmp_path / ".atlas_analysis.json"; analysis.write_text("{}", encoding="utf-8")
+    labels = tmp_path / ".atlas_labels.json"; labels.write_text("{}", encoding="utf-8")
     for p in [mem / "q.md", graph, analysis, labels]:
         os.utime(p, (1000, 1000))
     os.utime(out, (1500, 1500))
@@ -683,7 +683,7 @@ def test_cli_reflect_if_stale_reruns_when_labels_newer(tmp_path):
     assert first.returncode == 0, first.stderr
 
     lessons = out / "reflections" / "LESSONS.md"
-    labels_path = out / ".graphify_labels.json"
+    labels_path = out / ".atlas_labels.json"
     labels = json.loads(labels_path.read_text(encoding="utf-8"))
     labels[community] = "Renamed Topic"
     labels_path.write_text(json.dumps(labels), encoding="utf-8")
@@ -712,14 +712,14 @@ def test_dead_ends_and_corrections_dedupe_by_question():
     assert agg["corrections"][0]["correction"] == "SHA-256"  # recency wins
 
 
-# --- work-memory overlay sidecar (.graphify_learning.json) --------------------
+# --- work-memory overlay sidecar (.atlas_learning.json) --------------------
 #
 # The sidecar is a DERIVED experiential layer written next to graph.json; the
 # durable structural truth in graph.json is never stamped with learning_* fields.
 # It projects the reflect aggregate (preferred/tentative/contested) into a
 # per-node-id map with a code fingerprint for staleness and a provenance trail.
 
-from graphify.reflect import (  # noqa: E402
+from monarch_atlas.reflect import (  # noqa: E402
     LEARNING_SIDECAR_NAME,
     build_learning_overlay,
     load_learning_overlay,
@@ -753,10 +753,10 @@ def _overlay_corpus(mem: Path) -> None:
 
 
 def test_sidecar_write_classifies_and_keys_by_canonical_id(tmp_path):
-    """reflect with a graph writes .graphify_learning.json next to graph.json with
+    """reflect with a graph writes .atlas_learning.json next to graph.json with
     the preferred/tentative/contested nodes keyed by canonical node id; the
     dead-end-only node is NOT present; score/uses/provenance are carried."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     src = tmp_path / "auth.py"
     src.write_text("def login(): pass\n", encoding="utf-8")
     _overlay_graph(out, [
@@ -795,7 +795,7 @@ def test_sidecar_write_classifies_and_keys_by_canonical_id(tmp_path):
 def test_sidecar_is_byte_identical_across_runs(tmp_path):
     """Two reflect runs on identical input + fixed `now` produce a byte-identical
     sidecar (sorted keys, stable indent)."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     src = tmp_path / "auth.py"
     src.write_text("def login(): pass\n", encoding="utf-8")
     _overlay_graph(out, [
@@ -817,7 +817,7 @@ def test_sidecar_is_byte_identical_across_runs(tmp_path):
 def test_loader_marks_entry_stale_when_source_file_changes(tmp_path):
     """load_learning_overlay recomputes the file fingerprint: unchanged source =>
     stale=False; an edit to that source => stale=True."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     src = tmp_path / "auth.py"
     src.write_text("def login(): pass\n", encoding="utf-8")
     _overlay_graph(out, [
@@ -837,13 +837,13 @@ def test_loader_marks_entry_stale_when_source_file_changes(tmp_path):
     assert after["auth_login"]["stale"] is True
 
 
-def test_relative_source_file_not_spuriously_stale_in_graphify_out_layout(tmp_path):
-    """Regression: with a RELATIVE source_file and graph.json under graphify-out/,
+def test_relative_source_file_not_spuriously_stale_in_atlas_out_layout(tmp_path):
+    """Regression: with a RELATIVE source_file and graph.json under atlas-out/,
     a freshly-written verdict must NOT be flagged stale. The fingerprint resolves
     the file relative to the PROJECT root (tmp_path), not graph.json's own dir
-    (graphify-out/) — otherwise every node looked unfindable and was marked stale.
+    (atlas-out/) — otherwise every node looked unfindable and was marked stale.
     The edit case must still flip stale=True."""
-    out = tmp_path / "graphify-out"          # graph.json lives here
+    out = tmp_path / "atlas-out"          # graph.json lives here
     (tmp_path / "auth.py").write_text("def login(): pass\n", encoding="utf-8")
     _overlay_graph(out, [
         # source_file is RELATIVE to the project root (tmp_path), as `extract` writes it
@@ -863,9 +863,9 @@ def test_relative_source_file_not_spuriously_stale_in_graphify_out_layout(tmp_pa
     assert load_learning_overlay(out / "graph.json")["auth_login"]["stale"] is True
 
 
-def test_relative_source_file_resolved_via_graphify_root_marker(tmp_path):
-    """When a committed .graphify_root marker records the project root (e.g. a
-    GRAPHIFY_OUT override pointing the output dir elsewhere), the fingerprint
+def test_relative_source_file_resolved_via_atlas_root_marker(tmp_path):
+    """When a committed .atlas_root marker records the project root (e.g. a
+    ATLAS_OUT override pointing the output dir elsewhere), the fingerprint
     resolves source_file against that root, not graph.json's own dir."""
     proj = tmp_path / "project"
     proj.mkdir()
@@ -874,7 +874,7 @@ def test_relative_source_file_resolved_via_graphify_root_marker(tmp_path):
     _overlay_graph(out, [
         {"id": "auth_login", "label": "login()", "source_file": "auth.py", "community": 0},
     ])
-    (out / ".graphify_root").write_text(str(proj), encoding="utf-8")  # the marker
+    (out / ".atlas_root").write_text(str(proj), encoding="utf-8")  # the marker
     mem = out / "memory"
     _write_raw_doc(mem, "a.md", "2026-05-01", outcome="useful", nodes=["login()"])
     _write_raw_doc(mem, "b.md", "2026-05-10", outcome="useful", nodes=["login()"])
@@ -892,7 +892,7 @@ def test_flat_layout_does_not_match_same_named_file_one_dir_up(tmp_path):
     (proj / "util.py").write_text("REAL = 1\n", encoding="utf-8")
     # A decoy same-named file in the parent dir (tmp_path / util.py).
     (tmp_path / "util.py").write_text("DECOY = 2\n", encoding="utf-8")
-    # Flat layout: graph.json sits directly in proj/ (not a graphify-out subdir).
+    # Flat layout: graph.json sits directly in proj/ (not a atlas-out subdir).
     proj.joinpath("graph.json").write_text(json.dumps({
         "nodes": [{"id": "util", "label": "util.py", "source_file": "util.py",
                    "source_location": "L1", "community": 0}],
@@ -916,7 +916,7 @@ def test_flat_layout_does_not_match_same_named_file_one_dir_up(tmp_path):
 def test_provenance_capped_to_five_most_recent(tmp_path):
     """A node cited by >5 useful results keeps exactly the 5 most-recent in
     provenance (recent-first)."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     src = tmp_path / "auth.py"
     src.write_text("x\n", encoding="utf-8")
     _overlay_graph(out, [
@@ -939,7 +939,7 @@ def test_provenance_capped_to_five_most_recent(tmp_path):
 def test_ambiguous_or_unresolved_citation_is_skipped(tmp_path):
     """A label shared by >1 node id (ambiguous) or absent from the graph
     (unresolved) is skipped — it can't be displayed against a single node."""
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     _overlay_graph(out, [
         {"id": "dup_a", "label": "Dup", "source_file": "", "community": 0},
         {"id": "dup_b", "label": "Dup", "source_file": "", "community": 0},

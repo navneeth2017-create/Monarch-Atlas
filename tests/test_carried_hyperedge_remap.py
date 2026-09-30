@@ -11,8 +11,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from graphify.build import build_from_json, build_merge
-from graphify.export import to_json
+from monarch_atlas.build import build_from_json, build_merge
+from monarch_atlas.export import to_json
 
 # `alpha_a` and `alpha_concept_long_variant_id` label-dedup into one node.
 NODES = [

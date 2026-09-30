@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from graphify import llm
+from monarch_atlas import llm
 
 _ENVELOPE = {
     "type": "result",
@@ -261,7 +261,7 @@ def test_extraction_instructions_ride_in_user_turn(fake_claude):
     llm._call_claude_cli("UNIQUE_SOURCE_MARKER", max_tokens=8192)
     sent = fake_claude.call_args.kwargs["input"]
     # schema text from _extraction_system
-    assert "graphify semantic extraction agent" in sent
+    assert "atlas semantic extraction agent" in sent
     # explicit imperative appended before the source
     assert "output ONLY the JSON object" in sent
     # the caller's source payload is preserved
@@ -280,14 +280,14 @@ def test_user_turn_preserves_untrusted_source_guardrails(fake_claude):
 # Newer Claude Code CLIs treat a bare file-dump prompt as an agentic task and
 # REPORT the extraction in prose instead of returning JSON, so the graph comes
 # out empty and adaptive-retry bisects forever. When the CLI supports
-# `--json-schema`, graphify constrains the output shape structurally so the
+# `--json-schema`, atlas constrains the output shape structurally so the
 # model must emit the object regardless of framing. Older CLIs that predate the
 # flag fall back to the user-turn prompt, unchanged.
 
 
 def test_json_schema_flag_added_when_cli_supports_it(monkeypatch, fake_claude):
     """When the CLI advertises --json-schema, it is passed with a schema that
-    pins the top-level {nodes, edges} shape graphify parses."""
+    pins the top-level {nodes, edges} shape atlas parses."""
     monkeypatch.setattr(llm, "_claude_cli_supports_json_schema", lambda cmd: True)
     llm._call_claude_cli("dummy source", max_tokens=8192)
     argv = fake_claude.call_args.args[0]
@@ -411,37 +411,37 @@ def test_non_windows_uses_bare_claude(monkeypatch):
     assert argv[0] == "claude"
 
 
-# ---------- GRAPHIFY_API_TIMEOUT honoured by all backends ----------
+# ---------- ATLAS_API_TIMEOUT honoured by all backends ----------
 
 
 def test_resolve_api_timeout_default(monkeypatch):
-    monkeypatch.delenv("GRAPHIFY_API_TIMEOUT", raising=False)
+    monkeypatch.delenv("ATLAS_API_TIMEOUT", raising=False)
     assert llm._resolve_api_timeout() == 600.0
 
 
 def test_resolve_api_timeout_env_override(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "45")
+    monkeypatch.setenv("ATLAS_API_TIMEOUT", "45")
     assert llm._resolve_api_timeout() == 45.0
 
 
 def test_resolve_api_timeout_ignores_invalid(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "not-a-number")
+    monkeypatch.setenv("ATLAS_API_TIMEOUT", "not-a-number")
     assert llm._resolve_api_timeout() == 600.0
 
 
 def test_resolve_api_timeout_ignores_nonpositive(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "0")
+    monkeypatch.setenv("ATLAS_API_TIMEOUT", "0")
     assert llm._resolve_api_timeout() == 600.0
 
 
 def test_claude_cli_extraction_honours_timeout(monkeypatch, fake_claude):
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "30")
+    monkeypatch.setenv("ATLAS_API_TIMEOUT", "30")
     llm._call_claude_cli("dummy", max_tokens=8192)
     assert fake_claude.call_args.kwargs["timeout"] == 30.0
 
 
 def test_call_llm_claude_cli_branch_honours_timeout(monkeypatch, fake_claude):
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "30")
+    monkeypatch.setenv("ATLAS_API_TIMEOUT", "30")
     llm._call_llm(prompt="x", backend="claude-cli", max_tokens=10)
     assert fake_claude.call_args.kwargs["timeout"] == 30.0
 

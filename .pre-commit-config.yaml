@@ -2,7 +2,7 @@
 # One-off across the tree: uv run pre-commit run --all-files
 #
 # The skillgen hook is the local anti-drift guard. The skill files under
-# graphify/ are generated from the fragments in tools/skillgen/; a hand-edit to
+# atlas/ are generated from the fragments in tools/skillgen/; a hand-edit to
 # a generated file fails this check the same way CI does. Run
 # `python -m tools.skillgen` then `--bless` to regenerate after a fragment edit.
 repos:

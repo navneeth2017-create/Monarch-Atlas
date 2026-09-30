@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify.extract import _normalize_cpp_cli, extract_cpp
+from monarch_atlas.extract import _normalize_cpp_cli, extract_cpp
 
 pytest.importorskip("tree_sitter_cpp")
 

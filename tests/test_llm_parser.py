@@ -4,7 +4,7 @@ subprocess argv shape introduced in the hollow-response fix.
 These tests cover:
 - The four parser failure modes described in PR #1062
 - Extraction instructions delivered in the user turn (Claude Code >= 2.1)
-- The GRAPHIFY_CLAUDE_CLI_MODEL env-var passthrough
+- The ATLAS_CLAUDE_CLI_MODEL env-var passthrough
 """
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from graphify import llm
+from monarch_atlas import llm
 
 
 # ---------- _parse_llm_json: the four canonical failure modes ----------
@@ -106,7 +106,7 @@ def test_instructions_ride_in_user_turn_not_system_prompt(mock_run, _which):
     --system-prompt.
 
     History: the original hollow-response cause was --append-system-prompt
-    layering graphify's prompt on top of Claude Code's default agent prompt;
+    layering atlas's prompt on top of Claude Code's default agent prompt;
     the first fix switched to --system-prompt (replace). But newer Claude Code
     CLIs (>= ~2.1) don't treat --system-prompt as the sole authority — they
     keep the coding-agent context and reply conversationally to a bare file
@@ -122,7 +122,7 @@ def test_instructions_ride_in_user_turn_not_system_prompt(mock_run, _which):
     )
     assert "--append-system-prompt" not in argv
     sent = mock_run.call_args.kwargs["input"]
-    assert "graphify semantic extraction agent" in sent
+    assert "atlas semantic extraction agent" in sent
     assert "output ONLY the JSON object" in sent
     assert "payload" in sent
 
@@ -130,8 +130,8 @@ def test_instructions_ride_in_user_turn_not_system_prompt(mock_run, _which):
 @patch("shutil.which", return_value="/usr/local/bin/claude")
 @patch("subprocess.run")
 def test_model_env_var_adds_model_flag(mock_run, _which, monkeypatch):
-    """GRAPHIFY_CLAUDE_CLI_MODEL must be forwarded to claude -p --model."""
-    monkeypatch.setenv("GRAPHIFY_CLAUDE_CLI_MODEL", "haiku")
+    """ATLAS_CLAUDE_CLI_MODEL must be forwarded to claude -p --model."""
+    monkeypatch.setenv("ATLAS_CLAUDE_CLI_MODEL", "haiku")
     mock_run.return_value.returncode = 0
     mock_run.return_value.stdout = _make_envelope({"nodes": [], "edges": [], "hyperedges": []})
     mock_run.return_value.stderr = ""
@@ -146,7 +146,7 @@ def test_model_env_var_adds_model_flag(mock_run, _which, monkeypatch):
 def test_no_model_flag_when_env_var_unset(mock_run, _which, monkeypatch):
     """Default behaviour: when the env var is not set, --model is not
     added so claude-cli's own default kicks in."""
-    monkeypatch.delenv("GRAPHIFY_CLAUDE_CLI_MODEL", raising=False)
+    monkeypatch.delenv("ATLAS_CLAUDE_CLI_MODEL", raising=False)
     mock_run.return_value.returncode = 0
     mock_run.return_value.stdout = _make_envelope({"nodes": [], "edges": [], "hyperedges": []})
     mock_run.return_value.stderr = ""

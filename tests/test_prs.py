@@ -1,4 +1,4 @@
-"""Tests for graphify/prs.py."""
+"""Tests for monarch_atlas/prs.py."""
 from __future__ import annotations
 
 import json
@@ -9,7 +9,7 @@ from unittest.mock import patch, MagicMock
 import networkx as nx
 import pytest
 
-from graphify.prs import (
+from monarch_atlas.prs import (
     PRInfo,
     _classify,
     _gh,
@@ -226,7 +226,7 @@ class TestFetchWorktrees:
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = porcelain
-        with patch("graphify.prs.subprocess.run", return_value=mock_result):
+        with patch("monarch_atlas.prs.subprocess.run", return_value=mock_result):
             mapping = fetch_worktrees()
         assert mapping == {
             "main": "/home/user/proj",
@@ -249,7 +249,7 @@ class TestFetchWorktrees:
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = porcelain
-        with patch("graphify.prs.subprocess.run", return_value=mock_result):
+        with patch("monarch_atlas.prs.subprocess.run", return_value=mock_result):
             mapping = fetch_worktrees()
         # Only feature-x should be mapped, and it should point to its own worktree
         assert mapping == {"feature-x": "/home/user/proj-feature"}
@@ -259,7 +259,7 @@ class TestFetchWorktrees:
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = ""
-        with patch("graphify.prs.subprocess.run", return_value=mock_result):
+        with patch("monarch_atlas.prs.subprocess.run", return_value=mock_result):
             mapping = fetch_worktrees()
         assert mapping == {}
 
@@ -267,13 +267,13 @@ class TestFetchWorktrees:
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stdout = ""
-        with patch("graphify.prs.subprocess.run", return_value=mock_result):
+        with patch("monarch_atlas.prs.subprocess.run", return_value=mock_result):
             mapping = fetch_worktrees()
         assert mapping == {}
 
     def test_subprocess_failure_returns_empty_dict(self):
         with patch(
-            "graphify.prs.subprocess.run",
+            "monarch_atlas.prs.subprocess.run",
             side_effect=FileNotFoundError("git not found"),
         ):
             mapping = fetch_worktrees()
@@ -336,7 +336,7 @@ class TestFormatPrsText:
 class TestDetectDefaultBranch:
     def test_gh_returns_main(self):
         with patch(
-            "graphify.prs._gh",
+            "monarch_atlas.prs._gh",
             return_value={"defaultBranchRef": {"name": "main"}},
         ):
             assert _detect_default_branch() == "main"
@@ -345,8 +345,8 @@ class TestDetectDefaultBranch:
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = "refs/remotes/origin/develop\n"
-        with patch("graphify.prs._gh", return_value=None), patch(
-            "graphify.prs.subprocess.run", return_value=mock_result
+        with patch("monarch_atlas.prs._gh", return_value=None), patch(
+            "monarch_atlas.prs.subprocess.run", return_value=mock_result
         ):
             assert _detect_default_branch() == "develop"
 
@@ -354,8 +354,8 @@ class TestDetectDefaultBranch:
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stdout = ""
-        with patch("graphify.prs._gh", return_value=None), patch(
-            "graphify.prs.subprocess.run", return_value=mock_result
+        with patch("monarch_atlas.prs._gh", return_value=None), patch(
+            "monarch_atlas.prs.subprocess.run", return_value=mock_result
         ):
             assert _detect_default_branch() == "main"
 
@@ -364,14 +364,14 @@ class TestDetectDefaultBranch:
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = "refs/remotes/origin/trunk\n"
-        with patch("graphify.prs._gh", return_value={}), patch(
-            "graphify.prs.subprocess.run", return_value=mock_result
+        with patch("monarch_atlas.prs._gh", return_value={}), patch(
+            "monarch_atlas.prs.subprocess.run", return_value=mock_result
         ):
             assert _detect_default_branch() == "trunk"
 
     def test_git_timeout_returns_main(self):
-        with patch("graphify.prs._gh", return_value=None), patch(
-            "graphify.prs.subprocess.run",
+        with patch("monarch_atlas.prs._gh", return_value=None), patch(
+            "monarch_atlas.prs.subprocess.run",
             side_effect=subprocess.TimeoutExpired("git", 5),
         ):
             assert _detect_default_branch() == "main"
@@ -379,7 +379,7 @@ class TestDetectDefaultBranch:
     def test_repo_positional_arg_in_gh_repo_view(self):
         """gh repo view takes repo positionally; --repo is not a valid flag (#3318)."""
         with patch(
-            "graphify.prs._gh",
+            "monarch_atlas.prs._gh",
             return_value={"defaultBranchRef": {"name": "main"}},
         ) as mock_gh:
             branch = _detect_default_branch(repo="owner/repo")
@@ -391,8 +391,8 @@ class TestDetectDefaultBranch:
     def test_explicit_repo_gh_fails_returns_main_without_local_git(self):
         """When an explicit repo is supplied and gh fails, return 'main' without
         inspecting the local repository (#3318)."""
-        with patch("graphify.prs._gh", return_value=None), \
-             patch("graphify.prs.subprocess.run") as mock_git:
+        with patch("monarch_atlas.prs._gh", return_value=None), \
+             patch("monarch_atlas.prs.subprocess.run") as mock_git:
             branch = _detect_default_branch(repo="owner/repo")
         assert branch == "main"
         mock_git.assert_not_called()
@@ -478,7 +478,7 @@ class TestSubprocessOutputEncoding:
     def test_detect_default_branch_decodes_output_as_utf8(self):
         # Force the git symbolic-ref fallback: gh returns None -> git subprocess runs.
         completed = MagicMock(returncode=0, stdout="refs/remotes/origin/v8\n", stderr="")
-        with patch("graphify.prs._gh", return_value=None), \
+        with patch("monarch_atlas.prs._gh", return_value=None), \
              patch("subprocess.run", return_value=completed) as mock_run:
             _detect_default_branch()
         _args, kwargs = mock_run.call_args
@@ -514,7 +514,7 @@ class TestSubprocessStdinIsolation:
 
     def test_detect_default_branch_git_fallback_passes_devnull_stdin(self):
         completed = MagicMock(returncode=0, stdout="refs/remotes/origin/main\n", stderr="")
-        with patch("graphify.prs._gh", return_value=None), \
+        with patch("monarch_atlas.prs._gh", return_value=None), \
              patch("subprocess.run", return_value=completed) as mock_run:
             _detect_default_branch()
         _args, kwargs = mock_run.call_args

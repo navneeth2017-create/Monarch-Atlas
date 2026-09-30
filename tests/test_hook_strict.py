@@ -14,17 +14,17 @@ import time
 
 import pytest
 
-import graphify.cli as cli
+import monarch_atlas.cli as cli
 
 
 def _fixture(tmp_path, *, indexed=True, fresh=True):
-    """A project with graphify-out/graph.json + manifest and one source file.
+    """A project with atlas-out/graph.json + manifest and one source file.
     ``fresh`` makes the graph newer than the source (not stale)."""
     src = tmp_path / "src"
     src.mkdir()
     f = src / "mod.py"
     f.write_text("def x():\n    return 1\n", encoding="utf-8")
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     (out / "manifest.json").write_text(
         json.dumps({"src/mod.py": {"mtime": 1}} if indexed else {"other/z.py": {"mtime": 1}}),
@@ -65,9 +65,9 @@ def test_strict_first_read_denies_then_nudges(tmp_path, monkeypatch):
     f = _fixture(tmp_path)
     out1 = _invoke("read", _read(f), tmp_path, monkeypatch, strict=True)
     assert _is_deny(out1)
-    assert "graphify query" in json.loads(out1)["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "atlas query" in json.loads(out1)["hookSpecificOutput"]["permissionDecisionReason"]
     # marker created
-    assert (tmp_path / "graphify-out" / "cache" / "hook_sessions" / "s1.denied").exists()
+    assert (tmp_path / "atlas-out" / "cache" / "hook_sessions" / "s1.denied").exists()
     # same session again -> soft nudge, not a second deny
     out2 = _invoke("read", _read(f), tmp_path, monkeypatch, strict=True)
     assert not _is_deny(out2) and "MANDATORY" in out2
@@ -82,7 +82,7 @@ def test_strict_new_session_denies_again(tmp_path, monkeypatch):
 
 def test_fresh_query_stamp_suppresses_deny(tmp_path, monkeypatch):
     f = _fixture(tmp_path)
-    stamp = tmp_path / "graphify-out" / "cache" / "last_query_stamp"
+    stamp = tmp_path / "atlas-out" / "cache" / "last_query_stamp"
     stamp.parent.mkdir(parents=True, exist_ok=True)
     stamp.write_text(str(time.time()), encoding="utf-8")
     out = _invoke("read", _read(f), tmp_path, monkeypatch, strict=True)
@@ -91,12 +91,12 @@ def test_fresh_query_stamp_suppresses_deny(tmp_path, monkeypatch):
 
 def test_expired_query_stamp_still_denies(tmp_path, monkeypatch):
     f = _fixture(tmp_path)
-    stamp = tmp_path / "graphify-out" / "cache" / "last_query_stamp"
+    stamp = tmp_path / "atlas-out" / "cache" / "last_query_stamp"
     stamp.parent.mkdir(parents=True, exist_ok=True)
     stamp.write_text("old", encoding="utf-8")
     old = time.time() - 10_000
     os.utime(stamp, (old, old))
-    out = _invoke("read", _read(f), tmp_path, monkeypatch, strict=True, env={"GRAPHIFY_HOOK_STRICT_TTL": "1800"})
+    out = _invoke("read", _read(f), tmp_path, monkeypatch, strict=True, env={"ATLAS_HOOK_STRICT_TTL": "1800"})
     assert _is_deny(out)
 
 
@@ -108,13 +108,13 @@ def test_soft_mode_never_denies(tmp_path, monkeypatch):
 
 def test_env_forces_strict_on(tmp_path, monkeypatch):
     f = _fixture(tmp_path)
-    out = _invoke("read", _read(f), tmp_path, monkeypatch, strict=False, env={"GRAPHIFY_HOOK_STRICT": "1"})
+    out = _invoke("read", _read(f), tmp_path, monkeypatch, strict=False, env={"ATLAS_HOOK_STRICT": "1"})
     assert _is_deny(out)
 
 
 def test_env_kills_strict(tmp_path, monkeypatch):
     f = _fixture(tmp_path)
-    out = _invoke("read", _read(f), tmp_path, monkeypatch, strict=True, env={"GRAPHIFY_HOOK_STRICT": "0"})
+    out = _invoke("read", _read(f), tmp_path, monkeypatch, strict=True, env={"ATLAS_HOOK_STRICT": "0"})
     assert not _is_deny(out)
 
 
@@ -135,7 +135,7 @@ def test_stale_graph_softens_never_denies(tmp_path, monkeypatch):
 
 def test_needs_update_flag_softens(tmp_path, monkeypatch):
     f = _fixture(tmp_path)
-    (tmp_path / "graphify-out" / "needs_update").write_text("1", encoding="utf-8")
+    (tmp_path / "atlas-out" / "needs_update").write_text("1", encoding="utf-8")
     out = _invoke("read", _read(f), tmp_path, monkeypatch, strict=True)
     assert not _is_deny(out) and "stale" in out.lower()
 
@@ -173,24 +173,24 @@ def test_fail_open_on_malformed_stdin(tmp_path, monkeypatch):
 
 def test_strict_enabled_env_precedence():
     import os as _os
-    saved = _os.environ.get("GRAPHIFY_HOOK_STRICT")
+    saved = _os.environ.get("ATLAS_HOOK_STRICT")
     try:
-        _os.environ["GRAPHIFY_HOOK_STRICT"] = "1"
+        _os.environ["ATLAS_HOOK_STRICT"] = "1"
         assert cli._hook_strict_enabled(False) is True
-        _os.environ["GRAPHIFY_HOOK_STRICT"] = "0"
+        _os.environ["ATLAS_HOOK_STRICT"] = "0"
         assert cli._hook_strict_enabled(True) is False
-        _os.environ.pop("GRAPHIFY_HOOK_STRICT", None)
+        _os.environ.pop("ATLAS_HOOK_STRICT", None)
         assert cli._hook_strict_enabled(True) is True
         assert cli._hook_strict_enabled(False) is False
     finally:
         if saved is None:
-            _os.environ.pop("GRAPHIFY_HOOK_STRICT", None)
+            _os.environ.pop("ATLAS_HOOK_STRICT", None)
         else:
-            _os.environ["GRAPHIFY_HOOK_STRICT"] = saved
+            _os.environ["ATLAS_HOOK_STRICT"] = saved
 
 
 def test_install_hook_carries_strict_flag():
-    from graphify.install import _claude_pretooluse_hooks
+    from monarch_atlas.install import _claude_pretooluse_hooks
     soft = _claude_pretooluse_hooks(strict=False)
     strict = _claude_pretooluse_hooks(strict=True)
     read_soft = next(h for h in soft if h["matcher"] == "Read|Glob")["hooks"][0]["command"]

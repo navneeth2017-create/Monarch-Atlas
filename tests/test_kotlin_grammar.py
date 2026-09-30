@@ -15,7 +15,7 @@ older forks the extractor was written against:
   all-identifier chains into a `qualified_prefix` resolved against the
   declared packages (exactly-one-candidate guarded).
 * #2551 — the grammar rejects one-line `class C { val x }` bodies; consecutive
-  one-liners can dissolve the whole file's parse. Graphify warns on a file
+  one-liners can dissolve the whole file's parse. Atlas warns on a file
   extracted through ERROR recovery (language-agnostic, also #2520) and keeps
   class linkage for declarations recovered inside an ERROR span. Since
   #2610/#2599 the warning fires only on PLAUSIBLE symbol loss (file-node-only
@@ -28,7 +28,7 @@ import os
 import re
 from pathlib import Path
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _extract(tmp_path, files: dict[str, str]):
@@ -332,7 +332,7 @@ def test_kotlin_object_member_call_ambiguous_receiver_yields_no_edge(tmp_path):
 
 def test_kotlin_partial_parse_warns_with_file_and_line(tmp_path, capsys):
     # Consecutive one-line class bodies dissolve the whole file's parse in
-    # tree-sitter-kotlin 1.x; graphify must say so instead of silently
+    # tree-sitter-kotlin 1.x; atlas must say so instead of silently
     # returning a near-empty result.
     files = {
         "Broken.kt": (
@@ -614,13 +614,13 @@ def test_kotlin_companion_member_call_resolves_across_files(tmp_path):
 
 
 def test_kotlin_object_member_call_survives_incremental_rebuild(tmp_path):
-    """The cross-file resolution must hold on the real `graphify update` / watch
+    """The cross-file resolution must hold on the real `atlas update` / watch
     path, where the unchanged receiver-type file arrives as a resolution-context
     node. This exercises the actual watch context builder — it only works if the
     `_callable_class` marker and `method` edges ride through its allow-list
     (#1698). Routes through the real rebuild, not a hand-fed context list."""
     import json
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     (corpus / "config").mkdir(parents=True)
@@ -636,7 +636,7 @@ def test_kotlin_object_member_call_survives_incremental_rebuild(tmp_path):
                 "fun Start() {\n    Config.load()\n" + extra + "}\n")
 
     app.write_text(_app(), encoding="utf-8")
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
 
     def _resolves() -> bool:
         data = json.loads(graph_path.read_text(encoding="utf-8"))

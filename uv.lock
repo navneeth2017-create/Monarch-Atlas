@@ -1931,7 +1931,7 @@ wheels = [
 
 [[package]]
 name = "monarch-atlas"
-version = "0.9.67+monarch.1"
+version = "0.10.0"
 source = { editable = "." }
 dependencies = [
     { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },

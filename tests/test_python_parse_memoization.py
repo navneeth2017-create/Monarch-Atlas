@@ -12,10 +12,10 @@ import pytest
 
 pytest.importorskip("tree_sitter_python")
 
-from graphify.extractors.resolution import _parse_python_tree
+from monarch_atlas.extractors.resolution import _parse_python_tree
 
 try:
-    from graphify.extractors.resolution import _parse_python_tree_cached
+    from monarch_atlas.extractors.resolution import _parse_python_tree_cached
 except ImportError:  # pre-fix tree
     _parse_python_tree_cached = None
 

@@ -1,8 +1,8 @@
-"""Tests for graphify/_minhash.py — MinHash sketch and band-LSH."""
+"""Tests for monarch_atlas/_minhash.py — MinHash sketch and band-LSH."""
 from __future__ import annotations
 import numpy as np
 import pytest
-from graphify._minhash import MinHash, MinHashLSH, _optimal_lsh_params
+from monarch_atlas._minhash import MinHash, MinHashLSH, _optimal_lsh_params
 
 
 def _minhash_for(text: str, num_perm: int = 128) -> MinHash:
@@ -96,6 +96,6 @@ def test_dedup_import_does_not_pull_scipy_or_numpy_testing():
     import sys
     for mod in ("scipy", "numpy.testing"):
         sys.modules.pop(mod, None)
-    import graphify.dedup  # noqa: F401
+    import monarch_atlas.dedup  # noqa: F401
     assert "scipy" not in sys.modules
     assert "numpy.testing" not in sys.modules

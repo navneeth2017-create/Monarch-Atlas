@@ -14,8 +14,8 @@ from pathlib import Path
 
 import networkx as nx
 
-from graphify.affected import affected_nodes
-from graphify.extract import extract_scala
+from monarch_atlas.affected import affected_nodes
+from monarch_atlas.extract import extract_scala
 
 SRC = '''\
 trait Loggable

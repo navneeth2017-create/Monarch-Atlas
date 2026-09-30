@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.extract import extract
-from graphify.extractors.resolution import _resolve_python_module_path
-from graphify.build import build_from_json
+from monarch_atlas.extract import extract
+from monarch_atlas.extractors.resolution import _resolve_python_module_path
+from monarch_atlas.build import build_from_json
 
 
 _FILES = {

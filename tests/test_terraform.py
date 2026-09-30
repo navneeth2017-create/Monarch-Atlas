@@ -1,10 +1,10 @@
-"""Tests for the Terraform/HCL extractor (graphify/extract.py, issue #187)."""
+"""Tests for the Terraform/HCL extractor (monarch_atlas/extract.py, issue #187)."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.build import build_from_json
-from graphify.extract import extract_terraform
+from monarch_atlas.build import build_from_json
+from monarch_atlas.extract import extract_terraform
 
 
 def _write(tmp_path: Path, name: str, body: str) -> Path:
@@ -244,7 +244,7 @@ resource "aws_instance" "web" {
 
 
 def test_terraform_attributes_query_and_search_discovery(tmp_path):
-    from graphify.serve import _query_graph_text
+    from monarch_atlas.serve import _query_graph_text
 
     body = """\
 resource "aws_s3_bucket" "prod" {
@@ -282,7 +282,7 @@ resource "aws_s3_bucket" "backup" {
 
 
 def test_terraform_attributes_context_rendering(tmp_path):
-    from graphify.serve import _subgraph_to_text
+    from monarch_atlas.serve import _subgraph_to_text
 
     body = """\
 resource "aws_s3_bucket" "example" {
@@ -305,8 +305,8 @@ resource "aws_s3_bucket" "example" {
 
 
 def test_terraform_attributes_round_trip_serialization(tmp_path):
-    from graphify.export import to_json
-    from graphify.serve import _load_graph
+    from monarch_atlas.export import to_json
+    from monarch_atlas.serve import _load_graph
 
     body = """\
 resource "aws_s3_bucket" "example" {
@@ -366,7 +366,7 @@ def test_terraform_redact_value_recurses_into_lists():
     be redacted, matching the map case. HCL routinely nests objects in tuples
     (`list(object(...))`, dynamic blocks), and recursing into dicts but not lists
     left those values leaking (#3644 follow-up)."""
-    from graphify.extractors.terraform import _redact_value
+    from monarch_atlas.extractors.terraform import _redact_value
 
     # list of objects: the secret-named inner key is redacted, ordinary key kept
     assert _redact_value("connections", [{"host": "db", "password": "x"}]) == [

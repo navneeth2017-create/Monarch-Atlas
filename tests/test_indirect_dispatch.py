@@ -14,8 +14,8 @@ from pathlib import Path
 
 import networkx as nx
 
-from graphify.affected import affected_nodes
-from graphify.extract import extract, extract_python
+from monarch_atlas.affected import affected_nodes
+from monarch_atlas.extract import extract, extract_python
 
 SRC = '''\
 import threading
@@ -203,7 +203,7 @@ def _extract_dir(tmp_path, files: dict[str, str]):
 
 def test_cross_file_indirect_survives_id_relativization(tmp_path):
     """Regression: when the scan root relativizes node ids (cache_root == project
-    root, as the `graphify extract` CLI passes), the id-remap rewrites node ids
+    root, as the `atlas extract` CLI passes), the id-remap rewrites node ids
     AFTER per-file extraction. The cross-file indirect callable guard must read
     callable-ness from a node marker that survives the remap, not a stale pre-remap
     id set — otherwise every cross-file indirect_call is silently dropped (only

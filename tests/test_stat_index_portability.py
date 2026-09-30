@@ -20,7 +20,7 @@ import os
 import shutil
 from pathlib import Path
 
-from graphify import cache
+from monarch_atlas import cache
 
 
 def _reset_stat_index():
@@ -34,7 +34,7 @@ def _reset_stat_index():
 
 
 def _stat_index_path(root: Path) -> Path:
-    return root / "graphify-out" / "cache" / "stat-index.json"
+    return root / "atlas-out" / "cache" / "stat-index.json"
 
 
 def _read_index(root: Path) -> dict:
@@ -72,7 +72,7 @@ def _settle(path: Path) -> None:
 
 
 def test_cache_hits_survive_corpus_move(tmp_path, monkeypatch):
-    """Run A under tmp/a, copy the corpus (with graphify-out/) to tmp/b: run B
+    """Run A under tmp/a, copy the corpus (with atlas-out/) to tmp/b: run B
     must be 100% warm — zero content reads, zero word-count computes, digests
     identical to run A."""
     _reset_stat_index()
@@ -99,7 +99,7 @@ def test_cache_hits_survive_corpus_move(tmp_path, monkeypatch):
         assert "\\" not in k, f"non-portable separator in key: {k}"
     assert set(on_disk) == {"f1.py", "sub/f2.md"}
 
-    # Move the corpus (graphify-out/ rides along; copy2 preserves mtime_ns).
+    # Move the corpus (atlas-out/ rides along; copy2 preserves mtime_ns).
     b = tmp_path / "b"
     shutil.copytree(a, b, copy_function=shutil.copy2)
 
@@ -237,7 +237,7 @@ def test_semantic_cache_normalizes_absolute_source_file(tmp_path):
     assert saved == 1
     assert node["source_file"] == str(f.resolve()), "caller's dict must not be mutated"
 
-    entries = list((root / "graphify-out" / "cache" / "semantic").glob("*.json"))
+    entries = list((root / "atlas-out" / "cache" / "semantic").glob("*.json"))
     assert len(entries) == 1
     persisted = json.loads(entries[0].read_text(encoding="utf-8"))
     assert persisted["nodes"][0]["source_file"] == "m.py"
@@ -263,7 +263,7 @@ def test_semantic_cache_normalizes_backslash_poisoned_source_file(tmp_path):
     saved = cache.save_semantic_cache([node], [], root=root)
     assert saved == 1
 
-    entries = list((root / "graphify-out" / "cache" / "semantic").glob("*.json"))
+    entries = list((root / "atlas-out" / "cache" / "semantic").glob("*.json"))
     assert len(entries) == 1
     persisted = json.loads(entries[0].read_text(encoding="utf-8"))
     assert persisted["nodes"][0]["source_file"] == "sub/n.py"

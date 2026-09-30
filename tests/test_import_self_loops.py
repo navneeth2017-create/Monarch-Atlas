@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from graphify.build import build_from_json
-from graphify.extract import extract
+from monarch_atlas.build import build_from_json
+from monarch_atlas.extract import extract
 
 
 def _write(path: Path, source: str) -> Path:

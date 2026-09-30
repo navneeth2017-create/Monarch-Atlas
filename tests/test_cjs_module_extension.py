@@ -23,28 +23,28 @@ def _labels(r):
 
 
 def test_cjs_registered_as_code():
-    from graphify.detect import CODE_EXTENSIONS
+    from monarch_atlas.detect import CODE_EXTENSIONS
     assert ".cjs" in CODE_EXTENSIONS
 
 
 def test_cjs_in_extractor_dispatch():
-    from graphify.extract import _DISPATCH, extract_js
+    from monarch_atlas.extract import _DISPATCH, extract_js
     assert _DISPATCH.get(".cjs") is extract_js
 
 
 def test_cjs_in_js_language_family():
-    from graphify.analyze import _LANG_FAMILY
+    from monarch_atlas.analyze import _LANG_FAMILY
     assert _LANG_FAMILY.get(".cjs") == "js"
 
 
 def test_cjs_in_js_resolution_sets():
-    from graphify.extract import _JS_CACHE_BYPASS_SUFFIXES, _JS_RESOLVE_EXTS
+    from monarch_atlas.extract import _JS_CACHE_BYPASS_SUFFIXES, _JS_RESOLVE_EXTS
     assert ".cjs" in _JS_RESOLVE_EXTS
     assert ".cjs" in _JS_CACHE_BYPASS_SUFFIXES
 
 
 def test_cjs_in_hook_source_exts():
-    from graphify.cli import _HOOK_SOURCE_EXTS
+    from monarch_atlas.cli import _HOOK_SOURCE_EXTS
     assert ".cjs" in _HOOK_SOURCE_EXTS
 
 
@@ -65,7 +65,7 @@ _CJS_SOURCE = (
 
 
 def _extract(tmp_path: Path, ext: str):
-    from graphify.extract import extract_js
+    from monarch_atlas.extract import extract_js
     f = tmp_path / f"main{ext}"
     f.write_text(_CJS_SOURCE, encoding="utf-8")
     return extract_js(f)

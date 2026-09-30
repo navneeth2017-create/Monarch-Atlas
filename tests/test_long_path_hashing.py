@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify import detect
+from monarch_atlas import detect
 
 
 def test_os_path_noop_on_posix(monkeypatch):

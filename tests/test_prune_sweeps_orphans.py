@@ -9,9 +9,9 @@ corpus no longer contains, counted in every total that reads the graph, exported
 as a note of their own, and unreachable by any future prune since there is no
 `source_file` to match on (#2807).
 
-On graphify's own package, pruning `graphify/callflow_html.py` removed 137 of its
-139 nodes and stranded `graphify_callflow_html_py_path` (label `Path`) and
-`graphify_callflow_html_py_counter` (label `Counter`) permanently.
+On atlas's own package, pruning `monarch_atlas/callflow_html.py` removed 137 of its
+139 nodes and stranded `atlas_callflow_html_py_path` (label `Path`) and
+`atlas_callflow_html_py_counter` (label `Counter`) permanently.
 
 The sweep is deliberately scoped to nodes THIS prune isolated: a source-less node
 that was already isolated beforehand is a different question and must survive.
@@ -23,7 +23,7 @@ from pathlib import Path
 import pytest
 from networkx.readwrite import json_graph
 
-from graphify.build import build_from_json, build_merge
+from monarch_atlas.build import build_from_json, build_merge
 
 
 def _write_graph(G, tmp_path) -> str:

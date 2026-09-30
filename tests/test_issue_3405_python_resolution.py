@@ -2,7 +2,7 @@
 import pytest
 from pathlib import Path
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def test_python_nested_function_node_and_contains(tmp_path: Path):

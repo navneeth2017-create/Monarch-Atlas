@@ -11,9 +11,9 @@ from pathlib import Path
 
 import networkx as nx
 
-from graphify.paths import write_text_atomic_if_changed
-from graphify.export import to_obsidian
-from graphify.wiki import to_wiki
+from monarch_atlas.paths import write_text_atomic_if_changed
+from monarch_atlas.export import to_obsidian
+from monarch_atlas.wiki import to_wiki
 
 
 def _mtime(p: Path) -> int:

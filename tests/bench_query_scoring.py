@@ -22,7 +22,7 @@ Run it manually; do NOT wire this into CI (wall-clock assertions are flaky):
         --nodes 100000 --term-counts 3,10 --repeats 5
 
     uv run python tests/bench_query_scoring.py \\
-        --graph graphify-out/graph.json \\
+        --graph atlas-out/graph.json \\
         --query "what calls extract" --query "symbol resolution" \\
         --repeats 10
 """
@@ -38,7 +38,7 @@ from pathlib import Path
 
 import networkx as nx
 
-from graphify.serve import (
+from monarch_atlas.serve import (
     _get_trigram_index,
     _pick_seeds,
     _query_terms,
@@ -86,7 +86,7 @@ def _build_random_graph(n: int, *, seed: int) -> nx.DiGraph:
 
 def _load_real_graph(path: str) -> nx.Graph:
     """Light wrapper that just builds a NetworkX graph from a real
-    `graphify-out/graph.json`, skipping the size cap and work-memory overlay
+    `atlas-out/graph.json`, skipping the size cap and work-memory overlay
     that `serve._load_graph` enforces (the bench is read-only)."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if "links" not in data and "edges" in data:
@@ -235,7 +235,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--repeats", type=int, default=5,
                    help="timed iterations per scenario (after one warm-up)")
     p.add_argument("--graph", default=None,
-                   help="optional path to a real graphify-out/graph.json; overrides --nodes")
+                   help="optional path to a real atlas-out/graph.json; overrides --nodes")
     p.add_argument("--query", action="append", default=None,
                    help="natural-language query sentence (real-graph mode; repeat for multiple)")
     args = p.parse_args(argv)

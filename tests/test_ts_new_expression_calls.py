@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.extract import extract, extract_js
+from monarch_atlas.extract import extract, extract_js
 
 
 def _calls(tmp_path: Path, files: dict[str, str]):
@@ -17,7 +17,7 @@ def _calls(tmp_path: Path, files: dict[str, str]):
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(body, encoding="utf-8")
     r = extract([tmp_path / n for n in files],
-                cache_root=tmp_path / "graphify-out", parallel=False)
+                cache_root=tmp_path / "atlas-out", parallel=False)
     lbl = {n["id"]: n["label"] for n in r["nodes"]}
     calls = {(lbl.get(e["source"]), lbl.get(e["target"])) for e in r["edges"]
              if e["relation"] == "calls"}

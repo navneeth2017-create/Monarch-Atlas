@@ -10,7 +10,7 @@ Dispatch one `@mention` per chunk — ALL in the same response:
 @agent Chunk 2 of TOTAL_CHUNKS: [next chunk]
 ```
 
-Wait for all agents to return. Parse each response as JSON. Accumulate nodes/edges/hyperedges across all results and write to `graphify-out/.graphify_semantic_new.json`. If the `@agent` path cannot write chunk files, fall back to the serial path that writes each `graphify-out/.graphify_chunk_NN.json` before merge.
+Wait for all agents to return. Parse each response as JSON. Accumulate nodes/edges/hyperedges across all results and write to `atlas-out/.atlas_semantic_new.json`. If the `@agent` path cannot write chunk files, fall back to the serial path that writes each `atlas-out/.atlas_chunk_NN.json` before merge.
 
 Subagent prompt template:
 

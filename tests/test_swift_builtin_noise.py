@@ -10,8 +10,8 @@ fixed for TypeScript.
 import networkx as nx
 import pytest
 
-from graphify.analyze import god_nodes
-from graphify.extract import extract
+from monarch_atlas.analyze import god_nodes
+from monarch_atlas.extract import extract
 
 
 def _labels_by_id(r):

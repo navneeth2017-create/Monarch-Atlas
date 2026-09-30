@@ -1,6 +1,6 @@
 # RFC: file-level node summaries
 
-This RFC proposes an optional way for graphify to expose compact file-level
+This RFC proposes an optional way for atlas to expose compact file-level
 summaries for AI coding agents.
 
 ## Problem
@@ -12,12 +12,12 @@ often need to inspect raw files just to answer a basic navigation question:
 > What is this file or node responsible for?
 
 A short summary near the graph node could reduce repeated file reads during
-`graphify query`, `graphify explain`, MCP node lookup, and graph navigation.
+`atlas query`, `atlas explain`, MCP node lookup, and graph navigation.
 
 ## Goals
 
 - Help agents choose relevant files with less context.
-- Preserve graphify's offline, deterministic behavior by default.
+- Preserve atlas's offline, deterministic behavior by default.
 - Keep the first implementation small and reviewable.
 - Avoid adding long prose to `GRAPH_REPORT.md`.
 - Leave room for a future opt-in LLM-generated summary backend.
@@ -26,7 +26,7 @@ A short summary near the graph node could reduce repeated file reads during
 
 - Summarizing every function, method, or local symbol in the first version.
 - Calling an LLM or remote API by default.
-- Replacing `graphify explain`; summaries should make `explain` more useful.
+- Replacing `atlas explain`; summaries should make `explain` more useful.
 - Turning `GRAPH_REPORT.md` into a full per-file index.
 
 ## Shared constraints for either option
@@ -38,8 +38,8 @@ A short summary near the graph node could reduce repeated file reads during
   module docstrings, top comments, exported symbols, imports, relation counts,
   and community/context data.
 - Do not emit summaries by default until the storage model is agreed on.
-- Display a summary in `graphify explain <node>` when one exists.
-- Include summaries in `graphify serve` / MCP node lookup when one exists.
+- Display a summary in `atlas explain <node>` when one exists.
+- Include summaries in `atlas serve` / MCP node lookup when one exists.
 
 ## Proposed summary contents
 
@@ -72,7 +72,7 @@ Example:
 ```json
 {
   "label": "extract.py",
-  "source_file": "graphify/extract.py",
+  "source_file": "monarch_atlas/extract.py",
   "summary": "Extracts source files into graph nodes and relationships; defines language parsers and import/call extraction helpers.",
   "generated_by": "deterministic",
   "summary_version": 1
@@ -81,7 +81,7 @@ Example:
 
 The summary should not include long call chains, full dependency lists, raw code,
 or every symbol in the file. Those details already belong in the graph and can
-be fetched through `graphify explain`, `graphify query`, or direct file reads
+be fetched through `atlas explain`, `atlas query`, or direct file reads
 when needed.
 
 ## Option A: `summary` attribute in `graph.json`
@@ -90,10 +90,10 @@ Add an optional `summary` field to file-level nodes:
 
 ```json
 {
-  "id": "graphify_extract",
+  "id": "atlas_extract",
   "label": "extract.py",
   "file_type": "code",
-  "source_file": "graphify/extract.py",
+  "source_file": "monarch_atlas/extract.py",
   "summary": "Extracts source files into graph nodes and relationships using language-specific parsers."
 }
 ```
@@ -101,8 +101,8 @@ Add an optional `summary` field to file-level nodes:
 Possible user flow:
 
 ```bash
-graphify . --summarize-nodes
-graphify explain "extract.py"
+atlas . --summarize-nodes
+atlas explain "extract.py"
 ```
 
 Pros:
@@ -128,9 +128,9 @@ Write summaries to a separate artifact keyed by node ID:
   "version": 1,
   "generator": "deterministic",
   "nodes": {
-    "graphify_extract": {
+    "atlas_extract": {
       "label": "extract.py",
-      "source_file": "graphify/extract.py",
+      "source_file": "monarch_atlas/extract.py",
       "summary": "Extracts source files into graph nodes and relationships using language-specific parsers."
     }
   }
@@ -140,8 +140,8 @@ Write summaries to a separate artifact keyed by node ID:
 Possible user flow:
 
 ```bash
-graphify summarize
-graphify explain "extract.py"
+atlas summarize
+atlas explain "extract.py"
 ```
 
 Pros:
@@ -161,8 +161,8 @@ Cons:
 
 1. Add deterministic file-level summary generation.
 2. Store summaries using the selected option.
-3. Surface summaries in `graphify explain`.
-4. Surface summaries in `graphify serve` / MCP node lookup.
+3. Surface summaries in `atlas explain`.
+4. Surface summaries in `atlas serve` / MCP node lookup.
 5. Add tests for default behavior, generated summaries, missing summaries, and
    bounded summary length.
 
@@ -171,16 +171,16 @@ Cons:
 - Add opt-in LLM-generated summaries with explicit provider/backend selection.
 - Extend summaries to class or module-level nodes if file-level summaries prove
   useful.
-- Allow `graphify query` to include summaries for returned nodes under a budget.
+- Allow `atlas query` to include summaries for returned nodes under a budget.
 - Add cache/freshness metadata if summaries are generated separately from the
   main graph.
 
 ## Questions for maintainers and users
 
-1. Should graphify prefer one artifact (`graph.json`) or keep generated text in a
+1. Should atlas prefer one artifact (`graph.json`) or keep generated text in a
    sidecar?
 2. Should deterministic file-level summaries be generated during graph creation,
-   or only through an explicit command such as `graphify summarize`?
+   or only through an explicit command such as `atlas summarize`?
 3. Is `summary` the right term, or would `synopsis` better communicate a short,
    bounded description?
 4. What summary length budget would be acceptable for large repositories?

@@ -4,7 +4,7 @@ when a community's member list contains an id that has no backing node in G
 ids). Such dangling members must be skipped, not abort the whole vault export."""
 import networkx as nx
 
-from graphify.export import to_obsidian
+from monarch_atlas.export import to_obsidian
 
 
 def _graph_with_dangling_member():
@@ -52,11 +52,11 @@ def test_obsidian_community_of_only_dangling_members(tmp_path):
 
 def test_canvas_dangling_community_member_does_not_crash(tmp_path):
     """#1236 follow-up: the fix landed in to_obsidian but not to_canvas, so
-    `graphify export obsidian` (which also writes graph.canvas) still crashed
+    `atlas export obsidian` (which also writes graph.canvas) still crashed
     with KeyError in to_canvas on a dangling member. The same guard now applies
     to both the box-sizing loop and the card-layout loop."""
     import json
-    from graphify.export import to_canvas
+    from monarch_atlas.export import to_canvas
 
     G, comms = _graph_with_dangling_member()
     out = tmp_path / "graph.canvas"

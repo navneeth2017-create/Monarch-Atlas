@@ -8,7 +8,7 @@ These tests pin the fixed contract:
 - fn(pd)               -> project-scoped, global untouched (trap closed)
 - fn(pd, project=True) -> project only
 - fn(pd, remove_user_skill=True) -> global removed, project tree untouched
-- `graphify uninstall --project` for codebuddy no longer nukes the global skill
+- `atlas uninstall --project` for codebuddy no longer nukes the global skill
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify.install import (
+from monarch_atlas.install import (
     _project_uninstall,
     claude_uninstall,
     codebuddy_uninstall,
@@ -31,12 +31,12 @@ PLATFORMS = [
 
 
 def _plant_skill_tree(root: Path, dot_dir: str) -> Path:
-    """Create <root>/<dot_dir>/skills/graphify/{SKILL.md, references/x.md, .graphify_version}."""
-    skill_dir = root / dot_dir / "skills" / "graphify"
+    """Create <root>/<dot_dir>/skills/atlas/{SKILL.md, references/x.md, .atlas_version}."""
+    skill_dir = root / dot_dir / "skills" / "atlas"
     (skill_dir / "references").mkdir(parents=True)
-    (skill_dir / "SKILL.md").write_text("# graphify skill\n", encoding="utf-8")
+    (skill_dir / "SKILL.md").write_text("# atlas skill\n", encoding="utf-8")
     (skill_dir / "references" / "x.md").write_text("ref\n", encoding="utf-8")
-    (skill_dir / ".graphify_version").write_text("0.0.0-test", encoding="utf-8")
+    (skill_dir / ".atlas_version").write_text("0.0.0-test", encoding="utf-8")
     return skill_dir
 
 
@@ -51,7 +51,7 @@ def test_project_dir_call_never_touches_global(uninstall_fn, platform, dot_dir, 
 
     assert (global_tree / "SKILL.md").exists(), "global skill deleted by project-scoped uninstall"
     assert (global_tree / "references" / "x.md").exists()
-    assert (global_tree / ".graphify_version").exists()
+    assert (global_tree / ".atlas_version").exists()
     assert not (project_tree / "SKILL.md").exists()
     assert not project_tree.exists()
 
@@ -100,7 +100,7 @@ def test_project_true_removes_only_project_tree(uninstall_fn, platform, dot_dir,
 
 
 def test_project_uninstall_codebuddy_spares_global(tmp_path):
-    """`graphify uninstall --project` (codebuddy branch) must not delete ~/.codebuddy (#2215)."""
+    """`atlas uninstall --project` (codebuddy branch) must not delete ~/.codebuddy (#2215)."""
     global_tree = _plant_skill_tree(Path.home(), ".codebuddy")
     proj_dir = tmp_path / "proj"
     project_tree = _plant_skill_tree(proj_dir, ".codebuddy")
@@ -108,6 +108,6 @@ def test_project_uninstall_codebuddy_spares_global(tmp_path):
     _project_uninstall("codebuddy", proj_dir)
 
     assert (global_tree / "SKILL.md").exists(), "CLI --project uninstall deleted the global codebuddy skill"
-    assert (global_tree / ".graphify_version").exists()
+    assert (global_tree / ".atlas_version").exists()
     assert not (project_tree / "SKILL.md").exists()
     assert not project_tree.exists()

@@ -1,9 +1,9 @@
-"""Tests for graphify.wiki — Wikipedia-style article generation."""
+"""Tests for monarch_atlas.wiki — Wikipedia-style article generation."""
 import re
 import pytest
 from pathlib import Path
 import networkx as nx
-from graphify.wiki import to_wiki, _index_md, _community_article, _god_node_article
+from monarch_atlas.wiki import to_wiki, _index_md, _community_article, _god_node_article
 
 _MD_LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 

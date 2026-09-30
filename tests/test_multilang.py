@@ -3,7 +3,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 import pytest
-from graphify.extract import extract_js, extract_go, extract_rust, extract, extract_sql
+from monarch_atlas.extract import extract_js, extract_go, extract_rust, extract, extract_sql
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -174,7 +174,7 @@ def test_go_method_declaration_emits_refs_only_when_name_present():
     """
     import ast
     import inspect
-    from graphify.extract import extract_go
+    from monarch_atlas.extract import extract_go
 
     tree = ast.parse(inspect.getsource(extract_go))
 
@@ -439,7 +439,7 @@ def test_rust_method_parameter_return_and_generic_contexts():
 def test_rust_no_cross_crate_spurious_edges():
     """Scoped calls (Type::method) and blocklisted names must not produce
     INFERRED cross-crate calls edges (#908)."""
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     crate_a = FIXTURES / "crate_a" / "src" / "lib.rs"
     crate_b = FIXTURES / "crate_b" / "src" / "lib.rs"
     r = extract([crate_a, crate_b])
@@ -741,7 +741,7 @@ def test_mask_sql_comments_literal_and_comment_handling():
     preserved verbatim (they carry recoverable names); comments blank to
     spaces with newlines and offsets preserved, an unclosed block comment
     running to end-of-file."""
-    from graphify.extractors.sql import _mask_sql_comments as mask
+    from monarch_atlas.extractors.sql import _mask_sql_comments as mask
 
     # a comment opener inside a literal never blanks past the literal
     assert mask("select '-- x' from t") == "select        from t"
@@ -823,7 +823,7 @@ def test_mask_sql_comments_invariants_fuzz():
     """
     import random
 
-    from graphify.extractors.sql import _mask_sql_comments as mask
+    from monarch_atlas.extractors.sql import _mask_sql_comments as mask
 
     rng = random.Random(0xC0FFEE)
     alphabet = "ab[]\"'-*/ \n;.$"
@@ -839,7 +839,7 @@ def test_mask_sql_comments_invariants_fuzz():
 
 # Frozen copy of _mask_sql_comments as of the 2026-08-24 hardening series,
 # for the differential monotonicity fuzz below. Deliberately NOT imported
-# from graphify: the point is that future edits to the live mask are
+# from monarch_atlas: the point is that future edits to the live mask are
 # compared against this fixed baseline. Update it only when a deliberate,
 # reviewed decision changes what the mask must blank.
 def _frozen_mask_2026_08_24(text: str) -> str:
@@ -1014,7 +1014,7 @@ def test_mask_sql_comments_monotone_against_frozen_baseline():
     """
     import random
 
-    from graphify.extractors.sql import _mask_sql_comments as mask
+    from monarch_atlas.extractors.sql import _mask_sql_comments as mask
 
     rng = random.Random(0xBA5E11E)
     alphabet = "ab[]\"'-*/ \n;.$"
@@ -1268,7 +1268,7 @@ def test_sql_cross_file_fk_resolves_and_never_leaks_scan_path(tmp_path):
     absolute inputs leaked the machine path AND could never match the m1
     definition, so prisma-style cross-migration FKs dangled."""
     pytest.importorskip("tree_sitter_sql")
-    from graphify.ids import make_id
+    from monarch_atlas.ids import make_id
 
     m1 = tmp_path / "prisma" / "migrations" / "m1"
     m2 = tmp_path / "prisma" / "migrations" / "m2"

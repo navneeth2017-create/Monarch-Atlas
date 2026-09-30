@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify.manifest_ingest import (
+from monarch_atlas.manifest_ingest import (
     _TOMLI_REQUIRED,
     _load_toml_module,
     _parse_cargo,
@@ -31,7 +31,7 @@ def test_load_toml_module_raises_when_tomli_missing(monkeypatch):
 
 def test_parse_pyproject_surfaces_missing_parser(monkeypatch):
     monkeypatch.setattr(
-        "graphify.manifest_ingest._load_toml_module",
+        "monarch_atlas.manifest_ingest._load_toml_module",
         lambda: (_ for _ in ()).throw(ImportError(_TOMLI_REQUIRED)),
     )
     with pytest.raises(ImportError, match="tomli"):
@@ -40,7 +40,7 @@ def test_parse_pyproject_surfaces_missing_parser(monkeypatch):
 
 def test_parse_cargo_surfaces_missing_parser(monkeypatch):
     monkeypatch.setattr(
-        "graphify.manifest_ingest._load_toml_module",
+        "monarch_atlas.manifest_ingest._load_toml_module",
         lambda: (_ for _ in ()).throw(ImportError(_TOMLI_REQUIRED)),
     )
     with pytest.raises(ImportError, match="tomli"):
@@ -51,7 +51,7 @@ def test_extract_package_manifest_reports_missing_tomli(tmp_path, monkeypatch):
     p = tmp_path / "pyproject.toml"
     p.write_text('[project]\nname = "cool"\nversion = "0.1"\n', encoding="utf-8")
     monkeypatch.setattr(
-        "graphify.manifest_ingest._load_toml_module",
+        "monarch_atlas.manifest_ingest._load_toml_module",
         lambda: (_ for _ in ()).throw(ImportError(_TOMLI_REQUIRED)),
     )
     result = extract_package_manifest(p)

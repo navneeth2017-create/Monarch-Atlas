@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.extract import extract
-from graphify.extractors.resolution import _resolve_python_module_path
+from monarch_atlas.extract import extract
+from monarch_atlas.extractors.resolution import _resolve_python_module_path
 
 
 def _write(path: Path, text: str) -> Path:
@@ -259,8 +259,8 @@ def test_python_parameter_return_and_generic_contexts(tmp_path: Path):
 
 
 def test_issue_3777_package_module_collision_phantom_cycle_absent(tmp_path: Path):
-    from graphify.analyze import find_import_cycles
-    from graphify.build import build_from_json
+    from monarch_atlas.analyze import find_import_cycles
+    from monarch_atlas.build import build_from_json
 
     nettacker_py = _write(
         tmp_path / "nettacker.py",
@@ -298,8 +298,8 @@ def test_issue_3777_package_module_collision_phantom_cycle_absent(tmp_path: Path
 
 
 def test_issue_3777_nested_module_package_collision_resolves_to_submodule(tmp_path: Path):
-    from graphify.analyze import find_import_cycles
-    from graphify.build import build_from_json
+    from monarch_atlas.analyze import find_import_cycles
+    from monarch_atlas.build import build_from_json
 
     runner_py = _write(
         tmp_path / "pkg/runner.py",

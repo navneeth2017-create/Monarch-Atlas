@@ -3,7 +3,7 @@ from pathlib import Path
 import networkx as nx
 import pytest
 from networkx.readwrite import json_graph
-from graphify.build import build_from_json, build, build_merge, edge_data, edge_datas, dedupe_edges, dedupe_nodes
+from monarch_atlas.build import build_from_json, build, build_merge, edge_data, edge_datas, dedupe_edges, dedupe_nodes
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -63,7 +63,7 @@ def test_null_weight_edge_builds_and_clusters(tmp_path):
     """#1960: an explicit ``"weight": null`` (JSON null -> None) used to survive
     ``.get("weight", 1.0)`` and crash Louvain/Leiden modularity with a TypeError.
     It must now coerce to the 1.0 default, build, and cluster without raising."""
-    from graphify.cluster import cluster
+    from monarch_atlas.cluster import cluster
     extraction = {
         "nodes": [
             {"id": "a", "label": "A", "file_type": "code", "source_file": "a.py"},
@@ -140,7 +140,7 @@ def test_legacy_node_name_path_aliases_folded():
     """#2194: nodes carrying `name`/`path` instead of `label`/`source_file` must
     be canonicalized before validation, not enter the graph as label-less
     ghosts. After build the canonicalized dict also passes validation."""
-    from graphify.validate import validate_extraction
+    from monarch_atlas.validate import validate_extraction
     ext = {"nodes": [{"id": "n1", "name": "Foo", "path": "a/b.md", "file_type": "concept"}],
            "edges": [], "input_tokens": 0, "output_tokens": 0}
     G = build_from_json(ext)
@@ -280,7 +280,7 @@ def test_alias_node_ghost_merges_into_ast_twin():
 def test_alias_node_gets_nonempty_norm_label(tmp_path):
     """#2194: a recovered alias node must serialize with a non-empty norm_label
     so query/explain can find it."""
-    from graphify.export import to_json
+    from monarch_atlas.export import to_json
     ext = {"nodes": [{"id": "n1", "name": "Foo", "path": "a/b.md", "file_type": "concept"}],
            "edges": [], "input_tokens": 0, "output_tokens": 0}
     G = build_from_json(ext)
@@ -316,7 +316,7 @@ def test_absolute_derived_semantic_ids_rekeyed(tmp_path):
     """#2197: a semantic fragment whose ids were derived from an ABSOLUTE
     source_file (Windows detect() emits them) must re-key to the canonical
     repo-relative stem instead of ghosting against the existing graph."""
-    from graphify.ids import make_id
+    from monarch_atlas.ids import make_id
     (tmp_path / "docs").mkdir()
     abs_sf = str(tmp_path / "docs" / "DATAFLOW.md")
     abs_stem = make_id(str(tmp_path / "docs" / "DATAFLOW"))
@@ -340,7 +340,7 @@ def test_absolute_derived_semantic_ids_rekeyed(tmp_path):
 def test_absolute_derived_semantic_ids_rekeyed_backslash(tmp_path):
     """#2197 (separator variant): the same absolute-derived-id fragment with
     backslash separators in source_file re-keys identically."""
-    from graphify.ids import make_id
+    from monarch_atlas.ids import make_id
     (tmp_path / "docs").mkdir()
     abs_sf = str(tmp_path / "docs" / "DATAFLOW.md").replace("/", "\\")
     abs_stem = make_id(str(tmp_path / "docs" / "DATAFLOW"))
@@ -579,7 +579,7 @@ def test_ghost_merge_non_ast_same_file_still_merges():
 
 def test_ghost_merge_wrong_source_file_resolved_by_label():
     """#3344: a semantic node that only MENTIONS a file (a saved
-    graphify-out/memory/*.md query answer, a runbook narrating "see App.tsx")
+    atlas-out/memory/*.md query answer, a runbook narrating "see App.tsx")
     is stamped with source_file = the document being read, not the file named
     in its prose — so the (source_file, label) key can never match the real
     AST node's key. Resolve it by label alone against every AST file-self node
@@ -593,17 +593,17 @@ def test_ghost_merge_wrong_source_file_resolved_by_label():
             {"id": "apps_customer_app_index", "label": "customer-app/index.ts", "file_type": "code",
              "source_file": "apps/customer-app/index.ts", "source_location": "L1", "_origin": "ast"},
             {"id": "app", "label": "App.tsx", "file_type": "code",
-             "source_file": "graphify-out/memory/query_fake.md", "_origin": "semantic"},
+             "source_file": "atlas-out/memory/query_fake.md", "_origin": "semantic"},
             {"id": "customer_app_index", "label": "customer-app/index.ts", "file_type": "code",
-             "source_file": "graphify-out/memory/query_fake.md", "_origin": "semantic"},
+             "source_file": "atlas-out/memory/query_fake.md", "_origin": "semantic"},
             {"id": "some_query_node", "label": "Query: why does X connect Y?", "file_type": "document",
-             "source_file": "graphify-out/memory/query_fake.md", "_origin": "semantic"},
+             "source_file": "atlas-out/memory/query_fake.md", "_origin": "semantic"},
         ],
         "edges": [
             {"source": "some_query_node", "target": "app", "relation": "references",
-             "confidence": "EXTRACTED", "source_file": "graphify-out/memory/query_fake.md"},
+             "confidence": "EXTRACTED", "source_file": "atlas-out/memory/query_fake.md"},
             {"source": "some_query_node", "target": "customer_app_index", "relation": "references",
-             "confidence": "EXTRACTED", "source_file": "graphify-out/memory/query_fake.md"},
+             "confidence": "EXTRACTED", "source_file": "atlas-out/memory/query_fake.md"},
         ],
     }
     G = build_from_json(ext, directed=False)
@@ -624,7 +624,7 @@ def test_ghost_merge_wrong_source_file_ambiguous_basename_left_alone():
             {"id": "apps_api_index", "label": "index.ts", "file_type": "code",
              "source_file": "apps/api/src/lib/index.ts", "source_location": "L1", "_origin": "ast"},
             {"id": "phantom_index", "label": "index.ts", "file_type": "code",
-             "source_file": "graphify-out/memory/query_fake2.md", "_origin": "semantic"},
+             "source_file": "atlas-out/memory/query_fake2.md", "_origin": "semantic"},
         ],
         "edges": [],
     }
@@ -644,8 +644,8 @@ def test_build_merge_preserves_call_edge_direction(tmp_path):
     build_merge must read the saved JSON's source/target verbatim instead
     of round-tripping through NetworkX.
     """
-    from graphify.extract import extract_js
-    from graphify.export import to_json
+    from monarch_atlas.extract import extract_js
+    from monarch_atlas.export import to_json
 
     # Callee `b` is defined before caller `a` so node insertion order
     # is b, a. An undirected Graph then yields the edge as (b, a) on
@@ -704,8 +704,8 @@ def test_build_merge_directed_edge_direction_survives_round_trip(tmp_path):
     """Regression for #2342: once build_merge correctly inherits the on-disk
     `directed` flag, the resulting graph must actually be a DiGraph whose
     edges are readable in the right direction (a -> b, not b -> a)."""
-    from graphify.extract import extract_js
-    from graphify.export import to_json
+    from monarch_atlas.extract import extract_js
+    from monarch_atlas.export import to_json
 
     src = "function b() {}\nfunction a() { b(); }\n"
     src_file = tmp_path / "x.js"
@@ -739,7 +739,7 @@ def test_build_merge_inherits_directed_flag_from_disk(tmp_path):
                    "source_file": "x.md", "source_location": "L1"}],
         "edges": [],
     }
-    from graphify.export import to_json
+    from monarch_atlas.export import to_json
 
     graph_path = tmp_path / "graph.json"
 
@@ -774,7 +774,7 @@ def test_build_merge_explicit_directed_overrides_disk_flag(tmp_path):
                    "source_file": "x.md", "source_location": "L1"}],
         "edges": [],
     }
-    from graphify.export import to_json
+    from monarch_atlas.export import to_json
 
     graph_path = tmp_path / "graph.json"
 
@@ -805,7 +805,7 @@ def test_build_from_json_preserves_first_direction_on_bidirectional_pair(tmp_pat
     build_from_json must keep the first-seen direction for the surviving edge
     instead of letting the second add_edge overwrite _src/_tgt.
     """
-    from graphify.export import to_json
+    from monarch_atlas.export import to_json
 
     # Lexicographic order of (src, tgt, rel) puts `a` < `z` first, so the sort
     # processes `a -> z` BEFORE `z -> a`. Without the fix, the second write
@@ -988,7 +988,7 @@ def test_build_from_json_ambiguous_old_stem_alias_stays_dangling(tmp_path):
     extraction = {
         "nodes": [
             # Ids given in their canonical (post-extract.py, extension-stripped)
-            # form, matching what a real graphify update run would already have
+            # form, matching what a real atlas update run would already have
             # produced before build_from_json assembles the final graph.
             {"id": "dev_monitoring_ping", "label": "ping.h", "file_type": "code",
              "source_file": "Dev/monitoring/ping.h"},
@@ -1278,7 +1278,7 @@ def test_merge_raw_extraction_tier_scoped(tmp_path):
     """#2333 raw-path mirror: merge_raw_extraction (extract --no-cluster
     incremental) applies the same tier-scoped replace as build_merge — a
     semantic-only re-extract keeps the file's AST nodes/edges."""
-    from graphify.build import merge_raw_extraction
+    from monarch_atlas.build import merge_raw_extraction
 
     graph_path = tmp_path / "graph.json"
     _write_two_tier_graph(graph_path)
@@ -1307,7 +1307,7 @@ def test_merge_raw_extraction_tier_scoped(tmp_path):
 def test_is_ast_tier_legacy_fallback():
     """#2334: _origin wins when present; unstamped legacy items fall back to
     the source_location shape (AST emits 'L<line>', semantic emits null)."""
-    from graphify.build import _is_ast_tier
+    from monarch_atlas.build import _is_ast_tier
 
     assert _is_ast_tier({"_origin": "ast"}) is True
     assert _is_ast_tier({"_origin": "ast", "source_location": None}) is True
@@ -1328,7 +1328,7 @@ def test_build_merge_root_collapses_convention_drift(tmp_path):
     import networkx as nx
 
     root = tmp_path
-    graph_path = tmp_path / "graphify-out" / "graph.json"
+    graph_path = tmp_path / "atlas-out" / "graph.json"
     graph_path.parent.mkdir(parents=True)
 
     # Stored graph: nested project-relative convention + a STALE node for the same
@@ -1374,7 +1374,7 @@ def test_build_merge_rejects_oversized_existing_graph(monkeypatch, tmp_path):
 
     graph_path = tmp_path / "graph.json"
     graph_path.write_text(json.dumps({"nodes": [], "links": []}), encoding="utf-8")
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 8)
+    monkeypatch.setattr("monarch_atlas.security._MAX_GRAPH_FILE_BYTES", 8)
     with pytest.raises(ValueError, match="exceeds"):
         build_merge([], graph_path, dedup=False)
 
@@ -1421,7 +1421,7 @@ def test_build_from_json_skips_edge_with_non_hashable_endpoint():
 def test_graph_has_legacy_ids_detects_old_scheme():
     """The read-only-consumer nudge (query/serve) flags a pre-#1504 graph and
     leaves a canonical one alone."""
-    from graphify.build import graph_has_legacy_ids
+    from monarch_atlas.build import graph_has_legacy_ids
     old = [{"id": "api_readme", "source_file": "docs/v1/api/README.md", "type": "document", "source_location": "L1"}]
     new = [{"id": "docs_v1_api_readme", "source_file": "docs/v1/api/README.md", "type": "document", "source_location": "L1"}]
     assert graph_has_legacy_ids(old, root=".") is True
@@ -1447,7 +1447,7 @@ def test_graph_has_legacy_ids_ignores_global_mcp_ids(mcp_kind, nid):
     """MCP ingest stamps every node with L1 (JSON has no line info), so global ids
     would otherwise be read as file-level. Under `sub/.mcp.json` the old bare stem
     is `mcp`, which these ids legitimately start with (#2408)."""
-    from graphify.build import graph_has_legacy_ids
+    from monarch_atlas.build import graph_has_legacy_ids
     node = {
         "id": nid,
         "source_file": "sub/.mcp.json",
@@ -1460,7 +1460,7 @@ def test_graph_has_legacy_ids_ignores_global_mcp_ids(mcp_kind, nid):
 def test_graph_has_legacy_ids_still_checks_file_scoped_mcp_nodes():
     """The exemption is narrow: file-derived MCP kinds stay under detection, and a
     missing/malformed metadata blob doesn't exempt anything (or crash)."""
-    from graphify.build import graph_has_legacy_ids
+    from monarch_atlas.build import graph_has_legacy_ids
     for kind in ("mcp_config_file", "mcp_server"):
         stale = {"id": "mcp_mcp_server_x", "source_file": "sub/.mcp.json",
                  "source_location": "L1", "metadata": {"mcp_kind": kind}}
@@ -1475,8 +1475,8 @@ def test_graph_has_legacy_ids_still_checks_file_scoped_mcp_nodes():
 def test_fresh_mcp_graph_is_not_flagged_legacy(tmp_path, monkeypatch, mcp_dir):
     """End-to-end: a freshly extracted graph containing a .mcp.json — nested or at
     the repo root — must not nudge the user to rebuild (#2408)."""
-    from graphify.build import graph_has_legacy_ids
-    from graphify.extract import extract
+    from monarch_atlas.build import graph_has_legacy_ids
+    from monarch_atlas.extract import extract
 
     (tmp_path / "main.py").write_text("def main():\n    return 1\n")
     mcp_parent = tmp_path / mcp_dir if mcp_dir else tmp_path
@@ -1498,7 +1498,7 @@ def test_fresh_mcp_graph_is_not_flagged_legacy(tmp_path, monkeypatch, mcp_dir):
 def test_semantic_rekey_relative_vs_absolute_source_file():
     """Re-key contract: a relative source_file is migrated; an absolute one is left
     untouched (it can't be relativized, so its on-disk path must not leak into IDs)."""
-    from graphify.build import _semantic_id_remap
+    from monarch_atlas.build import _semantic_id_remap
     rel = [{"id": "api_readme", "source_file": "docs/v1/api/README.md", "type": "document"}]
     assert _semantic_id_remap(rel, ".") == {"api_readme": "docs_v1_api_readme"}
     # absolute path with no resolvable root → skipped, not remapped to an abs-path id
@@ -1644,7 +1644,7 @@ FOREIGN_ABSOLUTE_SOURCE_FILES = [
 @pytest.mark.parametrize("sf", FOREIGN_ABSOLUTE_SOURCE_FILES)
 def test_semantic_rekey_skips_absolute_from_either_platform(sf):
     """#2618: an absolute source_file is left alone whichever OS wrote it."""
-    from graphify.build import _semantic_id_remap
+    from monarch_atlas.build import _semantic_id_remap
     nodes = [{"id": "api_readme", "source_file": sf, "type": "document"}]
     assert _semantic_id_remap(nodes, None) == {}, (
         f"{sf!r} leaked its on-disk path into the node ID"
@@ -1655,7 +1655,7 @@ def test_semantic_rekey_skips_absolute_from_either_platform(sf):
 def test_graph_has_legacy_ids_skips_absolute_from_either_platform(sf):
     """The legacy-ID probe derives a stem from source_file, so it must skip an
     absolute path rather than mint a stem out of the whole build directory."""
-    from graphify.build import graph_has_legacy_ids
+    from monarch_atlas.build import graph_has_legacy_ids
     nodes = [{"id": "api_readme", "source_file": sf,
               "type": "document", "source_location": "L1"}]
     assert graph_has_legacy_ids(nodes, root=None) is False
@@ -1664,7 +1664,7 @@ def test_graph_has_legacy_ids_skips_absolute_from_either_platform(sf):
 def test_norm_source_file_relativizes_a_posix_absolute_path():
     """A Linux-built graph's absolute source_file must relativize against the
     matching root regardless of the host running the update."""
-    from graphify.build import _norm_source_file
+    from monarch_atlas.build import _norm_source_file
     assert _norm_source_file(
         "/home/ci/build/repo/docs/api/README.md", "/home/ci/build/repo"
     ) == "docs/api/README.md"
@@ -1676,7 +1676,7 @@ def test_build_from_json_relativizes_definition_file():
     `source_file`, so the graph must store it repo-relative — otherwise the
     build machine's absolute path ships in graph.json and a reader on another
     checkout (or the MCP `get_node` answer) points at a file that is not there."""
-    from graphify.build import build_from_json
+    from monarch_atlas.build import build_from_json
 
     root = "/home/ci/build/repo"
     extraction = {
@@ -1708,7 +1708,7 @@ def test_derive_prune_root_recovers_root_from_posix_absolute_prune_sources():
     no-opped — the failure mode of #1151 / #2446 / #2012, reached from the other
     direction.
     """
-    from graphify.build import _derive_prune_root
+    from monarch_atlas.build import _derive_prune_root
     stored = {"docs/a.md", "/home/ci/build/repo/docs/b.md"}
     assert _derive_prune_root(
         ["/home/ci/build/repo/docs/a.md"], stored
@@ -1894,7 +1894,7 @@ def test_merge_raw_extraction_cross_file_stub_parity(tmp_path):
     """#3411: merge_raw_extraction shares the same explicit extraction provenance
     scoping as build_merge."""
     import networkx as nx
-    from graphify.build import merge_raw_extraction
+    from monarch_atlas.build import merge_raw_extraction
 
     root = tmp_path / "corpus"
     root.mkdir()
@@ -1991,7 +1991,7 @@ def test_build_annotations_all_resolve():
     import inspect
     import typing
 
-    from graphify import build as build_module
+    from monarch_atlas import build as build_module
 
     unresolvable = []
     for name, obj in vars(build_module).items():
@@ -2004,7 +2004,7 @@ def test_build_annotations_all_resolve():
 
 
 def test_method_ghost_dedupe_and_alias_resolution_3705():
-    from graphify.build import build_from_json
+    from monarch_atlas.build import build_from_json
 
     extraction = {
         "nodes": [
@@ -2054,7 +2054,7 @@ def test_method_ghost_ambiguous_same_name_in_one_file_is_not_merged_3705():
     are a genuine ambiguity: a spec-conformant ghost must NOT be remapped or
     aliased onto either one (#3705 follow-up guard). The single-candidate rule
     (len == 1) must skip the 2-candidate case and leave the ghost intact."""
-    from graphify.build import build_from_json
+    from monarch_atlas.build import build_from_json
 
     extraction = {
         "nodes": [

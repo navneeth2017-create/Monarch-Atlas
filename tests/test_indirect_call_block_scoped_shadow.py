@@ -21,7 +21,7 @@ regress.
 import os
 from pathlib import Path
 
-from graphify.extract import extract, extract_js
+from monarch_atlas.extract import extract, extract_js
 
 
 def _extract_js_dir(tmp_path, files: dict[str, str]):

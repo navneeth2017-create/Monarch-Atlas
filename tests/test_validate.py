@@ -1,5 +1,5 @@
 import pytest
-from graphify.validate import validate_extraction, assert_valid
+from monarch_atlas.validate import validate_extraction, assert_valid
 
 VALID = {
     "nodes": [
@@ -92,7 +92,7 @@ def test_legacy_aliases_valid_after_build_canonicalization():
     # path->source_file, type->relation, confidence_score->confidence) in
     # place BEFORE validation, so an alias-only extraction that fails
     # validation raw is fully schema-valid after canonicalization.
-    from graphify.build import build_from_json
+    from monarch_atlas.build import build_from_json
     data = {
         "nodes": [
             {"id": "n1", "name": "Foo", "path": "a/b.md", "file_type": "concept"},

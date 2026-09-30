@@ -9,7 +9,7 @@ import pytest
 import networkx as nx
 from networkx.readwrite import json_graph
 
-from graphify.serve import (
+from monarch_atlas.serve import (
     _node_arg,
     _strip_diacritics,
     _communities_from_graph,
@@ -108,7 +108,7 @@ def test_score_nodes_ignores_trailing_punctuation():
 def test_score_nodes_multiword_exact_label_outranks_superset():
     """A multi-word query equal to a whole label must resolve uniquely.
 
-    Regression for the `graphify path` "No path found" bug: every node sharing
+    Regression for the `atlas path` "No path found" bug: every node sharing
     the query's token set scored identically (no single token equals a
     multi-word label, so the per-token exact tier never fired), the tie broke by
     arbitrary node-id sort, and a wrong/disconnected endpoint was chosen. The
@@ -263,7 +263,7 @@ def test_find_node_matches_merge_graphs_namespaced_node_id():
 
 def _force_full_scan(monkeypatch):
     """Disable the prefilter so a call exercises the original full-node scan."""
-    monkeypatch.setattr("graphify.serve._trigram_candidates", lambda *a, **k: None)
+    monkeypatch.setattr("monarch_atlas.serve._trigram_candidates", lambda *a, **k: None)
 
 
 def _make_big_graph(n: int = 150) -> nx.Graph:
@@ -498,7 +498,7 @@ def test_pick_seeds_german_query_seeds_content_node_not_heading_noise():
 
 
 def test_query_terms_filters_only_short_english_terms(monkeypatch):
-    import graphify.serve as serve_mod
+    import monarch_atlas.serve as serve_mod
 
     class FakeJieba:
         def cut(self, text):
@@ -687,10 +687,10 @@ def test_load_graph_roundtrip(tmp_path):
     assert G2.number_of_edges() == G.number_of_edges()
 
 def test_load_graph_missing_file(tmp_path):
-    graphify_dir = tmp_path / "graphify-out"
-    graphify_dir.mkdir()
+    atlas_dir = tmp_path / "atlas-out"
+    atlas_dir.mkdir()
     with pytest.raises(SystemExit):
-        _load_graph(str(graphify_dir / "nonexistent.json"))
+        _load_graph(str(atlas_dir / "nonexistent.json"))
 
 
 def test_load_graph_corrupted_json_prints_recovery_message(tmp_path, capsys):
@@ -703,7 +703,7 @@ def test_load_graph_corrupted_json_prints_recovery_message(tmp_path, capsys):
         _load_graph(str(p))
     err = capsys.readouterr().err
     assert "graph.json is corrupted" in err
-    assert "Re-run /graphify to rebuild" in err
+    assert "Re-run /atlas to rebuild" in err
 
 
 def test_load_graph_generic_value_error_message_unchanged(tmp_path, capsys):
@@ -725,7 +725,7 @@ def test_load_graph_rejects_oversized_file(monkeypatch, tmp_path, capsys):
     data = json_graph.node_link_data(G, edges="links")
     p = tmp_path / "graph.json"
     p.write_text(json.dumps(data))
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 16)
+    monkeypatch.setattr("monarch_atlas.security._MAX_GRAPH_FILE_BYTES", 16)
     with pytest.raises(SystemExit):
         _load_graph(str(p))
     err = capsys.readouterr().err
@@ -740,7 +740,7 @@ def test_load_graph_accepts_under_cap(monkeypatch, tmp_path):
     p = tmp_path / "graph.json"
     p.write_text(json.dumps(data))
     # Cap well above the actual file size — load proceeds.
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 10 * 1024 * 1024)
+    monkeypatch.setattr("monarch_atlas.security._MAX_GRAPH_FILE_BYTES", 10 * 1024 * 1024)
     G2 = _load_graph(str(p))
     assert G2.number_of_nodes() == G.number_of_nodes()
 
@@ -761,7 +761,7 @@ def test_maybe_reload_detects_graph_change(tmp_path):
     import time
     from unittest.mock import patch
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     graph_path = out / "graph.json"
     _write_graph(graph_path, ["alpha", "beta"])
@@ -782,7 +782,7 @@ def test_load_graph_cache_key_changes_with_content(tmp_path):
     """mtime_ns + size uniquely identifies a graph version (#874)."""
     import time
 
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir()
     graph_path = out / "graph.json"
     _write_graph(graph_path, ["a"])
@@ -1095,7 +1095,7 @@ def test_infer_context_filters_for_callers_question():
 
 def test_query_graph_text_parameter_type_context_filter_changes_traversal():
     import networkx as nx
-    from graphify.serve import _query_graph_text
+    from monarch_atlas.serve import _query_graph_text
 
     graph = nx.Graph()
     graph.add_node("process", label="process", source_file="sample.cs", source_location="L20")
@@ -1113,7 +1113,7 @@ def test_query_graph_text_parameter_type_context_filter_changes_traversal():
 
 def test_query_graph_text_context_filter_aliases_resolve():
     import networkx as nx
-    from graphify.serve import _normalize_context_filters
+    from monarch_atlas.serve import _normalize_context_filters
 
     assert _normalize_context_filters(["param"]) == ["parameter_type"]
     assert _normalize_context_filters(["parameter"]) == ["parameter_type"]
@@ -1139,7 +1139,7 @@ def test_serve_import_is_clean_under_syntax_warnings(tmp_path):
             sys.executable,
             "-X", f"pycache_prefix={tmp_path / 'pycache'}",
             "-W", "error::SyntaxWarning",
-            "-c", "import graphify.serve as serve; assert serve._jieba is not None",
+            "-c", "import monarch_atlas.serve as serve; assert serve._jieba is not None",
         ],
         capture_output=True,
         text=True,
@@ -1148,7 +1148,7 @@ def test_serve_import_is_clean_under_syntax_warnings(tmp_path):
 
 def test_query_terms_chinese_segments_with_cached_jieba(monkeypatch):
     """Chinese text should use the cached jieba module and keep the original term."""
-    import graphify.serve as serve_mod
+    import monarch_atlas.serve as serve_mod
 
     class FakeJieba:
         def cut(self, text):
@@ -1171,7 +1171,7 @@ def test_query_terms_chinese_mixed():
 
 def test_query_terms_non_chinese_scripts_are_not_segmented():
     """Japanese kana and Hangul are kept as terms but not segmented as Chinese."""
-    import graphify.serve as serve_mod
+    import monarch_atlas.serve as serve_mod
 
     assert not serve_mod._has_chinese("かなカナ한글")
     assert serve_mod._query_terms("かなカナ한글") == ["かなカナ한글"]
@@ -1179,7 +1179,7 @@ def test_query_terms_non_chinese_scripts_are_not_segmented():
 
 def test_query_terms_chinese_no_jieba_fallback(monkeypatch):
     """When jieba is not installed, fallback to character bigrams."""
-    import graphify.serve as serve_mod
+    import monarch_atlas.serve as serve_mod
 
     monkeypatch.setattr(serve_mod, "_jieba", None)
     terms = serve_mod._query_terms("页面路由")
@@ -1400,7 +1400,7 @@ def test_score_query_matches_legacy_under_full_scan_fallback(monkeypatch):
     whole graph — mirroring per-token `_score_nodes([token])` which would also
     full-scan when its own trigram search isn't selective."""
     monkeypatch.setattr(
-        "graphify.serve._trigram_candidates", lambda G, needles: None
+        "monarch_atlas.serve._trigram_candidates", lambda G, needles: None
     )
     terms = ["router", "service", "handler"]
     G = _make_random_scoring_graph(80, seed=19)
@@ -1429,8 +1429,8 @@ def test_query_graph_text_makes_exactly_one_score_query_call(monkeypatch):
         state["sn"] += 1
         return original_sn(*a, **k)
 
-    monkeypatch.setattr("graphify.serve._score_query", counting_sq)
-    monkeypatch.setattr("graphify.serve._score_nodes", counting_sn)
+    monkeypatch.setattr("monarch_atlas.serve._score_query", counting_sq)
+    monkeypatch.setattr("monarch_atlas.serve._score_nodes", counting_sn)
 
     queries = [
         "foo",                                              # one term
@@ -1711,7 +1711,7 @@ def test_underscore_query_matches_hyphenated_label():
 def test_snake_case_identifier_still_matches_itself():
     """Splitting on `_` must not break plain snake_case lookups."""
     G = nx.Graph()
-    G.add_node("n1", label="_query_terms", source_file="graphify/serve.py",
+    G.add_node("n1", label="_query_terms", source_file="monarch_atlas/serve.py",
                source_location="L128", community=0)
     G.add_node("n2", label="unrelated", source_file="other.py", source_location="L1", community=1)
 
@@ -1737,7 +1737,7 @@ def test_resolve_single_node_shared_by_get_node_and_get_neighbors():
     """ADR-0001 finding 1: the resolver both tools now use returns an Ambiguous
     message when the winning tier spans multiple files, a clean node id for a
     unique label, and a not-found message otherwise."""
-    from graphify.serve import _resolve_single_node
+    from monarch_atlas.serve import _resolve_single_node
 
     G = nx.Graph()
     G.add_node("a", label="extract", source_file="a/x.py")
@@ -1796,7 +1796,7 @@ def test_score_nodes_rationale_does_not_count_toward_term_coverage():
     """Like the source tier, a rationale hit adds recall but must not restore
     the coverage-scaled exact tier: if it counted, `a` would gain roughly three
     quarters of an exact-match bonus over `b`, not a sub-unit nudge."""
-    from graphify.serve import _EXACT_MATCH_BONUS
+    from monarch_atlas.serve import _EXACT_MATCH_BONUS
     G = nx.Graph()
     G.add_node("a", label="cache", source_file="x.py", rationale="pinned because of drift")
     G.add_node("b", label="cache", source_file="y.py")

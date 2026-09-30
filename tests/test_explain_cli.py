@@ -1,7 +1,7 @@
-"""Regression tests for `graphify explain` arrow direction (#853)."""
+"""Regression tests for `atlas explain` arrow direction (#853)."""
 from __future__ import annotations
 import json
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 
 
 def _write_graph(tmp_path):
@@ -34,7 +34,7 @@ def _write_graph(tmp_path):
 def _run(monkeypatch, graph_path, label, capsys):
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(mainmod.sys, "argv",
-        ["graphify", "explain", label, "--graph", str(graph_path)])
+        ["atlas", "explain", label, "--graph", str(graph_path)])
     mainmod.main()
     return capsys.readouterr().out
 
@@ -85,7 +85,7 @@ def test_explain_source_file_path_prefers_file_level_node(monkeypatch, tmp_path,
 # --- work-memory overlay Lesson line ------------------------------------------
 
 def _write_sidecar(tmp_path, nodes):
-    (tmp_path / ".graphify_learning.json").write_text(
+    (tmp_path / ".atlas_learning.json").write_text(
         json.dumps({"version": 1, "generated_at": "2026-06-01T00:00:00+00:00",
                     "nodes": nodes}),
         encoding="utf-8",
@@ -268,7 +268,7 @@ def _write_ambiguous_graph(tmp_path, *, reverse: bool = False):
 def _run_expect_exit(monkeypatch, graph_path, label, capsys):
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(mainmod.sys, "argv",
-        ["graphify", "explain", label, "--graph", str(graph_path)])
+        ["atlas", "explain", label, "--graph", str(graph_path)])
     try:
         mainmod.main()
     except SystemExit as exc:

@@ -1,4 +1,4 @@
-"""`graphify extract --code-only` indexes code without an LLM key (#1734).
+"""`atlas extract --code-only` indexes code without an LLM key (#1734).
 
 A mixed repo (code + docs) with no API key configured used to hard-fail on the
 doc/paper/image files. `--code-only` skips the semantic pass so the code graph
@@ -28,9 +28,9 @@ def _mixed_repo(tmp_path: Path) -> Path:
 
 def _run(repo: Path, *extra: str):
     env = {k: v for k, v in os.environ.items() if k not in _KEY_VARS}
-    env["GRAPHIFY_OUT"] = str(repo / "graphify-out")
+    env["ATLAS_OUT"] = str(repo / "atlas-out")
     return subprocess.run(
-        [PYTHON, "-m", "graphify", "extract", ".", *extra],
+        [PYTHON, "-m", "monarch_atlas", "extract", ".", *extra],
         cwd=repo, capture_output=True, text=True, env=env,
     )
 
@@ -41,7 +41,7 @@ def test_code_only_succeeds_without_key(tmp_path):
     assert r.returncode == 0, f"--code-only should succeed with no key: {r.stderr}"
     out = r.stdout + r.stderr
     assert "--code-only: skipping" in out
-    graph = repo / "graphify-out" / "graph.json"
+    graph = repo / "atlas-out" / "graph.json"
     assert graph.exists(), "code graph must still be written"
     import json
     g = json.loads(graph.read_text())
@@ -58,9 +58,9 @@ def test_mixed_repo_without_key_errors_and_points_at_code_only(tmp_path):
 
 def test_extract_usage_advertises_code_only(tmp_path):
     """#2071: --code-only must be discoverable in the extract usage text, not only
-    by triggering the no-key error. `graphify extract` with no path prints usage."""
+    by triggering the no-key error. `atlas extract` with no path prints usage."""
     r = subprocess.run(
-        [PYTHON, "-m", "graphify", "extract"],
+        [PYTHON, "-m", "monarch_atlas", "extract"],
         cwd=tmp_path, capture_output=True, text=True,
     )
     assert r.returncode != 0
@@ -70,19 +70,19 @@ def test_extract_usage_advertises_code_only(tmp_path):
 
 
 def _run_relative_out(repo: Path, *extra: str):
-    """Like _run but with a RELATIVE GRAPHIFY_OUT so --out/--output controls the
-    parent dir (an absolute GRAPHIFY_OUT would override the flag)."""
+    """Like _run but with a RELATIVE ATLAS_OUT so --out/--output controls the
+    parent dir (an absolute ATLAS_OUT would override the flag)."""
     env = {k: v for k, v in os.environ.items() if k not in _KEY_VARS}
-    env["GRAPHIFY_OUT"] = "graphify-out"
+    env["ATLAS_OUT"] = "atlas-out"
     return subprocess.run(
-        [PYTHON, "-m", "graphify", "extract", ".", *extra],
+        [PYTHON, "-m", "monarch_atlas", "extract", ".", *extra],
         cwd=repo, capture_output=True, text=True, env=env,
     )
 
 
 def test_output_flag_is_alias_of_out(tmp_path):
     """#2004 part 3: `--output DIR` was silently ignored on extract (output went
-    to the default `<path>/graphify-out/`). It is now an alias of `--out`."""
+    to the default `<path>/atlas-out/`). It is now an alias of `--out`."""
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "app.py").write_text("def hello():\n    return 1\n")
@@ -90,8 +90,8 @@ def test_output_flag_is_alias_of_out(tmp_path):
 
     r = _run_relative_out(repo, "--code-only", "--no-cluster", "--output", str(custom))
     assert r.returncode == 0, r.stderr
-    assert (custom / "graphify-out" / "graph.json").exists(), "--output was ignored (#2004)"
-    assert not (repo / "graphify-out").exists(), "output must not go to the default dir"
+    assert (custom / "atlas-out" / "graph.json").exists(), "--output was ignored (#2004)"
+    assert not (repo / "atlas-out").exists(), "output must not go to the default dir"
 
 
 def test_output_flag_inline_form(tmp_path):
@@ -101,17 +101,17 @@ def test_output_flag_inline_form(tmp_path):
     custom = tmp_path / "out2"
     r = _run_relative_out(repo, "--code-only", "--no-cluster", f"--output={custom}")
     assert r.returncode == 0, r.stderr
-    assert (custom / "graphify-out" / "graph.json").exists()
+    assert (custom / "atlas-out" / "graph.json").exists()
 
 
-def test_no_gitignore_indexes_vcs_ignored_code_but_keeps_graphifyignore(tmp_path):
+def test_no_gitignore_indexes_vcs_ignored_code_but_keeps_atlasignore(tmp_path):
     repo = tmp_path / "repo"
     generated = repo / "proj" / "deep" / "generated"
     generated.mkdir(parents=True)
     (repo / ".git" / "info").mkdir(parents=True)
     (repo / ".git" / "info" / "exclude").write_text("local/\n")
     (repo / "proj" / ".gitignore").write_text("generated/\n")
-    (repo / "proj" / ".graphifyignore").write_text("hidden/\n")
+    (repo / "proj" / ".atlasignore").write_text("hidden/\n")
     (generated / "Gen.cs").write_text("namespace N { public class Gen {} }\n")
     local = repo / "local"
     local.mkdir()
@@ -123,7 +123,7 @@ def test_no_gitignore_indexes_vcs_ignored_code_but_keeps_graphifyignore(tmp_path
     result = _run(repo, "--no-gitignore", "--no-cluster")
 
     assert result.returncode == 0, result.stderr
-    graph = json.loads((repo / "graphify-out" / "graph.json").read_text())
+    graph = json.loads((repo / "atlas-out" / "graph.json").read_text())
     sources = {Path(str(node.get("source_file", ""))).as_posix() for node in graph["nodes"]}
     assert any(source.endswith("proj/deep/generated/Gen.cs") for source in sources)
     assert any(source.endswith("local/Local.cs") for source in sources)
@@ -132,7 +132,7 @@ def test_no_gitignore_indexes_vcs_ignored_code_but_keeps_graphifyignore(tmp_path
 
 def test_no_gitignore_setting_persists_across_flagless_extract(tmp_path):
     """#1971 persistence: once --no-gitignore is set, a later flag-less
-    `graphify extract` must NOT clobber it back to honoring .gitignore (which
+    `atlas extract` must NOT clobber it back to honoring .gitignore (which
     would make the git-ignored code silently disappear again)."""
     repo = tmp_path / "repo"
     gen = repo / "generated"
@@ -142,7 +142,7 @@ def test_no_gitignore_setting_persists_across_flagless_extract(tmp_path):
     (gen / "Gen.py").write_text("def gen():\n    return 2\n")
 
     def _sources():
-        g = json.loads((repo / "graphify-out" / "graph.json").read_text())
+        g = json.loads((repo / "atlas-out" / "graph.json").read_text())
         return {Path(str(n.get("source_file", ""))).as_posix() for n in g["nodes"]}
 
     r1 = _run(repo, "--no-gitignore", "--code-only", "--no-cluster")
@@ -165,7 +165,7 @@ def test_exclude_setting_persists_across_flagless_extract(tmp_path):
     (vendor / "lib.py").write_text("def vendor():\n    return 2\n")
 
     def _sources():
-        graph = json.loads((repo / "graphify-out" / "graph.json").read_text())
+        graph = json.loads((repo / "atlas-out" / "graph.json").read_text())
         return {
             Path(str(node.get("source_file", ""))).as_posix()
             for node in graph["nodes"]
@@ -196,14 +196,14 @@ def test_explicit_exclude_replaces_persisted_setting_with_custom_out(tmp_path):
     out_root = tmp_path / "custom-output"
 
     env = {key: value for key, value in os.environ.items() if key not in _KEY_VARS}
-    env["GRAPHIFY_OUT"] = "graphify-out"
+    env["ATLAS_OUT"] = "atlas-out"
 
     def _run_extract(*extra: str):
         return subprocess.run(
             [
                 PYTHON,
                 "-m",
-                "graphify",
+                "monarch_atlas",
                 "extract",
                 ".",
                 "--out",
@@ -221,7 +221,7 @@ def test_explicit_exclude_replaces_persisted_setting_with_custom_out(tmp_path):
     first = _run_extract("--exclude", "vendor")
     assert first.returncode == 0, first.stderr
 
-    graph_out = out_root / "graphify-out"
+    graph_out = out_root / "atlas-out"
     def _sources():
         graph = json.loads((graph_out / "graph.json").read_text())
         return {
@@ -241,7 +241,7 @@ def test_explicit_exclude_replaces_persisted_setting_with_custom_out(tmp_path):
     assert any(source.endswith("app.py") for source in sources)
     assert any(source.endswith("vendor/lib.py") for source in sources)
     assert not any(source.endswith("generated/gen.py") for source in sources)
-    assert json.loads((graph_out / ".graphify_build.json").read_text()) == {
+    assert json.loads((graph_out / ".atlas_build.json").read_text()) == {
         "excludes": ["generated"]
     }
 
@@ -269,7 +269,7 @@ def test_code_only_force_preserves_existing_semantic_layer(tmp_path):
     node and every hyperedge connected to one.
     """
     repo = _mixed_repo(tmp_path)
-    out = repo / "graphify-out"
+    out = repo / "atlas-out"
     out.mkdir()
     graph = out / "graph.json"
     # Seed a graph.json as if a prior full extract with an LLM backend had run:
@@ -337,7 +337,7 @@ def test_code_only_force_prunes_removed_semantic_files(tmp_path):
     disk (the doc/paper/image tier cannot outlive the corpus it indexes).
     """
     repo = _mixed_repo(tmp_path)
-    out = repo / "graphify-out"
+    out = repo / "atlas-out"
     out.mkdir()
     graph = out / "graph.json"
     graph.write_text(json.dumps({
@@ -391,7 +391,7 @@ def test_code_only_force_rescan_re_resolves_tsconfig_paths_and_preserves_semanti
     # 1. Initial extract --code-only
     r1 = _run(repo, "--code-only", "--no-cluster")
     assert r1.returncode == 0, r1.stderr
-    graph_path = repo / "graphify-out" / "graph.json"
+    graph_path = repo / "atlas-out" / "graph.json"
     g1 = json.loads(graph_path.read_text(encoding="utf-8"))
     edges1 = [(e["source"], e["target"]) for e in g1.get("edges", g1.get("links", []))]
     assert not any(src == "src_index" and ("src_utils" in tgt or "helper" in tgt) for src, tgt in edges1), (

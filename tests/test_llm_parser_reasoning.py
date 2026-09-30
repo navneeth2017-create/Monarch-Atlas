@@ -6,12 +6,12 @@ of their own. The narration routinely contains braces, so the first `{` in the
 text is not the answer. `_parse_llm_json` used to try exactly that one
 candidate and give up, dropping chunks whose answer was sitting right there:
 
-    [graphify] LLM returned invalid JSON, skipping chunk (first 200 chars:
+    [atlas] LLM returned invalid JSON, skipping chunk (first 200 chars:
     'Let me analyze the provided source files to extract a knowledge graph...')
 """
 from __future__ import annotations
 
-from graphify import llm
+from monarch_atlas import llm
 
 EMPTY = {"nodes": [], "edges": [], "hyperedges": []}
 

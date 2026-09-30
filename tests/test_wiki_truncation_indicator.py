@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import networkx as nx
 
-from graphify.wiki import _god_node_article
+from monarch_atlas.wiki import _god_node_article
 
 
 def _star(n_refs: int, n_other: int = 0):

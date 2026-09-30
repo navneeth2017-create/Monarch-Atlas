@@ -11,7 +11,7 @@ import pytest
 tspython = pytest.importorskip("tree_sitter_python")
 from tree_sitter import Language, Parser  # noqa: E402
 
-from graphify.extractors.resolution import _walk_python_tree
+from monarch_atlas.extractors.resolution import _walk_python_tree
 
 
 def _reference_preorder(node):

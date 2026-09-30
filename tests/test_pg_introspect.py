@@ -5,8 +5,8 @@ from pathlib import Path
 
 pytest.importorskip("tree_sitter_sql", reason="tree-sitter-sql not installed; skip pg_introspect tests")
 
-from graphify.pg_introspect import introspect_postgres
-from graphify.validate import validate_extraction
+from monarch_atlas.pg_introspect import introspect_postgres
+from monarch_atlas.validate import validate_extraction
 
 
 # ---------------------------------------------------------------------------
@@ -363,7 +363,7 @@ def test_pg_introspect_import_error():
     with patch.dict("sys.modules", {"psycopg": None}):
         with pytest.raises(ImportError, match="psycopg is required") as exc_info:
             introspect_postgres("postgresql://localhost/db")
-    # #1906: the PyPI package is graphifyy (double-y), so the install hint must match
+    # #1906: the PyPI package is monarch-atlas (double-y), so the install hint must match
     assert "monarch-atlas[postgres]" in str(exc_info.value)
 
 
@@ -376,7 +376,7 @@ def test_pg_introspect_grammar_error_surfaces():
     )
     with patch.dict("sys.modules", {"psycopg": mock_psycopg}):
         with patch(
-            "graphify.pg_introspect.extract_sql",
+            "monarch_atlas.pg_introspect.extract_sql",
             return_value={
                 "nodes": [],
                 "edges": [],

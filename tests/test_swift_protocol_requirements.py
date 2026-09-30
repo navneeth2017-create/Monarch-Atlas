@@ -13,7 +13,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from graphify.extract import extract_swift
+from monarch_atlas.extract import extract_swift
 
 
 def _labels(result):

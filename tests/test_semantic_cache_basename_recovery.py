@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from graphify.cache import load_cached, save_semantic_cache
+from monarch_atlas.cache import load_cached, save_semantic_cache
 
 
 def test_malformed_but_basename_unique_path_recovers(tmp_path):

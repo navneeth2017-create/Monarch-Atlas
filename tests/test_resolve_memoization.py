@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 try:
-    from graphify.extractors.resolution import _resolve_cached, _cached_realpath
+    from monarch_atlas.extractors.resolution import _resolve_cached, _cached_realpath
 except ImportError:  # pre-fix tree
     _resolve_cached = None
     _cached_realpath = None

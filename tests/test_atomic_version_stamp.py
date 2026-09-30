@@ -1,30 +1,30 @@
-"""Regression tests for atomic `.graphify_version` stamp writes (#3286)."""
+"""Regression tests for atomic `.atlas_version` stamp writes (#3286)."""
 from __future__ import annotations
 
 import os
 
 import pytest
 
-import graphify.install as install
+import monarch_atlas.install as install
 
 
 def test_write_version_stamp_is_atomic_and_cleans_tmp(tmp_path):
-    skill_dst = tmp_path / "skills" / "graphify" / "SKILL.md"
+    skill_dst = tmp_path / "skills" / "atlas" / "SKILL.md"
     skill_dst.parent.mkdir(parents=True)
     skill_dst.write_text("skill", encoding="utf-8")
 
     install._write_version_stamp(skill_dst, "1.2.3")
 
-    stamp = skill_dst.parent / ".graphify_version"
+    stamp = skill_dst.parent / ".atlas_version"
     assert stamp.read_text(encoding="utf-8") == "1.2.3"
-    assert {p.name for p in skill_dst.parent.iterdir()} == {"SKILL.md", ".graphify_version"}
+    assert {p.name for p in skill_dst.parent.iterdir()} == {"SKILL.md", ".atlas_version"}
 
 
 def test_write_version_stamp_preserves_existing_on_replace_failure(tmp_path, monkeypatch):
-    skill_dst = tmp_path / "skills" / "graphify" / "SKILL.md"
+    skill_dst = tmp_path / "skills" / "atlas" / "SKILL.md"
     skill_dst.parent.mkdir(parents=True)
     skill_dst.write_text("skill", encoding="utf-8")
-    stamp = skill_dst.parent / ".graphify_version"
+    stamp = skill_dst.parent / ".atlas_version"
     stamp.write_text("old", encoding="utf-8")
 
     def boom(src, dst):
@@ -35,21 +35,21 @@ def test_write_version_stamp_preserves_existing_on_replace_failure(tmp_path, mon
         install._write_version_stamp(skill_dst, "new")
 
     assert stamp.read_text(encoding="utf-8") == "old"
-    assert not (skill_dst.parent / ".graphify_version.tmp").exists()
+    assert not (skill_dst.parent / ".atlas_version.tmp").exists()
 
 
 def test_write_version_stamp_replaces_symlink_instead_of_following(tmp_path):
     """Managed-dotfile case: os.replace must replace the symlink, not write through."""
-    real_store = tmp_path / "dotfiles" / ".graphify_version"
+    real_store = tmp_path / "dotfiles" / ".atlas_version"
     real_store.parent.mkdir(parents=True)
     real_store.write_text("from-dotfiles", encoding="utf-8")
 
-    skill_dir = tmp_path / "skills" / "graphify"
+    skill_dir = tmp_path / "skills" / "atlas"
     skill_dir.mkdir(parents=True)
     skill_dst = skill_dir / "SKILL.md"
     skill_dst.write_text("skill", encoding="utf-8")
 
-    link = skill_dir / ".graphify_version"
+    link = skill_dir / ".atlas_version"
     try:
         link.symlink_to(real_store)
     except OSError as exc:

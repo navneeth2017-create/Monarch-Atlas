@@ -1,4 +1,4 @@
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def test_imported_then_exported_binding_has_owned_target(tmp_path):
@@ -195,7 +195,7 @@ def test_private_name_in_star_branch_is_not_an_export(tmp_path):
 
 def test_repointed_target_file_tracks_definition_and_preserves_source_site(tmp_path, monkeypatch):
     from pathlib import Path
-    import graphify.extractors.resolution as resolution
+    import monarch_atlas.extractors.resolution as resolution
 
     original = resolution._apply_symbol_resolution_facts
     observed = []

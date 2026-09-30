@@ -19,7 +19,7 @@ PYTHON = sys.executable
 
 
 def _run(args, cwd):
-    return subprocess.run([PYTHON, "-m", "graphify"] + args, cwd=cwd,
+    return subprocess.run([PYTHON, "-m", "monarch_atlas"] + args, cwd=cwd,
                           capture_output=True, text=True)
 
 
@@ -45,8 +45,8 @@ def _write(p: Path, nodes: list[dict]):
 
 
 def _merge(tmp_path, left: list[dict], right: list[dict]):
-    a = tmp_path / "svc_a" / "graphify-out" / "graph.json"
-    b = tmp_path / "svc_b" / "graphify-out" / "graph.json"
+    a = tmp_path / "svc_a" / "atlas-out" / "graph.json"
+    b = tmp_path / "svc_b" / "atlas-out" / "graph.json"
     _write(a, left)
     _write(b, right)
     out = tmp_path / "merged.json"

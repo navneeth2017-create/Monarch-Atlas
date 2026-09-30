@@ -1,7 +1,7 @@
-"""Tests for graphify/dedup.py entity deduplication pipeline."""
+"""Tests for monarch_atlas/dedup.py entity deduplication pipeline."""
 from __future__ import annotations
 import pytest
-from graphify.dedup import (
+from monarch_atlas.dedup import (
     deduplicate_entities,
     _collision_rank,
     _defines_id,
@@ -131,7 +131,7 @@ def test_dedup_llm_flag_accepted():
 
 def test_build_calls_dedup():
     """build() should deduplicate near-identical nodes across extractions."""
-    from graphify.build import build
+    from monarch_atlas.build import build
     chunk1 = {
         "nodes": [{"id": "graphextractor", "label": "GraphExtractor", "source_file": "a.py"}],
         "edges": [],
@@ -146,7 +146,7 @@ def test_build_calls_dedup():
 
 def test_build_dedup_preserves_semantic_attributes():
     """The default build path must not discard semantic enrichment (#2091)."""
-    from graphify.build import build
+    from monarch_atlas.build import build
     ast = {
         "nodes": [{"id": "src_auth_login", "label": "login", "file_type": "code",
                    "source_file": "src/auth.py", "_origin": "ast",
@@ -193,7 +193,7 @@ def test_dedup_does_not_merge_model_with_suffix(tmp_path):
 
 def test_dedup_still_merges_real_typos():
     """Genuine same-length single-char typos should still merge (#878 non-regression)."""
-    from graphify.dedup import _is_variant_pair, _short_label_blocked
+    from monarch_atlas.dedup import _is_variant_pair, _short_label_blocked
     from rapidfuzz.distance import JaroWinkler
     a, b = "graphextractor", "graphextractar"
     score = JaroWinkler.normalized_similarity(a, b) * 100
@@ -203,7 +203,7 @@ def test_dedup_still_merges_real_typos():
 
 def test_variant_pair_helper():
     """_is_variant_pair correctly identifies chip-model variant pairs (#878)."""
-    from graphify.dedup import _is_variant_pair
+    from monarch_atlas.dedup import _is_variant_pair
     assert _is_variant_pair("asr1603", "asr1605")
     assert _is_variant_pair("cortex a55", "cortex a55x")
     assert not _is_variant_pair("graphextractor", "graphextracter")
@@ -215,7 +215,7 @@ def test_prefix_extension_symbols_not_merged():
     be merged (#1201). getActiveSession / getActiveSessions score ~98.82 JW but are
     different functions; parseConfig / parseConfigFile likewise."""
     import networkx as nx
-    from graphify.dedup import deduplicate_entities
+    from monarch_atlas.dedup import deduplicate_entities
 
     pairs = [
         ("getActiveSession", "getActiveSessions"),
@@ -274,7 +274,7 @@ def test_prefix_guard_does_not_block_same_length_typos():
     prefix-extensions (one is a substring of the other) should be blocked (#1201).
     graphextractor / graphextractar have the same length, so neither starts-with the
     other, and the guard must not fire."""
-    from graphify.dedup import _norm
+    from monarch_atlas.dedup import _norm
     a = _norm("GraphExtractor")   # "graphextractor" — 14 chars
     b = _norm("GraphExtractar")   # "graphextractar" — 14 chars
     lo, hi = sorted((a, b), key=len)
@@ -287,7 +287,7 @@ def test_prefix_guard_does_not_block_same_length_typos():
 def test_prefix_guard_fires_for_extension_pairs():
     """The prefix-extension guard must fire for pairs where one is a strict prefix
     of the other, preventing false merges (#1201)."""
-    from graphify.dedup import _norm
+    from monarch_atlas.dedup import _norm
     pairs = [
         ("getActiveSession", "getActiveSessions"),
         ("parseConfig", "parseConfigFile"),
@@ -306,7 +306,7 @@ def test_prefix_guard_fires_for_extension_pairs():
 def test_numeric_tokens_differ_helper():
     """_numeric_tokens_differ compares digit runs as zero-padding-insensitive
     multisets (#1284)."""
-    from graphify.dedup import _numeric_tokens_differ
+    from monarch_atlas.dedup import _numeric_tokens_differ
     assert _numeric_tokens_differ("adr 0011 d5 pipeline placement", "adr 0013 d4 pipeline placement")
     assert _numeric_tokens_differ("3 1 product goals", "1 1 product goals")
     assert _numeric_tokens_differ("code block3", "code block13")
@@ -534,7 +534,7 @@ def test_absolute_source_path_still_defines_id(capsys):
 # definer-wins tiebreak to a page that merely references the same entity.
 
 def test_id_prefixes_preserves_non_latin_segments():
-    from graphify.dedup import _id_prefixes
+    from monarch_atlas.dedup import _id_prefixes
     prefixes = _id_prefixes("concepts/작업 단위 폴더 + README 진입점 컨벤션.md")
     assert "concepts_작업_단위_폴더_readme_진입점_컨벤션" in prefixes
     assert "작업_단위_폴더_readme_진입점_컨벤션" in prefixes
@@ -575,7 +575,7 @@ def test_korean_defining_file_wins_over_referencing_file(nodes):
 def test_id_prefixes_ascii_path_unchanged():
     """Negative control: an ordinary ASCII path's reconstructed prefixes must
     be identical to what the old ASCII only regex produced."""
-    from graphify.dedup import _id_prefixes
+    from monarch_atlas.dedup import _id_prefixes
     assert _id_prefixes("docs/v1/api/README.md") == {
         "readme", "api_readme", "v1_api_readme", "docs_v1_api_readme",
     }
@@ -1001,7 +1001,7 @@ def test_crossfile_concept_merge_deterministic_across_hash_seeds():
     import sys
     script = (
         "import random, sys\n"
-        "from graphify.dedup import deduplicate_entities\n"
+        "from monarch_atlas.dedup import deduplicate_entities\n"
         "nodes = [\n"
         "    {'id': 'shenzhen', 'label': 'SHENZHEN INTERNATIONAL',\n"
         "     'file_type': 'concept', 'source_file': 'doc1.md'},\n"
@@ -1228,7 +1228,7 @@ def test_dedup_does_not_merge_same_community_dated_doc_slugs():
 def test_content_token_swap_helper():
     """_content_token_swap fires when any same-position pair is a swap of two
     distinct content words (#2576)."""
-    from graphify.dedup import _content_token_swap
+    from monarch_atlas.dedup import _content_token_swap
     assert _content_token_swap("asset contribution flow", "asset consumption flow")
     assert _content_token_swap("testing library jest native",
                                "testing library react native")
@@ -1249,7 +1249,7 @@ def test_content_token_swap_helper():
 def test_same_word_variant_helper():
     """_same_word_variant separates one-word misspellings from two words
     (#2576 DELTA over #2587's bare token-JW test)."""
-    from graphify.dedup import _same_word_variant
+    from monarch_atlas.dedup import _same_word_variant
     assert _same_word_variant("manager", "managr")     # JW 97.14, min len 6
     assert _same_word_variant("manager", "nanager")    # JW 84.92 but same-len DL 1
     assert _same_word_variant("builder", "buildre")    # trailing transposition
@@ -1280,7 +1280,7 @@ def test_reads_as_file_entity_helper():
     an id or provenance all stay treated as file-anchored (#296). The own-node
     half is a reconstruction and holds for every stored-path spelling; the
     structural half rests on the producer stamping `node_kind`."""
-    from graphify.dedup import _reads_as_file_entity
+    from monarch_atlas.dedup import _reads_as_file_entity
     # An entity extracted from a note: `<path>_<entity>` never equals the path.
     assert _reads_as_file_entity(
         {"id": "journal_2024_03_01_cyrilxbt", "label": "@cyrilXBT",
@@ -1433,7 +1433,7 @@ def test_reads_as_file_entity_trusts_the_node_kind_stamp_only():
     Pinned deliberately — the fix for such a producer is to stamp `node_kind`,
     and this test is what fails if the predicate is ever quietly changed to
     guess instead."""
-    from graphify.dedup import _reads_as_file_entity
+    from monarch_atlas.dedup import _reads_as_file_entity
     stamped = {"id": "book_xlsx_summary", "label": "Summary (sheet)",
                "node_kind": "heading", "source_file": "book.xlsx"}
     unstamped = dict(stamped)

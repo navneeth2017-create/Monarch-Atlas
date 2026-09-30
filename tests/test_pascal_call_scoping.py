@@ -18,7 +18,7 @@ FIXTURE_PATH = FIXTURES / "sample_scoped_calls.pas"
 
 
 def _extractors():
-    from graphify.extract import extract_pascal, _extract_pascal_regex
+    from monarch_atlas.extract import extract_pascal, _extract_pascal_regex
     return [extract_pascal, _extract_pascal_regex]
 
 

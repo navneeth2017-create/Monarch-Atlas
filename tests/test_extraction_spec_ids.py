@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify.extract import _file_stem, _make_id
+from monarch_atlas.extract import _file_stem, _make_id
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -32,7 +32,7 @@ _EXAMPLE_RE = re.compile(r"`([^`]+)`\s*\+\s*`([^`]+)`\s*→\s*`([^`]+)`")
 
 
 def _spec_files() -> list[Path]:
-    roots = [REPO_ROOT / "graphify" / "skills", REPO_ROOT / "tools" / "skillgen" / "fragments"]
+    roots = [REPO_ROOT / "monarch_atlas" / "skills", REPO_ROOT / "tools" / "skillgen" / "fragments"]
     files: list[Path] = []
     for root in roots:
         for p in root.rglob("extraction-spec.md"):

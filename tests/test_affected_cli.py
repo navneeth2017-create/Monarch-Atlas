@@ -5,7 +5,7 @@ import json
 import networkx as nx
 from networkx.readwrite import json_graph
 
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 
 
 def _write_graph(tmp_path):
@@ -28,7 +28,7 @@ def test_affected_cli_reverse_traverses_impact_edges(monkeypatch, tmp_path, caps
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "affected", "Foo", "--graph", str(graph_path)],
+        ["atlas", "affected", "Foo", "--graph", str(graph_path)],
     )
 
     mainmod.main()
@@ -49,7 +49,7 @@ def test_affected_cli_relation_filter_limits_reverse_traversal(monkeypatch, tmp_
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "affected", "Foo", "--relation", "calls", "--graph", str(graph_path)],
+        ["atlas", "affected", "Foo", "--relation", "calls", "--graph", str(graph_path)],
     )
 
     mainmod.main()
@@ -81,7 +81,7 @@ def test_affected_cli_forces_directed_on_undirected_graph(monkeypatch, tmp_path,
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "affected", "B", "--relation", "calls", "--graph", str(graph_path)],
+        ["atlas", "affected", "B", "--relation", "calls", "--graph", str(graph_path)],
     )
 
     mainmod.main()
@@ -95,7 +95,7 @@ def test_affected_cli_forces_directed_on_undirected_graph(monkeypatch, tmp_path,
 
 
 def test_affected_cli_loads_edges_keyed_graph(monkeypatch, tmp_path, capsys):
-    """graphify's `extract` writes graph.json with an "edges" key (not networkx's
+    """atlas's `extract` writes graph.json with an "edges" key (not networkx's
     default "links"). affected.load_graph must handle it; before the edges/links
     normalization it raised an uncaught KeyError: 'links' (same class as #1198)."""
     graph = nx.DiGraph()
@@ -103,7 +103,7 @@ def test_affected_cli_loads_edges_keyed_graph(monkeypatch, tmp_path, capsys):
     graph.add_node("caller", label="X()", source_file="app.py", source_location="L4")
     graph.add_edge("caller", "target", relation="calls", context="call", confidence="EXTRACTED")
 
-    # Emulate graphify extract output: top-level "edges" key instead of "links".
+    # Emulate atlas extract output: top-level "edges" key instead of "links".
     data = json_graph.node_link_data(graph, edges="links")
     data["edges"] = data.pop("links")
     graph_path = tmp_path / "graph.json"
@@ -113,7 +113,7 @@ def test_affected_cli_loads_edges_keyed_graph(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "affected", "Foo", "--graph", str(graph_path)],
+        ["atlas", "affected", "Foo", "--graph", str(graph_path)],
     )
 
     mainmod.main()
@@ -125,7 +125,7 @@ def test_affected_cli_loads_edges_keyed_graph(monkeypatch, tmp_path, capsys):
 
 
 def test_resolve_seed_bare_name_matches_callable_label():
-    from graphify.affected import resolve_seed
+    from monarch_atlas.affected import resolve_seed
 
     graph = nx.DiGraph()
     graph.add_node("a", label="classifyProperty()", source_file="pkg/entity.py")
@@ -136,7 +136,7 @@ def test_resolve_seed_bare_name_matches_callable_label():
 
 
 def test_resolve_seed_decorated_query_matches_bare_label():
-    from graphify.affected import resolve_seed
+    from monarch_atlas.affected import resolve_seed
 
     graph = nx.DiGraph()
     graph.add_node("a", label="Foo", source_file="pkg/foo.py")
@@ -148,7 +148,7 @@ def test_resolve_seed_decorated_query_matches_bare_label():
 def test_resolve_seed_matches_unicode_normalized_label():
     import unicodedata
 
-    from graphify.affected import resolve_seed
+    from monarch_atlas.affected import resolve_seed
 
     graph = nx.DiGraph()
     graph.add_node("a", label="Auditoría", source_file="pkg/auditoria.py")
@@ -157,7 +157,7 @@ def test_resolve_seed_matches_unicode_normalized_label():
 
 
 def test_resolve_seed_preserves_distinct_accents():
-    from graphify.affected import resolve_seed
+    from monarch_atlas.affected import resolve_seed
 
     graph = nx.DiGraph()
     graph.add_node("a", label="resume", source_file="pkg/resume.py")
@@ -167,7 +167,7 @@ def test_resolve_seed_preserves_distinct_accents():
 
 
 def test_resolve_seed_bare_name_tie_still_returns_none():
-    from graphify.affected import resolve_seed
+    from monarch_atlas.affected import resolve_seed
 
     graph = nx.DiGraph()
     graph.add_node("a", label="dup()", source_file="pkg/one.py")
@@ -177,7 +177,7 @@ def test_resolve_seed_bare_name_tie_still_returns_none():
 
 
 def test_resolve_seed_source_file_path_prefers_file_level_node():
-    from graphify.affected import resolve_seed
+    from monarch_atlas.affected import resolve_seed
 
     graph = nx.DiGraph()
     source_file = "app/api/example/route.ts"
@@ -200,7 +200,7 @@ def test_resolve_seed_source_file_path_prefers_file_level_node():
 def test_resolve_seed_source_file_trailing_slash_parity():
     """A trailing path separator must not change the match (parity with explain's
     _find_node, which tokenizes the path and drops the slash)."""
-    from graphify.affected import resolve_seed
+    from monarch_atlas.affected import resolve_seed
 
     graph = nx.DiGraph()
     source_file = "app/api/example/route.ts"
@@ -213,7 +213,7 @@ def test_resolve_seed_source_file_trailing_slash_parity():
 def test_resolve_seed_source_file_ambiguous_no_file_node_returns_none():
     """Several nodes share a source_file but none is the L1 file node and none's
     basename matches the path — must not guess; return None."""
-    from graphify.affected import resolve_seed
+    from monarch_atlas.affected import resolve_seed
 
     graph = nx.DiGraph()
     source_file = "pkg/handlers.py"
@@ -258,7 +258,7 @@ def test_affected_cli_source_file_path_uses_file_level_node(monkeypatch, tmp_pat
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "affected", source_file, "--graph", str(graph_path)],
+        ["atlas", "affected", source_file, "--graph", str(graph_path)],
     )
 
     mainmod.main()
@@ -292,7 +292,7 @@ def test_affected_reports_call_site_line_not_def_line(monkeypatch, tmp_path, cap
     gp = _write_callsite_graph(tmp_path)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(mainmod.sys, "argv",
-                        ["graphify", "affected", "transition_state", "--graph", str(gp)])
+                        ["atlas", "affected", "transition_state", "--graph", str(gp)])
     mainmod.main()
     out = capsys.readouterr().out
     assert "apollo_pipeline_status.py:L158" in out, "must report the call SITE line (BUG1)"
@@ -308,7 +308,7 @@ def test_affected_falls_back_to_def_line_when_edge_has_no_location(monkeypatch, 
     gp = tmp_path / "graph.json"
     gp.write_text(json.dumps(json_graph.node_link_data(g, edges="links")), encoding="utf-8")
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
-    monkeypatch.setattr(mainmod.sys, "argv", ["graphify", "affected", "target", "--graph", str(gp)])
+    monkeypatch.setattr(mainmod.sys, "argv", ["atlas", "affected", "target", "--graph", str(gp)])
     mainmod.main()
     assert "a.py:L90" in capsys.readouterr().out
 
@@ -322,7 +322,7 @@ def test_affected_resolves_equivalent_path_forms(tmp_path, monkeypatch):
     blast-radius tool reporting "nothing depends on this" about a file with three
     dependents, and indistinguishable both from a genuine zero and from a typo.
     """
-    from graphify.affected import resolve_seed
+    from monarch_atlas.affected import resolve_seed
 
     graph = nx.DiGraph()
     graph.add_node("target", label="Foo", source_file="pkg/foo.py", source_location="L1")
@@ -345,12 +345,12 @@ def test_affected_absolute_seed_resolves_via_graph_root_off_cwd(tmp_path, monkey
     was the analysed repo root. Editors and scripts pass an absolute path from
     anywhere, so `affected` kept answering "nothing depends on this" — the
     maintainer's noted follow-up. The root is now derived from the graph's own
-    location (`<root>/graphify-out/graph.json`).
+    location (`<root>/atlas-out/graph.json`).
     """
-    from graphify.paths import GRAPHIFY_OUT_NAME
+    from monarch_atlas.paths import ATLAS_OUT_NAME
 
     repo_root = tmp_path / "repo"
-    out_dir = repo_root / GRAPHIFY_OUT_NAME
+    out_dir = repo_root / ATLAS_OUT_NAME
     out_dir.mkdir(parents=True)
     g = nx.DiGraph()
     g.add_node("target", label="Foo", source_file="pkg/foo.py", source_location="L1")
@@ -364,7 +364,7 @@ def test_affected_absolute_seed_resolves_via_graph_root_off_cwd(tmp_path, monkey
     monkeypatch.chdir(elsewhere)  # NOT the repo root — mimics an editor/script caller
     abs_seed = str(repo_root / "pkg" / "foo.py")
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
-    monkeypatch.setattr(mainmod.sys, "argv", ["graphify", "affected", abs_seed, "--graph", str(gp)])
+    monkeypatch.setattr(mainmod.sys, "argv", ["atlas", "affected", abs_seed, "--graph", str(gp)])
     mainmod.main()
 
     out = capsys.readouterr().out
@@ -375,10 +375,10 @@ def test_affected_absolute_seed_resolves_via_graph_root_off_cwd(tmp_path, monkey
 def test_affected_absolute_seed_outside_root_misses_cleanly(tmp_path, monkeypatch, capsys):
     """An absolute seed that is NOT under the derived repo root must report a clean
     no-match, not silently traverse from a wrong/guessed node (#2706)."""
-    from graphify.paths import GRAPHIFY_OUT_NAME
+    from monarch_atlas.paths import ATLAS_OUT_NAME
 
     repo_root = tmp_path / "repo"
-    out_dir = repo_root / GRAPHIFY_OUT_NAME
+    out_dir = repo_root / ATLAS_OUT_NAME
     out_dir.mkdir(parents=True)
     g = nx.DiGraph()
     g.add_node("target", label="Foo", source_file="pkg/foo.py", source_location="L1")
@@ -391,7 +391,7 @@ def test_affected_absolute_seed_outside_root_misses_cleanly(tmp_path, monkeypatc
     outside_seed = str(tmp_path / "other-repo" / "pkg" / "foo.py")  # same basename, different tree
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(mainmod.sys, "argv",
-                        ["graphify", "affected", outside_seed, "--graph", str(gp)])
+                        ["atlas", "affected", outside_seed, "--graph", str(gp)])
     mainmod.main()
 
     out = capsys.readouterr().out
@@ -400,14 +400,14 @@ def test_affected_absolute_seed_outside_root_misses_cleanly(tmp_path, monkeypatc
 
 def test_affected_absolute_seed_with_graph_not_under_out_dir(tmp_path, monkeypatch, capsys):
     """Fallback layout: when --graph points at a graph.json NOT under the
-    graphify-out dir, the root is the graph's own parent (`else gp.parent`)."""
+    atlas-out dir, the root is the graph's own parent (`else gp.parent`)."""
     repo_root = tmp_path / "repo"
     repo_root.mkdir(parents=True)
     g = nx.DiGraph()
     g.add_node("target", label="Foo", source_file="pkg/foo.py", source_location="L1")
     g.add_node("caller", label="X()", source_file="app.py", source_location="L4")
     g.add_edge("caller", "target", relation="calls")
-    gp = repo_root / "graph.json"  # directly under repo_root, not graphify-out/
+    gp = repo_root / "graph.json"  # directly under repo_root, not atlas-out/
     gp.write_text(json.dumps(json_graph.node_link_data(g, edges="links")), encoding="utf-8")
 
     elsewhere = tmp_path / "elsewhere"
@@ -416,7 +416,7 @@ def test_affected_absolute_seed_with_graph_not_under_out_dir(tmp_path, monkeypat
     abs_seed = str(repo_root / "pkg" / "foo.py")
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(mainmod.sys, "argv",
-                        ["graphify", "affected", abs_seed, "--graph", str(gp)])
+                        ["atlas", "affected", abs_seed, "--graph", str(gp)])
     mainmod.main()
 
     out = capsys.readouterr().out

@@ -16,7 +16,7 @@ pytest.importorskip("starlette")
 
 from starlette.testclient import TestClient  # noqa: E402
 
-from graphify import serve as serve_mod  # noqa: E402
+from monarch_atlas import serve as serve_mod  # noqa: E402
 
 SAMPLE_GRAPH = {
     "directed": True,
@@ -66,7 +66,7 @@ def test_app_builds_and_initialize_succeeds(tmp_path):
         # json_response=True returns a single JSON-RPC envelope.
         payload = resp.json()
         assert payload["jsonrpc"] == "2.0"
-        assert payload["result"]["serverInfo"]["name"] == "graphify"
+        assert payload["result"]["serverInfo"]["name"] == "atlas"
 
 
 def test_unknown_path_is_404(tmp_path):
@@ -104,7 +104,7 @@ def test_api_key_bearer_ok(tmp_path):
             json=_INIT_BODY,
         )
         assert resp.status_code == 200
-        assert resp.json()["result"]["serverInfo"]["name"] == "graphify"
+        assert resp.json()["result"]["serverInfo"]["name"] == "atlas"
 
 
 def test_api_key_x_api_key_header_ok(tmp_path):
@@ -171,15 +171,15 @@ def test_tools_list_over_http(tmp_path):
 
 
 def _project_with_graph(tmp_path, node_count: int, name: str = "proj") -> str:
-    """Create ``<proj>/graphify-out/graph.json`` and return the project dir."""
+    """Create ``<proj>/atlas-out/graph.json`` and return the project dir."""
     proj = tmp_path / name
-    (proj / "graphify-out").mkdir(parents=True)
+    (proj / "atlas-out").mkdir(parents=True)
     graph = {
         "directed": True,
         "nodes": [{"id": f"n{i}", "label": f"N{i}", "community": 0} for i in range(node_count)],
         "edges": [],
     }
-    (proj / "graphify-out" / "graph.json").write_text(json.dumps(graph), encoding="utf-8")
+    (proj / "atlas-out" / "graph.json").write_text(json.dumps(graph), encoding="utf-8")
     return str(proj)
 
 
@@ -233,15 +233,15 @@ def test_project_path_routes_to_that_projects_graph(tmp_path):
 )
 def test_max_server_contexts_parsing(monkeypatch, value, expected):
     if value is None:
-        monkeypatch.delenv("GRAPHIFY_MAX_CONTEXTS", raising=False)
+        monkeypatch.delenv("ATLAS_MAX_CONTEXTS", raising=False)
     else:
-        monkeypatch.setenv("GRAPHIFY_MAX_CONTEXTS", value)
+        monkeypatch.setenv("ATLAS_MAX_CONTEXTS", value)
     assert serve_mod._max_server_contexts() == expected
 
 
 def test_project_context_cache_is_lru_and_pins_default_graph(tmp_path, monkeypatch):
     """Project contexts hit, promote, and evict without evicting the default."""
-    monkeypatch.setenv("GRAPHIFY_MAX_CONTEXTS", "2")
+    monkeypatch.setenv("ATLAS_MAX_CONTEXTS", "2")
     original_load = serve_mod._load_graph
     loads: dict[str, int] = {}
 
@@ -269,8 +269,8 @@ def test_project_context_cache_is_lru_and_pins_default_graph(tmp_path, monkeypat
         # The configured default graph stays warm even when project capacity is full.
         assert "Nodes: 2" in _call_tool(client, headers, "graph_stats", {}, rid=7)
 
-    first_graph = str((Path(projects[0]) / "graphify-out" / "graph.json").resolve())
-    second_graph = str((Path(projects[1]) / "graphify-out" / "graph.json").resolve())
+    first_graph = str((Path(projects[0]) / "atlas-out" / "graph.json").resolve())
+    second_graph = str((Path(projects[1]) / "atlas-out" / "graph.json").resolve())
     default_graph = str(Path(default_graph).resolve())
     assert loads[first_graph] == 1
     assert loads[second_graph] == 2
@@ -292,7 +292,7 @@ def test_bad_project_path_errors_without_killing_server(tmp_path):
 def test_corrupt_project_graph_is_a_tool_error_without_killing_server(tmp_path):
     """A CLI-style SystemExit from a client graph cannot stop the MCP server."""
     project = Path(_project_with_graph(tmp_path, node_count=3))
-    (project / "graphify-out" / "graph.json").write_text("{not json", encoding="utf-8")
+    (project / "atlas-out" / "graph.json").write_text("{not json", encoding="utf-8")
     app = serve_mod._build_http_app(_graph_file(tmp_path), json_response=True)
     with _client(app) as client:
         headers = _init_session(client)
@@ -333,8 +333,8 @@ def test_cli_defaults_to_stdio(monkeypatch):
     monkeypatch.setattr(
         serve_mod, "serve_http", lambda *a, **k: calls.setdefault("http", (a, k))
     )
-    serve_mod._main(["graphify-out/graph.json"])
-    assert calls.get("stdio") == "graphify-out/graph.json"
+    serve_mod._main(["atlas-out/graph.json"])
+    assert calls.get("stdio") == "atlas-out/graph.json"
     assert "http" not in calls
 
 
@@ -357,7 +357,7 @@ def test_cli_http_passes_flags(monkeypatch):
 
 def test_cli_api_key_from_env(monkeypatch):
     captured = {}
-    monkeypatch.setenv("GRAPHIFY_API_KEY", "from-env")
+    monkeypatch.setenv("ATLAS_API_KEY", "from-env")
     monkeypatch.setattr(serve_mod, "serve_http", lambda gp, **k: captured.update(**k))
     serve_mod._main(["g.json", "--transport", "http"])
     assert captured["api_key"] == "from-env"
@@ -366,7 +366,7 @@ def test_cli_api_key_from_env(monkeypatch):
 def test_pr_tool_failure_sets_iserror(tmp_path, monkeypatch):
     """ADR-0001 finding 4: a PR tool that fails because gh is missing / not
     authenticated must return isError:true, not a successful text result."""
-    import graphify.prs as prs_mod
+    import monarch_atlas.prs as prs_mod
 
     def _boom(*a, **k):
         raise RuntimeError("gh CLI not found or not authenticated. Run: gh auth login")

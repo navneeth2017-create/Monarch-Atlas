@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import networkx as nx
 
-from graphify.affected import affected_nodes
+from monarch_atlas.affected import affected_nodes
 
 
 def _g():

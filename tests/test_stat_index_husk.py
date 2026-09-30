@@ -1,10 +1,10 @@
 """The atexit stat-index flush must not resurrect a deleted directory (#2974).
 
-A post-commit hook runs `graphify update . &` in a short-lived worktree; the
+A post-commit hook runs `atlas update . &` in a short-lived worktree; the
 branch merges and `git worktree remove` deletes the tree while the rebuild
 is still running. The exit-time flush then `mkdir -p`'d the dead path back
 into existence, leaving a husk holding nothing but
-`graphify-out/cache/stat-index.json` — 81 of them over a few weeks.
+`atlas-out/cache/stat-index.json` — 81 of them over a few weeks.
 """
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify import cache
+from monarch_atlas import cache
 
 
 @pytest.fixture(autouse=True)
@@ -60,10 +60,10 @@ def test_a_redirected_cache_root_that_vanished_is_not_recreated(tmp_path):
 
 
 def test_the_index_is_still_written_for_a_live_run(tmp_path):
-    """A first run writes the index before graphify-out/ exists at all; that
+    """A first run writes the index before atlas-out/ exists at all; that
     stays as it was — the root is live, so creating cache/ under it is fine."""
     corpus = tmp_path / "c"
     corpus.mkdir()
     _dirty(corpus)
     cache._flush_stat_index()
-    assert (corpus / "graphify-out" / "cache" / "stat-index.json").is_file()
+    assert (corpus / "atlas-out" / "cache" / "stat-index.json").is_file()

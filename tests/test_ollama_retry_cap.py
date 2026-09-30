@@ -1,13 +1,13 @@
 """#1686 - a wedged local Ollama request must not multiply --api-timeout by the
 SDK's 6 transient-error retries into a ~20min block. Ollama defaults to 0 SDK
 retries so the timeout is the effective wall-clock bound; an explicit
-GRAPHIFY_MAX_RETRIES still wins.
+ATLAS_MAX_RETRIES still wins.
 """
 from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import graphify.llm as llm
+import monarch_atlas.llm as llm
 
 
 def _capture_client_kwargs(monkeypatch):
@@ -29,7 +29,7 @@ def _capture_client_kwargs(monkeypatch):
 
 
 def test_ollama_defaults_to_zero_sdk_retries(monkeypatch):
-    monkeypatch.delenv("GRAPHIFY_MAX_RETRIES", raising=False)
+    monkeypatch.delenv("ATLAS_MAX_RETRIES", raising=False)
     captured = _capture_client_kwargs(monkeypatch)
     llm._call_openai_compat("http://localhost:11434/v1", "ollama", "m",
                             "def f(): pass", backend="ollama")
@@ -37,7 +37,7 @@ def test_ollama_defaults_to_zero_sdk_retries(monkeypatch):
 
 
 def test_ollama_honors_explicit_max_retries(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_MAX_RETRIES", "3")
+    monkeypatch.setenv("ATLAS_MAX_RETRIES", "3")
     captured = _capture_client_kwargs(monkeypatch)
     llm._call_openai_compat("http://localhost:11434/v1", "ollama", "m",
                             "def f(): pass", backend="ollama")
@@ -45,7 +45,7 @@ def test_ollama_honors_explicit_max_retries(monkeypatch):
 
 
 def test_cloud_backend_keeps_default_retries(monkeypatch):
-    monkeypatch.delenv("GRAPHIFY_MAX_RETRIES", raising=False)
+    monkeypatch.delenv("ATLAS_MAX_RETRIES", raising=False)
     captured = _capture_client_kwargs(monkeypatch)
     llm._call_openai_compat("https://api.moonshot.cn/v1", "sk-x", "m",
                             "def f(): pass", backend="kimi")
@@ -53,7 +53,7 @@ def test_cloud_backend_keeps_default_retries(monkeypatch):
 
 
 def test_api_timeout_is_passed_to_client(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "180")
+    monkeypatch.setenv("ATLAS_API_TIMEOUT", "180")
     captured = _capture_client_kwargs(monkeypatch)
     llm._call_openai_compat("http://localhost:11434/v1", "ollama", "m",
                             "def f(): pass", backend="ollama")

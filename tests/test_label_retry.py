@@ -1,4 +1,4 @@
-"""Tests for graphify.llm._label_batch_with_retry — adaptive split-and-retry
+"""Tests for monarch_atlas.llm._label_batch_with_retry — adaptive split-and-retry
 on JSON parse failure during community labeling (#1278).
 """
 from __future__ import annotations
@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import re
 
-from graphify import llm as llm_mod
+from monarch_atlas import llm as llm_mod
 
 
 def test_label_batch_recovers_via_split_on_invalid_json(monkeypatch):

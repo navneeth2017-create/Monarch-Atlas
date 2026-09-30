@@ -9,7 +9,7 @@ not the missing key.
 from __future__ import annotations
 import json
 
-from graphify.benchmark import run_benchmark
+from monarch_atlas.benchmark import run_benchmark
 
 
 def _graph_payload(edges_key: str) -> dict:

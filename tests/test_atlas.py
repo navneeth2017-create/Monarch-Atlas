@@ -1,7 +1,7 @@
 """Monarch Atlas viewer — kept in its own file so upstream test merges never touch it."""
 import networkx as nx
 
-from graphify.exporters.html import to_html
+from monarch_atlas.exporters.html import to_html
 
 
 def _graph():
@@ -13,7 +13,7 @@ def _graph():
 
 
 def test_atlas_is_the_default_outside_pytest(tmp_path, monkeypatch):
-    monkeypatch.delenv("GRAPHIFY_THEME", raising=False)
+    monkeypatch.delenv("ATLAS_THEME", raising=False)
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
     out = tmp_path / "graph.html"
     assert to_html(_graph(), {0: ["a", "b"]}, str(out), community_labels={0: "Test"}) is True
@@ -24,16 +24,16 @@ def test_atlas_is_the_default_outside_pytest(tmp_path, monkeypatch):
 
 
 def test_classic_theme_still_available(tmp_path, monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_THEME", "classic")
+    monkeypatch.setenv("ATLAS_THEME", "classic")
     out = tmp_path / "graph.html"
     to_html(_graph(), {0: ["a", "b"]}, str(out), community_labels={0: "Test"})
     html = out.read_text(encoding="utf-8")
     assert "Monarch Atlas" not in html
-    assert "<title>graphify - " in html
+    assert "<title>atlas - " in html
 
 
 def test_realms_render_as_galaxies(tmp_path, monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_THEME", "atlas")
+    monkeypatch.setenv("ATLAS_THEME", "atlas")
     G = _graph()
     G.nodes["a"]["realm"] = "One"
     G.nodes["b"]["realm"] = "Two"
@@ -48,17 +48,17 @@ def test_realms_render_as_galaxies(tmp_path, monkeypatch):
 
 def test_atlas_merge_namespaces_and_links(tmp_path):
     import json
-    from graphify.atlas_merge import merge
+    from monarch_atlas.atlas_merge import merge
 
     def repo(name):
         root = tmp_path / name
-        (root / "graphify-out").mkdir(parents=True)
+        (root / "atlas-out").mkdir(parents=True)
         g = {"directed": True, "nodes": [
                 {"id": "server", "label": "server.js", "community": 0, "source_file": "server.js"},
                 {"id": "fn", "label": "fn()", "community": 0, "source_file": "server.js"}],
              "links": [{"source": "server", "target": "fn", "relation": "contains", "confidence": "EXTRACTED"}]}
-        (root / "graphify-out" / "graph.json").write_text(json.dumps(g), encoding="utf-8")
-        (root / "graphify-out" / ".graphify_labels.json").write_text(json.dumps({"0": name.upper() + " core"}), encoding="utf-8")
+        (root / "atlas-out" / "graph.json").write_text(json.dumps(g), encoding="utf-8")
+        (root / "atlas-out" / ".atlas_labels.json").write_text(json.dumps({"0": name.upper() + " core"}), encoding="utf-8")
         return str(root)
 
     links = tmp_path / "links.json"
@@ -75,34 +75,34 @@ def test_atlas_merge_namespaces_and_links(tmp_path):
 
 
 def test_page_carries_data_and_a_live_viewer_with_fallback(tmp_path, monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_THEME", "atlas")
-    monkeypatch.delenv("GRAPHIFY_ATLAS_LOCAL", raising=False)
+    monkeypatch.setenv("ATLAS_THEME", "atlas")
+    monkeypatch.delenv("ATLAS_LOCAL", raising=False)
     out = tmp_path / "graph.html"
     to_html(_graph(), {0: ["a", "b"]}, str(out), community_labels={0: "Test"})
     html = out.read_text(encoding="utf-8")
     assert "window.ATLAS={v:1," in html
-    assert "cdn.jsdelivr.net/gh/navneeth2017-create/Monarch-Atlas@main/graphify/exporters/atlas_viewer.js" in html
+    assert "cdn.jsdelivr.net/gh/navneeth2017-create/Monarch-Atlas@main/monarch_atlas/exporters/atlas_viewer.js" in html
     assert 'id="atlas-local"' in html and "window.__atlasReady=true" in html
 
 
 def test_skins_match_the_viewer_and_retired_ones_fall_back(tmp_path, monkeypatch):
     import re
     from pathlib import Path
-    from graphify.exporters.atlas_html import SKIN_KEYS
-    viewer = (Path(__file__).resolve().parents[1] / "graphify/exporters/atlas_viewer.js").read_text(encoding="utf-8")
+    from monarch_atlas.exporters.atlas_html import SKIN_KEYS
+    viewer = (Path(__file__).resolve().parents[1] / "monarch_atlas/exporters/atlas_viewer.js").read_text(encoding="utf-8")
     block = re.search(r"const SKINS=\{([\s\S]*?)\n\};", viewer).group(1)
     assert tuple(re.findall(r"^\s{2}([a-z0-9_]+):\{name:", block, re.M)) == SKIN_KEYS == ("monarch", "jarvis", "synthwave", "tron", "pacman", "mario", "city", "pokemon")
-    monkeypatch.setenv("GRAPHIFY_THEME", "atlas")
+    monkeypatch.setenv("ATLAS_THEME", "atlas")
     for asked, got in (("tron", "tron"), ("matrix", "tron"), ("pacman", "pacman"), ("mario", "mario"), ("city", "city"), ("pokemon", "pokemon"), ("blueprint", "pacman"), ("nope", "monarch")):
-        monkeypatch.setenv("GRAPHIFY_ATLAS_SKIN", asked)
+        monkeypatch.setenv("ATLAS_SKIN", asked)
         out = tmp_path / f"{asked}.html"
         to_html(_graph(), {0: ["a", "b"]}, str(out), community_labels={0: "Test"})
         assert f',skin:"{got}",' in out.read_text(encoding="utf-8")
 
 
 def test_local_build_never_reaches_out(tmp_path, monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_THEME", "atlas")
-    monkeypatch.setenv("GRAPHIFY_ATLAS_LOCAL", "1")
+    monkeypatch.setenv("ATLAS_THEME", "atlas")
+    monkeypatch.setenv("ATLAS_LOCAL", "1")
     out = tmp_path / "graph.html"
     to_html(_graph(), {0: ["a", "b"]}, str(out), community_labels={0: "Test"})
     html = out.read_text(encoding="utf-8")
@@ -111,7 +111,7 @@ def test_local_build_never_reaches_out(tmp_path, monkeypatch):
 
 
 def test_self_update_is_quiet_when_not_a_git_install(monkeypatch, tmp_path):
-    from graphify import atlas_update
+    from monarch_atlas import atlas_update
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
     monkeypatch.delenv("CI", raising=False)
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))

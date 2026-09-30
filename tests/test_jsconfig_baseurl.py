@@ -14,7 +14,7 @@ untouched.
 """
 from pathlib import Path
 
-from graphify.extract import _make_id, extract
+from monarch_atlas.extract import _make_id, extract
 
 
 def _write(path: Path, text: str) -> Path:
@@ -198,7 +198,7 @@ def test_tsconfig_wins_when_both_configs_present(tmp_path):
 # `_TSCONFIG_ALIAS_CACHE` and `_TSCONFIG_BASEURL_CACHE` are keyed on the config
 # path with no mtime component. Every test above calls extract() exactly once
 # under its own tmp_path, so each gets a fresh cache key and the staleness never
-# shows. `graphify watch` and the MCP server are the opposite shape: one process,
+# shows. `atlas watch` and the MCP server are the opposite shape: one process,
 # one config path, many extract() calls — so an edit to compilerOptions was never
 # observed again for the life of the process. These two run extract() twice
 # against the SAME config path, which is the case that was unguarded.

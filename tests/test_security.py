@@ -1,4 +1,4 @@
-"""Tests for graphify/security.py - URL validation, safe fetch, path guards, label sanitisation."""
+"""Tests for monarch_atlas/security.py - URL validation, safe fetch, path guards, label sanitisation."""
 from __future__ import annotations
 
 import json
@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from graphify.security import (
+from monarch_atlas.security import (
     check_graph_file_size_cap,
     sanitize_label,
     sanitize_metadata,
@@ -80,7 +80,7 @@ def test_safe_fetch_rejects_ftp_url():
 
 def test_safe_fetch_returns_bytes(tmp_path):
     mock_resp = _make_mock_response(b"hello world")
-    with patch("graphify.security._build_opener") as mock_opener_fn:
+    with patch("monarch_atlas.security._build_opener") as mock_opener_fn:
         mock_opener = MagicMock()
         mock_opener.open.return_value = mock_resp
         mock_opener_fn.return_value = mock_opener
@@ -89,7 +89,7 @@ def test_safe_fetch_returns_bytes(tmp_path):
 
 def test_safe_fetch_raises_on_non_2xx():
     mock_resp = _make_mock_response(b"Not Found", status=404)
-    with patch("graphify.security._build_opener") as mock_opener_fn:
+    with patch("monarch_atlas.security._build_opener") as mock_opener_fn:
         mock_opener = MagicMock()
         mock_opener.open.return_value = mock_resp
         mock_opener_fn.return_value = mock_opener
@@ -107,7 +107,7 @@ def test_safe_fetch_raises_on_size_exceeded():
     # Return the chunk twice so total > max_bytes=65536
     mock_resp.read.side_effect = [big_chunk, big_chunk, b""]
 
-    with patch("graphify.security._build_opener") as mock_opener_fn:
+    with patch("monarch_atlas.security._build_opener") as mock_opener_fn:
         mock_opener = MagicMock()
         mock_opener.open.return_value = mock_resp
         mock_opener_fn.return_value = mock_opener
@@ -122,7 +122,7 @@ def test_safe_fetch_raises_on_size_exceeded():
 def test_safe_fetch_text_decodes_utf8():
     content = "héllo wörld".encode("utf-8")
     mock_resp = _make_mock_response(content)
-    with patch("graphify.security._build_opener") as mock_opener_fn:
+    with patch("monarch_atlas.security._build_opener") as mock_opener_fn:
         mock_opener = MagicMock()
         mock_opener.open.return_value = mock_resp
         mock_opener_fn.return_value = mock_opener
@@ -132,7 +132,7 @@ def test_safe_fetch_text_decodes_utf8():
 def test_safe_fetch_text_replaces_bad_bytes():
     bad = b"hello \xff world"
     mock_resp = _make_mock_response(bad)
-    with patch("graphify.security._build_opener") as mock_opener_fn:
+    with patch("monarch_atlas.security._build_opener") as mock_opener_fn:
         mock_opener = MagicMock()
         mock_opener.open.return_value = mock_resp
         mock_opener_fn.return_value = mock_opener
@@ -147,7 +147,7 @@ def test_safe_fetch_text_replaces_bad_bytes():
 # ---------------------------------------------------------------------------
 
 def test_validate_graph_path_allows_inside_base(tmp_path):
-    base = tmp_path / "graphify-out"
+    base = tmp_path / "atlas-out"
     base.mkdir()
     graph = base / "graph.json"
     graph.write_text("{}")
@@ -155,43 +155,43 @@ def test_validate_graph_path_allows_inside_base(tmp_path):
     assert result == graph.resolve()
 
 def test_validate_graph_path_blocks_traversal(tmp_path):
-    base = tmp_path / "graphify-out"
+    base = tmp_path / "atlas-out"
     base.mkdir()
-    evil = tmp_path / "graphify-out" / ".." / "etc_passwd"
+    evil = tmp_path / "atlas-out" / ".." / "etc_passwd"
     with pytest.raises(ValueError, match="escapes"):
         validate_graph_path(str(evil), base=base)
 
 def test_validate_graph_path_requires_base_exists(tmp_path):
-    base = tmp_path / "graphify-out"  # not created
+    base = tmp_path / "atlas-out"  # not created
     with pytest.raises(ValueError, match="does not exist"):
         validate_graph_path(str(base / "graph.json"), base=base)
 
 def test_validate_graph_path_raises_if_file_missing(tmp_path):
-    base = tmp_path / "graphify-out"
+    base = tmp_path / "atlas-out"
     base.mkdir()
     with pytest.raises(FileNotFoundError):
         validate_graph_path(str(base / "missing.json"), base=base)
 
 def test_validate_graph_path_default_base_discovers_output_dir(tmp_path):
     """With base omitted, the output dir is discovered by walking the path's
-    parents for the configured output-dir name (default 'graphify-out')."""
-    base = tmp_path / "graphify-out"
+    parents for the configured output-dir name (default 'atlas-out')."""
+    base = tmp_path / "atlas-out"
     base.mkdir()
     graph = base / "graph.json"
     graph.write_text("{}")
     assert validate_graph_path(str(graph)) == graph.resolve()
 
-def test_validate_graph_path_default_base_honours_graphify_out_override(tmp_path, monkeypatch):
-    """The base=None discovery must honour GRAPHIFY_OUT, not the hardcoded
-    'graphify-out' literal — otherwise a renamed output dir validates against the
+def test_validate_graph_path_default_base_honours_atlas_out_override(tmp_path, monkeypatch):
+    """The base=None discovery must honour ATLAS_OUT, not the hardcoded
+    'atlas-out' literal — otherwise a renamed output dir validates against the
     wrong base or raises spuriously (#1423)."""
-    monkeypatch.setattr("graphify.security.GRAPHIFY_OUT_NAME", "custom-out")
-    monkeypatch.setattr("graphify.security.GRAPHIFY_OUT", "custom-out")
+    monkeypatch.setattr("monarch_atlas.security.ATLAS_OUT_NAME", "custom-out")
+    monkeypatch.setattr("monarch_atlas.security.ATLAS_OUT", "custom-out")
     out = tmp_path / "custom-out"
     out.mkdir()
     graph = out / "graph.json"
     graph.write_text("{}")
-    # No base passed → must discover custom-out by name rather than graphify-out.
+    # No base passed → must discover custom-out by name rather than atlas-out.
     assert validate_graph_path(str(graph)) == graph.resolve()
 
 
@@ -235,53 +235,53 @@ def test_graph_size_cap_default_is_512_mib():
 
 
 # ---------------------------------------------------------------------------
-# _max_graph_file_bytes — GRAPHIFY_MAX_GRAPH_BYTES env-var parsing
+# _max_graph_file_bytes — ATLAS_MAX_GRAPH_BYTES env-var parsing
 # ---------------------------------------------------------------------------
 
 def test_max_graph_bytes_default_when_unset(monkeypatch):
-    monkeypatch.delenv("GRAPHIFY_MAX_GRAPH_BYTES", raising=False)
+    monkeypatch.delenv("ATLAS_MAX_GRAPH_BYTES", raising=False)
     assert _max_graph_file_bytes() == _MAX_GRAPH_FILE_BYTES
 
 
 def test_max_graph_bytes_default_when_blank(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_MAX_GRAPH_BYTES", "   ")
+    monkeypatch.setenv("ATLAS_MAX_GRAPH_BYTES", "   ")
     assert _max_graph_file_bytes() == _MAX_GRAPH_FILE_BYTES
 
 
 def test_max_graph_bytes_plain_integer(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_MAX_GRAPH_BYTES", "671088640")
+    monkeypatch.setenv("ATLAS_MAX_GRAPH_BYTES", "671088640")
     assert _max_graph_file_bytes() == 671088640
 
 
 def test_max_graph_bytes_mb_suffix_is_binary(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_MAX_GRAPH_BYTES", "640MB")
+    monkeypatch.setenv("ATLAS_MAX_GRAPH_BYTES", "640MB")
     assert _max_graph_file_bytes() == 640 * 1024 * 1024
 
 
 def test_max_graph_bytes_gb_suffix_is_binary(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_MAX_GRAPH_BYTES", "2GB")
+    monkeypatch.setenv("ATLAS_MAX_GRAPH_BYTES", "2GB")
     assert _max_graph_file_bytes() == 2 * 1024 * 1024 * 1024
 
 
 def test_max_graph_bytes_suffix_is_case_insensitive(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_MAX_GRAPH_BYTES", "3gb")
+    monkeypatch.setenv("ATLAS_MAX_GRAPH_BYTES", "3gb")
     assert _max_graph_file_bytes() == 3 * 1024 * 1024 * 1024
 
 
 def test_max_graph_bytes_tolerates_space_before_suffix(monkeypatch):
-    monkeypatch.setenv("GRAPHIFY_MAX_GRAPH_BYTES", "5 GB")
+    monkeypatch.setenv("ATLAS_MAX_GRAPH_BYTES", "5 GB")
     assert _max_graph_file_bytes() == 5 * 1024 * 1024 * 1024
 
 
 @pytest.mark.parametrize("bad", ["not-a-number", "1.5GB", "0x10", "640KB"])
 def test_max_graph_bytes_unparseable_falls_back(monkeypatch, bad):
-    monkeypatch.setenv("GRAPHIFY_MAX_GRAPH_BYTES", bad)
+    monkeypatch.setenv("ATLAS_MAX_GRAPH_BYTES", bad)
     assert _max_graph_file_bytes() == _MAX_GRAPH_FILE_BYTES
 
 
 @pytest.mark.parametrize("nonpositive", ["0", "-1", "-4GB"])
 def test_max_graph_bytes_nonpositive_falls_back(monkeypatch, nonpositive):
-    monkeypatch.setenv("GRAPHIFY_MAX_GRAPH_BYTES", nonpositive)
+    monkeypatch.setenv("ATLAS_MAX_GRAPH_BYTES", nonpositive)
     assert _max_graph_file_bytes() == _MAX_GRAPH_FILE_BYTES
 
 
@@ -292,7 +292,7 @@ def test_graph_size_cap_under_limit_returns_none(tmp_path):
 
 
 def test_graph_size_cap_over_limit_raises(monkeypatch, tmp_path):
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 16)
+    monkeypatch.setattr("monarch_atlas.security._MAX_GRAPH_FILE_BYTES", 16)
     p = tmp_path / "graph.json"
     p.write_text('{"nodes": [], "links": [], "padding": "x" * 50}', encoding="utf-8")
     with pytest.raises(ValueError, match="exceeds"):
@@ -300,7 +300,7 @@ def test_graph_size_cap_over_limit_raises(monkeypatch, tmp_path):
 
 
 def test_graph_size_cap_error_message_includes_size_and_cap(monkeypatch, tmp_path):
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 8)
+    monkeypatch.setattr("monarch_atlas.security._MAX_GRAPH_FILE_BYTES", 8)
     p = tmp_path / "graph.json"
     p.write_text("AAAAAAAAAAAAAAAA", encoding="utf-8")  # 16 bytes
     with pytest.raises(ValueError) as excinfo:
@@ -316,9 +316,9 @@ def test_graph_size_cap_at_boundary_passes(monkeypatch, tmp_path):
     p = tmp_path / "graph.json"
     payload = "A" * 32
     p.write_text(payload, encoding="utf-8")
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 32)
+    monkeypatch.setattr("monarch_atlas.security._MAX_GRAPH_FILE_BYTES", 32)
     assert check_graph_file_size_cap(p) is None
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 31)
+    monkeypatch.setattr("monarch_atlas.security._MAX_GRAPH_FILE_BYTES", 31)
     with pytest.raises(ValueError):
         check_graph_file_size_cap(p)
 

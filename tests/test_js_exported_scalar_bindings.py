@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from graphify.extract import extract, extract_js
+from monarch_atlas.extract import extract, extract_js
 
 
 @pytest.mark.parametrize("suffix", [".js", ".ts"])

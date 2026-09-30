@@ -14,9 +14,9 @@ import tempfile
 from contextlib import redirect_stdout
 from pathlib import Path
 
-from graphify.build import build_from_json
-from graphify.cache import _absolutize_source_files_in, _relativize_source_files_in
-from graphify.extract import extract
+from monarch_atlas.build import build_from_json
+from monarch_atlas.cache import _absolutize_source_files_in, _relativize_source_files_in
+from monarch_atlas.extract import extract
 
 FOO_H = "#pragma once\n\nclass Foo {\npublic:\n    int Bar(int x);\n};\n"
 FOO_CPP = '#include "Foo.h"\n\nint Foo::Bar(int x) {\n    return x + 1;\n}\n'

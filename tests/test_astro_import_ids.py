@@ -21,7 +21,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from graphify.extract import _file_node_id, _make_id, extract
+from monarch_atlas.extract import _file_node_id, _make_id, extract
 
 
 def _write(path: Path, body: str) -> Path:

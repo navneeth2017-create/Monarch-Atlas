@@ -5,7 +5,7 @@ dependencies. PyYAML is not a hard dependency, so on any machine without it the
 line-based fallback runs instead — and it hardcoded ``"version": None``, so the
 package node lost its version entirely. The two parsers must agree.
 """
-from graphify.manifest_ingest import _parse_apm_fallback
+from monarch_atlas.manifest_ingest import _parse_apm_fallback
 
 APM = "name: my-pkg\nversion: 1.2.3\ndependencies:\n  - dep-a\n  - dep-b\n"
 

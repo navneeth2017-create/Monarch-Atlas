@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import pytest
-from graphify.extract import extract, extract_sln, extract_slnx, extract_csproj, extract_xaml, extract_razor
+from monarch_atlas.extract import extract, extract_sln, extract_slnx, extract_csproj, extract_xaml, extract_razor
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -387,10 +387,10 @@ def test_extract_xaml_viewmodel_resolution_stays_inside_cache_root(tmp_path):
     assert _view_model_edges(r) == []
 
 
-def test_xaml_viewmodel_resolution_respects_graphifyignore(tmp_path):
+def test_xaml_viewmodel_resolution_respects_atlasignore(tmp_path):
     project = tmp_path / "xaml_viewmodel"
     shutil.copytree(FIXTURES / "xaml_viewmodel", project)
-    (project / ".graphifyignore").write_text("ViewModels/MainViewModel.cs\n", encoding="utf-8")
+    (project / ".atlasignore").write_text("ViewModels/MainViewModel.cs\n", encoding="utf-8")
 
     r = extract_xaml(project / "Views" / "ExplicitMainWindow.xaml")
 
@@ -716,12 +716,12 @@ def test_razor_missing_file():
 # ── dispatch & detect integration ────────────────────────────────────────────
 
 def test_dispatch_table():
-    from graphify.extract import _get_extractor
+    from monarch_atlas.extract import _get_extractor
     for ext in (".sln", ".slnx", ".csproj", ".fsproj", ".vbproj", ".xaml", ".razor", ".cshtml"):
         assert _get_extractor(Path(f"foo{ext}")) is not None, f"{ext} not in dispatch"
 
 
 def test_code_extensions():
-    from graphify.detect import CODE_EXTENSIONS
+    from monarch_atlas.detect import CODE_EXTENSIONS
     for ext in (".sln", ".slnx", ".csproj", ".fsproj", ".vbproj", ".xaml", ".razor", ".cshtml"):
         assert ext in CODE_EXTENSIONS, f"{ext} missing"

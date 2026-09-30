@@ -6,7 +6,7 @@ These env vars point `--backend openai` at any OpenAI-compatible server
 
 import importlib
 
-from graphify import llm
+from monarch_atlas import llm
 
 
 def test_openai_defaults_without_env(monkeypatch):
@@ -33,14 +33,14 @@ def test_openai_base_url_and_model_env_override(monkeypatch):
         importlib.reload(llm)
 
 
-def test_graphify_openai_model_wins_over_openai_model(monkeypatch):
-    # model_env_key (GRAPHIFY_OPENAI_MODEL) is resolved at call time and takes
+def test_atlas_openai_model_wins_over_openai_model(monkeypatch):
+    # model_env_key (ATLAS_OPENAI_MODEL) is resolved at call time and takes
     # precedence over the import-time OPENAI_MODEL default.
     monkeypatch.setenv("OPENAI_MODEL", "env-default-model")
-    monkeypatch.setenv("GRAPHIFY_OPENAI_MODEL", "graphify-override-model")
+    monkeypatch.setenv("ATLAS_OPENAI_MODEL", "atlas-override-model")
     reloaded = importlib.reload(llm)
     try:
-        assert reloaded._default_model_for_backend("openai") == "graphify-override-model"
+        assert reloaded._default_model_for_backend("openai") == "atlas-override-model"
     finally:
         monkeypatch.undo()
         importlib.reload(llm)

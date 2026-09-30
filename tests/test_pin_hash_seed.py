@@ -1,4 +1,4 @@
-"""#3641: `graphify update`/`extract`/`cluster-only` must pin PYTHONHASHSEED
+"""#3641: `atlas update`/`extract`/`cluster-only` must pin PYTHONHASHSEED
 like the generated git hooks already do.
 
 PYTHONHASHSEED is read once at interpreter startup, so it cannot be fixed by
@@ -10,7 +10,7 @@ from OUTSIDE that process.
 
 That is also exactly why the function must never fire while running under
 pytest in the first place: dozens of existing tests across the suite call
-`graphify.__main__.main()` directly with a monkeypatched sys.argv to
+`monarch_atlas.__main__.main()` directly with a monkeypatched sys.argv to
 simulate a full CLI run in process, which only works because main() was
 previously side-effect-free at the point it starts -- a real os.execvpe
 there would replace the pytest worker process running those tests. Pytest
@@ -34,7 +34,7 @@ import json, os, sys
 calls = []
 os.execvpe = lambda *a: calls.append(a)
 sys.argv = {argv!r}
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 mainmod._pin_hash_seed_if_needed()
 print(json.dumps({{"called": bool(calls), "argv": calls[0][1] if calls else None,
                     "env_hashseed": calls[0][2].get("PYTHONHASHSEED") if calls else None}}))
@@ -54,9 +54,9 @@ def _run_probe(argv: list[str], extra_env: dict | None = None) -> dict:
 
 def test_reexecs_for_hash_sensitive_commands_when_unset():
     for cmd in ("update", "extract", "cluster-only", "label"):
-        outcome = _run_probe(["graphify", cmd, "."])
+        outcome = _run_probe(["atlas", cmd, "."])
         assert outcome["called"], f"{cmd} must re-exec with PYTHONHASHSEED pinned"
-        assert outcome["argv"] == [sys.executable, "-m", "graphify", cmd, "."]
+        assert outcome["argv"] == [sys.executable, "-m", "monarch_atlas", cmd, "."]
         assert outcome["env_hashseed"] == "0"
 
 
@@ -64,28 +64,28 @@ def test_reexec_does_not_depend_on_argv0_being_a_runnable_script():
     """#3779: a uv/pip/pipx console-script launcher on Windows is a native
     .exe with no .py content, so `python.exe <that .exe path>` fails
     outright with "can't open file" the moment argv[0] is replayed as a
-    script path. Re-execing via `-m graphify` never touches argv[0] at
+    script path. Re-execing via `-m monarch_atlas` never touches argv[0] at
     all, so a launcher stub that isn't even a real file must not matter."""
     outcome = _run_probe(["/some/launcher/stub/with/no/py/content", "update", "."])
     assert outcome["called"]
-    assert outcome["argv"] == [sys.executable, "-m", "graphify", "update", "."], (
+    assert outcome["argv"] == [sys.executable, "-m", "monarch_atlas", "update", "."], (
         "the launcher stub path must never appear in the re-exec argv"
     )
 
 
 def test_does_not_reexec_when_already_set():
-    outcome = _run_probe(["graphify", "update", "."], extra_env={"PYTHONHASHSEED": "1"})
+    outcome = _run_probe(["atlas", "update", "."], extra_env={"PYTHONHASHSEED": "1"})
     assert not outcome["called"], "an explicit PYTHONHASHSEED must never be overridden"
 
 
 def test_does_not_reexec_for_unrelated_commands():
     for cmd in ("query", "install", "path", "explain"):
-        outcome = _run_probe(["graphify", cmd, "x"])
+        outcome = _run_probe(["atlas", cmd, "x"])
         assert not outcome["called"], f"{cmd} does not depend on clustering, must not re-exec"
 
 
 def test_does_not_reexec_with_no_subcommand():
-    outcome = _run_probe(["graphify"])
+    outcome = _run_probe(["atlas"])
     assert not outcome["called"]
 
 
@@ -95,7 +95,7 @@ def test_does_not_reexec_while_pytest_current_test_is_set():
     call shaped just like the ones dozens of existing CLI tests make must
     not fire a real os.execvpe."""
     outcome = _run_probe(
-        ["graphify", "update", "."],
+        ["atlas", "update", "."],
         extra_env={"PYTEST_CURRENT_TEST": "tests/test_extract_cli.py::some_test (call)"},
     )
     assert not outcome["called"], "must never re-exec while PYTEST_CURRENT_TEST is set"
@@ -107,8 +107,8 @@ import os, sys
 def _raise(*a):
     raise OSError("exec not permitted")
 os.execvpe = _raise
-sys.argv = ["graphify", "update", "."]
-import graphify.__main__ as mainmod
+sys.argv = ["atlas", "update", "."]
+import monarch_atlas.__main__ as mainmod
 mainmod._pin_hash_seed_if_needed()  # must not raise
 print("survived")
 """
@@ -122,7 +122,7 @@ def test_update_still_runs_end_to_end_with_hashseed_unset(tmp_path):
     """Full subprocess smoke test: PYTHONHASHSEED unset and PYTEST_CURRENT_TEST
     stripped from the child's env (a real invocation, not a pytest-guarded
     one, the shape an interactive shell or an agent's own process has), must
-    still let `graphify update .` complete successfully all the way through
+    still let `atlas update .` complete successfully all the way through
     the re-exec."""
     (tmp_path / "a.py").write_text("def f():\n    return g()\n\ndef g():\n    return 1\n")
 
@@ -131,9 +131,9 @@ def test_update_still_runs_end_to_end_with_hashseed_unset(tmp_path):
         if k not in ("PYTHONHASHSEED", "PYTEST_CURRENT_TEST")
     }
     result = subprocess.run(
-        [sys.executable, "-m", "graphify", "update", "."],
+        [sys.executable, "-m", "monarch_atlas", "update", "."],
         cwd=tmp_path, capture_output=True, text=True, env=env,
     )
 
     assert result.returncode == 0, result.stderr
-    assert (tmp_path / "graphify-out" / "graph.json").exists()
+    assert (tmp_path / "atlas-out" / "graph.json").exists()

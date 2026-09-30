@@ -7,7 +7,7 @@ silently dropped every member, leaving e.g. an AngularJS frontend opaque
 below file level.
 """
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _labels(tmp_path, monkeypatch, source):

@@ -10,7 +10,7 @@ so `build_from_json` dropped the edge as external.
 
 from pathlib import Path
 
-from graphify.extract import (
+from monarch_atlas.extract import (
     _make_id,
     _resolve_js_module_path,
     extract_js,
@@ -125,7 +125,7 @@ def test_resolve_svelte_prefers_svelte_ts_over_svelte_js(tmp_path):
 
     Note: Vite's default `resolve.extensions` puts `.js` before `.ts`, but
     in practice TypeScript codebases that emit `.svelte.js` build artifacts
-    expect tooling to read the `.svelte.ts` source. graphify is a source-
+    expect tooling to read the `.svelte.ts` source. atlas is a source-
     code tool, not a runtime resolver, so source-first ordering is correct
     for our use case."""
     ts_target = _write(tmp_path / "store.svelte.ts",

@@ -1,10 +1,10 @@
-"""Tests for graphify.paths — the shared test-path classifier (#1553)."""
+"""Tests for monarch_atlas.paths — the shared test-path classifier (#1553)."""
 
 from __future__ import annotations
 
 import pytest
 
-from graphify.paths import (
+from monarch_atlas.paths import (
     _is_test_path,
     disambiguate_ambiguous_candidates,
 )
@@ -115,7 +115,7 @@ def test_disambiguate_path_proximity_same_dir() -> None:
     "//server/share/docs/a.md",                 # UNC, forward slashes
 ])
 def test_is_absolute_any_platform_accepts_both_conventions(path):
-    from graphify.paths import is_absolute_any_platform
+    from monarch_atlas.paths import is_absolute_any_platform
     assert is_absolute_any_platform(path) is True, (
         f"{path!r} is absolute on some platform and must be treated as such"
     )
@@ -131,7 +131,7 @@ def test_is_absolute_any_platform_accepts_both_conventions(path):
     r"\foo",         # Windows root-relative (no drive) — not absolute anywhere
 ])
 def test_is_absolute_any_platform_rejects_relative(path):
-    from graphify.paths import is_absolute_any_platform
+    from monarch_atlas.paths import is_absolute_any_platform
     assert is_absolute_any_platform(path) is False
 
 
@@ -141,6 +141,6 @@ def test_is_absolute_any_platform_is_host_independent():
     Both spellings are absolute somewhere, so both must return True on every
     host — that is exactly what Path.is_absolute() fails to do.
     """
-    from graphify.paths import is_absolute_any_platform
+    from monarch_atlas.paths import is_absolute_any_platform
     assert is_absolute_any_platform("/home/ci/x.md")
     assert is_absolute_any_platform("C:/Users/u/x.md")

@@ -9,7 +9,7 @@ RELATION survived, and it decided it alphabetically:
     calls < contains < imports < ... < references < uses
 
 So `references` always overwrote `calls`, and `uses` overwrote everything. On
-graphify's own corpus that rewrote all 144 pairs where the extraction found both
+atlas's own corpus that rewrote all 144 pairs where the extraction found both
 `calls` and `references` into plain `references` — 144 out of 144, not a
 sampling — and callflow's relation filter
 (`calls, imports, imports_from, uses, method, indirect_call`) does not include
@@ -21,7 +21,7 @@ about the collapse changed.
 """
 import pytest
 
-from graphify.build import build_from_json, edge_data
+from monarch_atlas.build import build_from_json, edge_data
 
 SPECIFIC = ["calls", "imports", "imports_from", "inherits", "implements",
             "method", "indirect_call", "re_exports", "contains"]
@@ -65,7 +65,7 @@ def test_generic_never_overwrites_specific(specific, generic, order):
 
 
 def test_the_reported_case_keeps_calls():
-    """The exact shape seen 144 times on graphify's own graph."""
+    """The exact shape seen 144 times on atlas's own graph."""
     G = build_from_json(_extraction([
         _edge("calls", source_location="L10"),
         _edge("references", source_location="L10"),

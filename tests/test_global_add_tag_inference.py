@@ -1,8 +1,8 @@
-"""`graphify global add` repo-tag inference, and addressing the tag it produces.
+"""`atlas global add` repo-tag inference, and addressing the tag it produces.
 
 The tag was `source.parent.parent.name`, which is empty whenever the graph is not two
-levels below a named directory — `graphify global add /tmp/graph.json`, or any relative
-path such as `graphify-out/graph.json`. The empty tag then prefixes every node with
+levels below a named directory — `atlas global add /tmp/graph.json`, or any relative
+path such as `atlas-out/graph.json`. The empty tag then prefixes every node with
 `::`, prunes by `""`, and registers a manifest entry the `remove` subcommand rejected
 as a missing argument, so the store could not be cleaned up again.
 """
@@ -14,7 +14,7 @@ import networkx as nx
 import pytest
 from networkx.readwrite import json_graph as jg
 
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 
 
 def _write_graph(path):
@@ -34,9 +34,9 @@ def _write_graph(path):
 def store(monkeypatch, tmp_path):
     """Point the global store at a scratch dir and yield its manifest reader."""
     where = tmp_path / "store"
-    monkeypatch.setattr("graphify.global_graph._GLOBAL_DIR", where)
-    monkeypatch.setattr("graphify.global_graph._GLOBAL_GRAPH", where / "global-graph.json")
-    monkeypatch.setattr("graphify.global_graph._GLOBAL_MANIFEST", where / "global-manifest.json")
+    monkeypatch.setattr("monarch_atlas.global_graph._GLOBAL_DIR", where)
+    monkeypatch.setattr("monarch_atlas.global_graph._GLOBAL_GRAPH", where / "global-graph.json")
+    monkeypatch.setattr("monarch_atlas.global_graph._GLOBAL_MANIFEST", where / "global-manifest.json")
     return where
 
 
@@ -63,7 +63,7 @@ def test_bare_graph_path_gets_a_non_empty_tag(monkeypatch, tmp_path, store):
     _write_graph(repo / "graph.json")
     monkeypatch.chdir(repo)
 
-    assert _run(monkeypatch, ["graphify", "global", "add", "graph.json"]) == 0
+    assert _run(monkeypatch, ["atlas", "global", "add", "graph.json"]) == 0
 
     tags = list(_manifest(store))
     assert tags == [tmp_path.name]
@@ -74,17 +74,17 @@ def test_a_nameless_repo_dir_degrades_to_repo():
     """The tag the CLI inherits for a graph at the filesystem root."""
     from pathlib import Path
 
-    from graphify.build import distinct_repo_tags
+    from monarch_atlas.build import distinct_repo_tags
 
     assert distinct_repo_tags([Path("/graph.json")]) == ["repo"]
 
 
 def test_relative_path_infers_from_the_resolved_repo_dir(monkeypatch, tmp_path, store):
     repo = tmp_path / "myrepo"
-    _write_graph(repo / "graphify-out" / "graph.json")
+    _write_graph(repo / "atlas-out" / "graph.json")
     monkeypatch.chdir(repo)
 
-    assert _run(monkeypatch, ["graphify", "global", "add", "graphify-out/graph.json"]) == 0
+    assert _run(monkeypatch, ["atlas", "global", "add", "atlas-out/graph.json"]) == 0
 
     assert list(_manifest(store)) == ["myrepo"]
 
@@ -93,24 +93,24 @@ def test_explicit_as_tag_still_wins(monkeypatch, tmp_path, store):
     graph = tmp_path / "graph.json"
     _write_graph(graph)
 
-    assert _run(monkeypatch, ["graphify", "global", "add", str(graph), "--as", "chosen"]) == 0
+    assert _run(monkeypatch, ["atlas", "global", "add", str(graph), "--as", "chosen"]) == 0
 
     assert list(_manifest(store)) == ["chosen"]
 
 
 def test_remove_without_a_tag_is_still_a_usage_error(monkeypatch, store):
-    assert _run(monkeypatch, ["graphify", "global", "remove"]) == 1
+    assert _run(monkeypatch, ["atlas", "global", "remove"]) == 1
 
 
 def test_remove_can_address_a_repo_registered_under_an_empty_tag(monkeypatch, tmp_path, store):
     graph = tmp_path / "graph.json"
     _write_graph(graph)
-    from graphify.global_graph import global_add
+    from monarch_atlas.global_graph import global_add
 
     global_add(graph, "")  # what an older revision's inference produced
     assert "" in _manifest(store)
 
-    assert _run(monkeypatch, ["graphify", "global", "remove", ""]) == 0
+    assert _run(monkeypatch, ["atlas", "global", "remove", ""]) == 0
 
     assert "" not in _manifest(store)
     assert _nodes(store) == []

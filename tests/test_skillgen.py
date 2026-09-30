@@ -1,6 +1,6 @@
 """Tests for the tools/skillgen generator and the claude lean-core split.
 
-skillgen renders graphify's committed skill artifacts from human-edited
+skillgen renders atlas's committed skill artifacts from human-edited
 fragments. These tests lock in the anti-drift guards (``--check``,
 ``--audit-coverage``), the render idempotency, and the lean-core invariant: the
 core runs a default extraction with zero reference reads, on-demand content
@@ -60,7 +60,7 @@ def test_render_output_is_lf_only():
 
 def test_no_version_or_timestamp_in_output():
     """No generated artifact carries the package version string."""
-    from graphify.__main__ import __version__
+    from monarch_atlas.__main__ import __version__
 
     platforms = gen.load_platforms()
     for art in gen.render_all(platforms, only="claude"):
@@ -70,8 +70,8 @@ def test_no_version_or_timestamp_in_output():
 def _claude_artifacts():
     platforms = gen.load_platforms()
     arts = gen.render_all(platforms, only="claude")
-    core = next(a for a in arts if a.path == "graphify/skill.md")
-    refs = {a.path.rsplit("/", 1)[-1]: a.content for a in arts if a.path != "graphify/skill.md"}
+    core = next(a for a in arts if a.path == "monarch_atlas/skill.md")
+    refs = {a.path.rsplit("/", 1)[-1]: a.content for a in arts if a.path != "monarch_atlas/skill.md"}
     return core.content, refs
 
 
@@ -86,18 +86,18 @@ def test_lean_core_has_no_reference_only_content():
     # The full embedded subagent prompt lives only in extraction-spec.md.
     assert '"file_type":"code|document|paper|image|rationale|concept"' not in core
     # The incremental-update merge machinery lives only in update.md.
-    assert "from graphify.build import build_merge" not in core
-    assert "graphify cluster-only ." not in core
+    assert "from monarch_atlas.build import build_merge" not in core
+    assert "atlas cluster-only ." not in core
     # The vocab-expansion query flow lives only in query.md.
     assert "Constrained query expansion" not in core
     assert "save-result --question" not in core
     # The export commands live only in exports.md.
-    assert "graphify export wiki" not in core
-    assert "graphify export neo4j" not in core
+    assert "atlas export wiki" not in core
+    assert "atlas export neo4j" not in core
     # The add / watch / hook flows live only in their references.
-    assert "from graphify.ingest import ingest" not in core
-    assert "graphify hook install" not in core
-    assert "python3 -m graphify.watch" not in core
+    assert "from monarch_atlas.ingest import ingest" not in core
+    assert "atlas hook install" not in core
+    assert "python3 -m monarch_atlas.watch" not in core
 
 
 def test_lean_core_runs_default_pipeline_with_zero_references():
@@ -106,7 +106,7 @@ def test_lean_core_runs_default_pipeline_with_zero_references():
     # The whole default pipeline (detect -> AST -> build -> label -> HTML ->
     # report) must be present in the core so a plain run reads no reference.
     for needed in (
-        "### Step 1 - Ensure graphify is installed",
+        "### Step 1 - Ensure atlas is installed",
         "### Step 2 - Detect files",
         "### Step 3 - Extract entities and relationships",
         "#### Part A - Structural extraction for code files",
@@ -116,7 +116,7 @@ def test_lean_core_runs_default_pipeline_with_zero_references():
         "### Step 6 - Generate Obsidian vault (opt-in) + HTML",
         "### Step 9 - Save manifest, update cost tracker, clean up, and report",
         "## Honesty Rules",
-        "graphify export html",
+        "atlas export html",
     ):
         assert needed in core, f"lean core is missing default-pipeline content: {needed!r}"
 
@@ -136,7 +136,7 @@ def test_extraction_states_no_api_key_required_for_every_host():
               if "### Step 3 - Extract entities and relationships" in a.content]
     assert bodies, "no rendered skill body contains the Step 3 extraction section"
     for a in bodies:
-        assert "graphify needs no API key" in a.content, a.path
+        assert "atlas needs no API key" in a.content, a.path
         assert "Never ask the user for one, and never block on one." in a.content, a.path
         # the no-key fallback must not be framed *only* around subagent dispatch
         assert "cannot dispatch subagents" in a.content, a.path
@@ -145,7 +145,7 @@ def test_extraction_states_no_api_key_required_for_every_host():
         # tip — they are the model themselves — so the check only applies if present)
         tip = "Tip: set `GEMINI_API_KEY`"
         if tip in a.content:
-            assert a.content.index("graphify needs no API key") < a.content.index(tip), \
+            assert a.content.index("atlas needs no API key") < a.content.index(tip), \
                 f"{a.path}: no-key clarity is not hoisted above the GEMINI tip"
 
 
@@ -155,7 +155,7 @@ def test_references_contain_no_core_pipeline_content():
     # Distinctive lines from the core build/label steps must not appear in any
     # reference, or the same content would be double-homed.
     core_only_markers = (
-        "from graphify.cluster import cluster, score_all",
+        "from monarch_atlas.cluster import cluster, score_all",
         "### Step 4 - Build graph, cluster, analyze, generate outputs",
         "### Step 5 - Label communities",
         "## Honesty Rules",
@@ -181,12 +181,12 @@ def test_query_heading_is_homed_in_core_stub_only():
     core, refs = _claude_artifacts()
     core_headings = set(gen.headings(core))
     query_headings = set(gen.headings(refs["query.md"]))
-    assert "## For /graphify query" in core_headings
-    assert "## For /graphify query" not in query_headings
+    assert "## For /atlas query" in core_headings
+    assert "## For /atlas query" not in query_headings
     # The deeper query content moved into the reference.
-    assert "## For /graphify path" in query_headings
-    assert "## For /graphify explain" in query_headings
-    assert "## For /graphify path" not in core_headings
+    assert "## For /atlas path" in query_headings
+    assert "## For /atlas explain" in query_headings
+    assert "## For /atlas path" not in core_headings
 
 
 def test_eight_references_render_for_claude():
@@ -258,8 +258,8 @@ def test_audit_coverage_passes_for_codex_and_windows():
 
 UNIFIED_DESCRIPTION = (
     "Use for any question about a codebase, its architecture, file relationships, "
-    "or project content — especially when graphify-out/ exists, where the question "
-    "should be treated as a graphify query first. Turns any input (code, docs, "
+    "or project content — especially when atlas-out/ exists, where the question "
+    "should be treated as a atlas query first. Turns any input (code, docs, "
     "papers, images, videos) into a persistent knowledge graph with god nodes, "
     "community detection, and query/path/explain tools."
 )
@@ -280,19 +280,19 @@ def test_descriptions_are_unified():
         assert expected_line in body, f"[{key}] missing the unified description line"
         # None of the drifted v8 wording may survive on any platform.
         assert "Provides persistent graph with god nodes" not in body, f"[{key}] kept old wording"
-        assert "treat the question as a /graphify query." not in body, f"[{key}] kept old wording"
+        assert "treat the question as a /atlas query." not in body, f"[{key}] kept old wording"
         assert "clustered communities" not in body, f"[{key}] kept old wording"
 
 
 def test_windows_frontmatter_name_and_shell_and_extra():
-    """windows: name must be `graphify` (folder-name rule, #1635), powershell
+    """windows: name must be `atlas` (folder-name rule, #1635), powershell
     install, troubleshooting tail."""
     core, _ = _platform_artifacts("windows")
     # Claude Code requires the frontmatter name to equal the install folder
-    # (graphify); a `graphify-windows` name broke skill discovery (#1635).
-    assert core.startswith("---\nname: graphify\n")
+    # (atlas); a `atlas-windows` name broke skill discovery (#1635).
+    assert core.startswith("---\nname: atlas\n")
     assert "```powershell" in core
-    assert "function Find-GraphifyPython" in core
+    assert "function Find-AtlasPython" in core
     assert "## Troubleshooting" in core
     assert "### PowerShell 5.1: Vertical scrolling stops working" in core
     # The troubleshooting section sits before Honesty Rules, single separator.
@@ -349,8 +349,8 @@ def test_every_platform_query_has_expansion_and_fallback():
         q = refs["query.md"]
         assert "Constrained query expansion" in q
         assert "If the CLI is unavailable" in q
-        assert "## For /graphify path" in q
-        assert "## For /graphify explain" in q
+        assert "## For /atlas path" in q
+        assert "## For /atlas explain" in q
 
 
 # --- cross-shell parity for powershell hosts (#2528) ---------------------------
@@ -360,7 +360,7 @@ _BASH_ONLY_TOKENS = ("$(cat ", "rm -f ", "2>/dev/null", "```bash")
 
 # The default-pipeline step headings that must exist on BOTH shells (parity).
 _STEP_HEADINGS = (
-    "### Step 1 - Ensure graphify is installed",
+    "### Step 1 - Ensure atlas is installed",
     "### Step 2 - Detect files",
     "### Step 3 - Extract entities and relationships",
     "#### Part A - Structural extraction for code files",
@@ -400,12 +400,12 @@ def test_powershell_hosts_carry_no_bash_only_shell():
         assert re.search(r"\bfind\b[^\n]*-delete", core) is None, f"[{key}] find -delete survived"
         # The PowerShell invocation pattern replaces $(cat ...) -c "..." everywhere.
         assert "```powershell" in core
-        assert "'@ | & (Get-Content graphify-out\\.graphify_python) -" in core, (
+        assert "'@ | & (Get-Content atlas-out\\.atlas_python) -" in core, (
             f"[{key}] missing the here-string stdin python invocation"
         )
         # Cleanup went through Remove-Item / Get-ChildItem, not rm/find.
         assert "Remove-Item -Force -ErrorAction SilentlyContinue" in core
-        assert "Get-ChildItem graphify-out -Filter '.graphify_chunk_*.json'" in core
+        assert "Get-ChildItem atlas-out -Filter '.atlas_chunk_*.json'" in core
 
 
 def test_windows_and_posix_cores_have_step_and_2490_parity():
@@ -416,7 +416,7 @@ def test_windows_and_posix_cores_have_step_and_2490_parity():
     for heading in _STEP_HEADINGS:
         assert heading in claude_core, f"skill.md lost step heading: {heading!r}"
         assert heading in windows_core, f"skill-windows.md lost step heading: {heading!r}"
-    line_2490 = "to_json(G, communities, 'graphify-out/graph.json', community_labels=labels)"
+    line_2490 = "to_json(G, communities, 'atlas-out/graph.json', community_labels=labels)"
     assert line_2490 in claude_core, "skill.md lost the #2490 Step-5 re-export"
     assert line_2490 in windows_core, "skill-windows.md lost the #2490 Step-5 re-export"
 
@@ -454,8 +454,8 @@ def test_powershell_translator_rejects_unknown_bash():
     with pytest.raises(ValueError, match="cannot translate rm -f operand"):
         gen._rm_to_remove_item("rm -f $HOME/danger")
     # And the sanctioned pieces translate exactly.
-    assert gen._rm_to_remove_item("rm -f graphify-out/.needs_update 2>/dev/null || true") == (
-        "Remove-Item -Force -ErrorAction SilentlyContinue graphify-out\\.needs_update"
+    assert gen._rm_to_remove_item("rm -f atlas-out/.needs_update 2>/dev/null || true") == (
+        "Remove-Item -Force -ErrorAction SilentlyContinue atlas-out\\.needs_update"
     )
     assert gen._translate_bash_block([gen._FIND_CHUNKS_POSIX]) == [gen._FIND_CHUNKS_PS]
 
@@ -585,7 +585,7 @@ def test_monoliths_render_inline_single_file_no_references():
         assert platforms[key].bucket == "monolith"
         arts = gen.render(platforms[key])
         assert len(arts) == 1, f"[{key}] monolith should render exactly one file"
-        assert arts[0].path == f"graphify/skill-{key}.md"
+        assert arts[0].path == f"monarch_atlas/skill-{key}.md"
         assert "references/" not in arts[0].content or "see `references/" not in arts[0].content.lower()
 
 
@@ -637,7 +637,7 @@ def test_monoliths_carry_the_1392_runbook_fixes():
         assert "detect['files'].values()" not in body
 
         # #12 stale-cache unlink on a miss.
-        assert ".graphify_cached.json').unlink(missing_ok=True)" in body
+        assert ".atlas_cached.json').unlink(missing_ok=True)" in body
 
         # #18/#20 zero-node guard before any write, report/analysis gated on
         # to_json's return.
@@ -657,7 +657,7 @@ def test_monoliths_scope_semantic_cache_writes_to_uncached_files():
     platforms = gen.load_platforms()
     for key in ("aider", "devin"):
         body = gen.render(platforms[key])[0].content
-        assert ".graphify_uncached.txt').read_text(" in body
+        assert ".atlas_uncached.txt').read_text(" in body
         assert "allowed_source_files=uncached" in body
 
 
@@ -671,11 +671,11 @@ def test_generated_runbooks_pass_root_to_save_manifest():
     shipped artifacts; --check keeps them in sync with the fragments.
     """
     targets = [
-        REPO_ROOT / "graphify" / "skill.md",
-        REPO_ROOT / "graphify" / "skill-aider.md",
-        REPO_ROOT / "graphify" / "skill-devin.md",
+        REPO_ROOT / "monarch_atlas" / "skill.md",
+        REPO_ROOT / "monarch_atlas" / "skill-aider.md",
+        REPO_ROOT / "monarch_atlas" / "skill-devin.md",
     ]
-    targets += sorted((REPO_ROOT / "graphify" / "skills").glob("*/references/update.md"))
+    targets += sorted((REPO_ROOT / "monarch_atlas" / "skills").glob("*/references/update.md"))
     checked = 0
     for path in targets:
         for ln in path.read_text(encoding="utf-8").splitlines():
@@ -705,12 +705,12 @@ def test_always_on_renders_six_blocks():
     arts = gen.render_always_on()
     paths = sorted(a.path for a in arts)
     assert paths == [
-        "graphify/always_on/agents-md.md",
-        "graphify/always_on/antigravity-rules.md",
-        "graphify/always_on/claude-md.md",
-        "graphify/always_on/gemini-md.md",
-        "graphify/always_on/kiro-steering.md",
-        "graphify/always_on/vscode-instructions.md",
+        "monarch_atlas/always_on/agents-md.md",
+        "monarch_atlas/always_on/antigravity-rules.md",
+        "monarch_atlas/always_on/claude-md.md",
+        "monarch_atlas/always_on/gemini-md.md",
+        "monarch_atlas/always_on/kiro-steering.md",
+        "monarch_atlas/always_on/vscode-instructions.md",
     ]
 
 
@@ -719,8 +719,8 @@ def test_always_on_included_in_full_render_not_per_platform():
     platforms = gen.load_platforms()
     full = {a.path for a in gen.render_all(platforms)}
     claude_only = {a.path for a in gen.render_all(platforms, only="claude")}
-    assert "graphify/always_on/claude-md.md" in full
-    assert "graphify/always_on/claude-md.md" not in claude_only
+    assert "monarch_atlas/always_on/claude-md.md" in full
+    assert "monarch_atlas/always_on/claude-md.md" not in claude_only
 
 
 def test_always_on_roundtrip_is_byte_faithful():
@@ -728,7 +728,7 @@ def test_always_on_roundtrip_is_byte_faithful():
 
     This is the load-bearing fidelity check behind the D2-a extraction: the
     install-string / issue-#580 tests still import the constants from
-    graphify.__main__, so the packaged markdown must round-trip exactly or those
+    monarch_atlas.__main__, so the packaged markdown must round-trip exactly or those
     contracts silently change.
     """
     # The guard passes with zero problems: every always-on block reproduces its
@@ -740,14 +740,14 @@ def test_always_on_roundtrip_is_byte_faithful():
     rendered_agents = next(
         a.content
         for a in gen.render_always_on()
-        if a.path == "graphify/always_on/agents-md.md"
+        if a.path == "monarch_atlas/always_on/agents-md.md"
     )
     old_instruction = (
-        "When the user types `/graphify`, invoke the `skill` tool with "
-        '`skill: "graphify"` before doing anything else.'
+        "When the user types `/atlas`, invoke the `skill` tool with "
+        '`skill: "atlas"` before doing anything else.'
     )
     new_instruction = (
-        "When the user types `/graphify`, use the installed graphify skill or instructions "
+        "When the user types `/atlas`, use the installed atlas skill or instructions "
         "before doing anything else."
     )
     # The sanctioned-edit registry holds exactly this single old->new substitution.
@@ -760,12 +760,12 @@ def test_always_on_roundtrip_is_byte_faithful():
     assert old_instruction in baseline_agents
     assert baseline_agents.replace(old_instruction, new_instruction) == rendered_agents
     assert "`skill` tool" not in rendered_agents
-    assert 'skill: "graphify"' not in rendered_agents
+    assert 'skill: "atlas"' not in rendered_agents
 
 
 def test_extracted_constants_equal_the_packaged_always_on_files():
     """The live module constants now equal the packaged files they read at load."""
-    from graphify import __main__ as mainmod
+    from monarch_atlas import __main__ as mainmod
 
     pairs = {
         "_CLAUDE_MD_SECTION": "claude-md",
@@ -790,7 +790,7 @@ def test_always_on_files_are_guarded_by_check(tmp_path):
     # A mutated artifact is flagged.
     mutated = [
         gen.RenderedArtifact(a.path, a.content + "drift\n")
-        if a.path == "graphify/always_on/claude-md.md"
+        if a.path == "monarch_atlas/always_on/claude-md.md"
         else a
         for a in arts
     ]
@@ -816,9 +816,9 @@ def test_audit_reads_each_host_against_its_own_v8_body():
 
     This is the structural fix: a per-host body, so a drop on one host surfaces.
     """
-    assert gen._v8_baseline_ref("claude") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:graphify/skill.md"
-    assert gen._v8_baseline_ref("trae") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:graphify/skill-trae.md"
-    assert gen._v8_baseline_ref("vscode") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:graphify/skill-vscode.md"
+    assert gen._v8_baseline_ref("claude") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:monarch_atlas/skill.md"
+    assert gen._v8_baseline_ref("trae") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:monarch_atlas/skill-trae.md"
+    assert gen._v8_baseline_ref("vscode") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:monarch_atlas/skill-vscode.md"
 
 
 def test_audit_catches_an_induced_per_host_drop():
@@ -898,20 +898,20 @@ def test_audit_allowlist_documents_only_consolidations():
 
 
 def test_trae_renders_native_agents_md_integration_not_claude():
-    """trae wires `graphify trae install` -> AGENTS.md, never `graphify claude install`."""
+    """trae wires `atlas trae install` -> AGENTS.md, never `atlas claude install`."""
     core, refs = _platform_artifacts("trae")
     hooks = refs["hooks.md"]
     # The hooks reference carries the v8 native AGENTS.md integration section.
     assert "## For native AGENTS.md integration (Trae)" in hooks
-    assert "graphify trae install" in hooks
-    assert "graphify trae-cn install" in hooks
-    assert "writes a `## graphify` section to the local `AGENTS.md`" in hooks
+    assert "atlas trae install" in hooks
+    assert "atlas trae-cn install" in hooks
+    assert "writes a `## atlas` section to the local `AGENTS.md`" in hooks
     # The claude-flavored install command must NOT appear for trae.
-    assert "graphify claude install" not in hooks
+    assert "atlas claude install" not in hooks
     assert "native CLAUDE.md integration" not in hooks
     # The lean-core pointer names AGENTS.md, not CLAUDE.md.
     assert "## For the commit hook and native AGENTS.md integration" in core
-    assert "wire graphify into a project's AGENTS.md" in core
+    assert "wire atlas into a project's AGENTS.md" in core
     assert "native CLAUDE.md integration" not in core
 
 
@@ -928,7 +928,7 @@ def test_trae_hooks_reference_includes_the_pretooluse_note():
     _, refs = _platform_artifacts("trae")
     hooks = refs["hooks.md"]
     assert "Unlike Claude Code, Trae does NOT support PreToolUse hooks" in hooks
-    assert "Run `/graphify --update` manually after code changes" in hooks
+    assert "Run `/atlas --update` manually after code changes" in hooks
 
 
 def test_claude_flavored_hosts_keep_their_hooks_text_unchanged():
@@ -940,7 +940,7 @@ def test_claude_flavored_hosts_keep_their_hooks_text_unchanged():
     for key in ("claude", "droid", "codex", "windows", "kilo", "vscode"):
         core, refs = _platform_artifacts(key)
         hooks = refs["hooks.md"]
-        assert "graphify claude install" in hooks, f"[{key}] lost the claude install command"
+        assert "atlas claude install" in hooks, f"[{key}] lost the claude install command"
         assert "native CLAUDE.md integration" in hooks, f"[{key}] lost the CLAUDE.md heading"
         assert "Trae does NOT support PreToolUse hooks" not in core, f"[{key}] leaked the trae caveat"
         assert "Trae does NOT support PreToolUse hooks" not in hooks, f"[{key}] leaked the trae caveat"
@@ -951,7 +951,7 @@ def test_claude_flavored_hosts_keep_their_hooks_text_unchanged():
 
 
 def test_amp_renders_native_agents_md_integration_v8_faithfully():
-    """amp wires `graphify amp install` -> AGENTS.md exactly as its v8 body had it.
+    """amp wires `atlas amp install` -> AGENTS.md exactly as its v8 body had it.
 
     amp shares the agents-md hooks variant with trae but renders its OWN wording:
     a bare "## For native AGENTS.md integration" heading (no "(Trae)" suffix),
@@ -963,20 +963,20 @@ def test_amp_renders_native_agents_md_integration_v8_faithfully():
     # amp's bare v8 heading and Amp-worded prose.
     assert "## For native AGENTS.md integration" in hooks
     assert "## For native AGENTS.md integration (Trae)" not in hooks
-    assert "make graphify always-on in Amp sessions" in hooks
+    assert "make atlas always-on in Amp sessions" in hooks
     assert "instructs Amp to check the graph" in hooks
     # amp's single-line install/uninstall, no trae-cn alt comments.
-    assert "graphify amp install" in hooks
-    assert "graphify amp uninstall  # remove the section" in hooks
-    assert "graphify trae install" not in hooks
-    assert "graphify trae-cn" not in hooks
-    assert "or: graphify" not in hooks
+    assert "atlas amp install" in hooks
+    assert "atlas amp uninstall  # remove the section" in hooks
+    assert "atlas trae install" not in hooks
+    assert "atlas trae-cn" not in hooks
+    assert "or: atlas" not in hooks
     # No claude flavoring on amp.
-    assert "graphify claude install" not in hooks
+    assert "atlas claude install" not in hooks
     assert "native CLAUDE.md integration" not in hooks
     # The lean-core pointer names AGENTS.md, not CLAUDE.md.
     assert "## For the commit hook and native AGENTS.md integration" in core
-    assert "wire graphify into a project's AGENTS.md" in core
+    assert "wire atlas into a project's AGENTS.md" in core
     assert "native CLAUDE.md integration" not in core
 
 
@@ -1002,11 +1002,11 @@ def test_amp_audit_coverage_passes_against_its_own_v8():
     """The per-host audit (the guard amp is the exact case for) passes for amp.
 
     amp was omitted from wave 3's render list, so its v8 body was never audited
-    against a lean split. The audit reads origin/v8:graphify/skill-amp.md and
+    against a lean split. The audit reads origin/v8:monarch_atlas/skill-amp.md and
     confirms every heading single-homes in amp's core + references.
     """
     platforms = gen.load_platforms()
-    assert gen._v8_baseline_ref("amp") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:graphify/skill-amp.md"
+    assert gen._v8_baseline_ref("amp") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:monarch_atlas/skill-amp.md"
     problems = gen.audit_coverage(platforms["amp"])
     assert problems == [], "\n".join(problems)
 
@@ -1019,19 +1019,19 @@ def test_agents_renders_its_own_agents_md_hooks_wording():
 
     It shares amp's bare, caveat-free `## For native AGENTS.md integration`
     section (no `(Trae)` suffix, no PreToolUse note) but points at
-    `graphify agents install` and is worded for an unspecified host.
+    `atlas agents install` and is worded for an unspecified host.
     """
     core, refs = _platform_artifacts("agents")
     hooks = refs["hooks.md"]
     assert "## For native AGENTS.md integration" in hooks
     assert "## For native AGENTS.md integration (Trae)" not in hooks
-    assert "make graphify always-on in your agent sessions" in hooks
-    assert "graphify agents install" in hooks
-    assert "graphify agents uninstall  # remove the section" in hooks
+    assert "make atlas always-on in your agent sessions" in hooks
+    assert "atlas agents install" in hooks
+    assert "atlas agents uninstall  # remove the section" in hooks
     # No amp/trae/claude wording leaks into the agents render.
-    assert "graphify amp install" not in hooks
-    assert "graphify trae" not in hooks
-    assert "graphify claude install" not in hooks
+    assert "atlas amp install" not in hooks
+    assert "atlas trae" not in hooks
+    assert "atlas claude install" not in hooks
     assert "PreToolUse" not in hooks and "PreToolUse" not in core
     # The lean-core pointer names AGENTS.md, not CLAUDE.md.
     assert "## For the commit hook and native AGENTS.md integration" in core
@@ -1062,7 +1062,7 @@ def test_agents_body_matches_amp_modulo_hooks_wording():
 def test_agents_audit_baseline_is_amps_v8_body():
     """`agents` is a post-v8 platform, so its audit baseline is amp's v8 body."""
     platforms = gen.load_platforms()
-    assert gen._v8_baseline_ref("agents") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:graphify/skill-amp.md"
+    assert gen._v8_baseline_ref("agents") == "47042beb05d1f6dd2186c0c499ae2840ce604ead:monarch_atlas/skill-amp.md"
     problems = gen.audit_coverage(platforms["agents"])
     assert problems == [], "\n".join(problems)
 
@@ -1100,17 +1100,17 @@ def test_windows_skill_writes_marker_files_without_a_bom():
 
     `Out-File -Encoding utf8` always emits EF BB BF on Windows PowerShell 5.1 --
     `utf8NoBOM` only exists from PowerShell 6 -- and `-NoNewline` does nothing about
-    it. The BOM then rode into `.graphify_python` / `.graphify_root`, so every
+    it. The BOM then rode into `.atlas_python` / `.atlas_root`, so every
     post-commit rebuild died with WinError 123 while `hook install` and `hook status`
     both still reported success. The readers now decode with `utf-8-sig`; this keeps
     the writer from producing the BOM in the first place.
     """
     core, _ = _platform_artifacts("windows")
-    for marker in (".graphify_python", ".graphify_root"):
-        assert f"Out-File -FilePath graphify-out\\{marker} -Encoding utf8" not in core, (
+    for marker in (".atlas_python", ".atlas_root"):
+        assert f"Out-File -FilePath atlas-out\\{marker} -Encoding utf8" not in core, (
             f"the windows render still writes {marker} with a BOM-emitting Out-File"
         )
-        assert f"WriteAllText((Join-Path $PWD 'graphify-out\\{marker}')" in core, (
+        assert f"WriteAllText((Join-Path $PWD 'atlas-out\\{marker}')" in core, (
             f"{marker} must be written through WriteAllText with a BOM-less encoding"
         )
     assert "New-Object System.Text.UTF8Encoding $false" in core, \

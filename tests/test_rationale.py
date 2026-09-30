@@ -2,8 +2,8 @@
 import textwrap
 from pathlib import Path
 import pytest
-from graphify.extract import extract_python
-from graphify.build import build_from_json
+from monarch_atlas.extract import extract_python
+from monarch_atlas.build import build_from_json
 
 
 def _write_py(tmp_path: Path, code: str) -> Path:
@@ -466,7 +466,7 @@ def _write_ts(tmp_path: Path, code: str) -> Path:
 
 
 def test_js_rationale_comment_extracted(tmp_path):
-    from graphify.extract import extract_js
+    from monarch_atlas.extract import extract_js
     path = _write_ts(tmp_path, '''
         // NOTE: must run before compile() or the linker will fail
         export function build(): void {}
@@ -477,7 +477,7 @@ def test_js_rationale_comment_extracted(tmp_path):
 
 
 def test_js_block_comment_rationale_extracted(tmp_path):
-    from graphify.extract import extract_js
+    from monarch_atlas.extract import extract_js
     path = _write_ts(tmp_path, '''
         /**
          * WHY: retries are capped because the upstream rate-limits at 10 rps.
@@ -490,7 +490,7 @@ def test_js_block_comment_rationale_extracted(tmp_path):
 
 
 def test_js_adr_reference_extracted(tmp_path):
-    from graphify.extract import extract_js
+    from monarch_atlas.extract import extract_js
     path = _write_ts(tmp_path, '''
         // Gateway pattern per ADR-0002; provider selection per ADR-0015.
         export function route(): void {}
@@ -504,7 +504,7 @@ def test_js_adr_reference_extracted(tmp_path):
 
 
 def test_js_adr_reference_normalized_and_deduped(tmp_path):
-    from graphify.extract import extract_js
+    from monarch_atlas.extract import extract_js
     path = _write_ts(tmp_path, '''
         // See ADR-11 for the trust boundary.
         // ADR 0011 also governs the injection containment below.
@@ -516,7 +516,7 @@ def test_js_adr_reference_normalized_and_deduped(tmp_path):
 
 
 def test_js_adr_in_string_literal_not_extracted(tmp_path):
-    from graphify.extract import extract_js
+    from monarch_atlas.extract import extract_js
     path = _write_ts(tmp_path, '''
         export const banner = "compliant with ADR-0099";
     ''')
@@ -531,7 +531,7 @@ def test_js_adr_in_string_literal_not_extracted(tmp_path):
 def test_js_rationale_label_truncates_on_word_boundary(tmp_path):
     """Same invariant as the Python site: a long ``// WHY:`` comment must be
     shortened at a word boundary, not mid-word."""
-    from graphify.extract import extract_js
+    from monarch_atlas.extract import extract_js
     comment_text = ("retries are capped because the upstream billing service "
                      "enforces a strict per-tenant rate limit that keeps dropping requests")
     path = _write_ts(tmp_path, f'''
@@ -553,7 +553,7 @@ def test_js_rationale_label_truncates_on_word_boundary(tmp_path):
 def test_js_rationale_label_never_ends_with_bare_period_when_truncated(tmp_path):
     """Same invariant as the Python site: a truncated label must never end on
     a lone "." (double-dot Obsidian filename)."""
-    from graphify.extract import extract_js
+    from monarch_atlas.extract import extract_js
     comment_text = ("retries are capped at five attempts before the circuit breaker "
                      "opens for the endpoint. A metrics counter records every trip.")
     path = _write_ts(tmp_path, f'''
@@ -574,7 +574,7 @@ def test_js_rationale_comment_opening_with_unbroken_long_token_keeps_content(tmp
     placeholder label. Unlike the Python site, the ``WHY:`` prefix always
     fits on its own, so the invariant is "some real content survives",
     not "the URL itself survives" (it genuinely cannot fit in 80 chars)."""
-    from graphify.extract import extract_js
+    from monarch_atlas.extract import extract_js
     url = "https://example.com/api/v3/settlements/" + "a" * 60 + "/confirm"
     path = _write_ts(tmp_path, f'''
         // WHY: {url} documents the retry contract for this handler.
@@ -590,7 +590,7 @@ def test_js_rationale_comment_opening_with_unbroken_long_token_keeps_content(tmp
 def test_js_short_rationale_comment_unchanged(tmp_path):
     """Non-regression: a short ``// NOTE:`` comment must pass through
     byte-for-byte, matching the pre-existing test above but pinned exactly."""
-    from graphify.extract import extract_js
+    from monarch_atlas.extract import extract_js
     path = _write_ts(tmp_path, '''
         // NOTE: must run before compile() or the linker will fail
         export function build(): void {}

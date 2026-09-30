@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.build import build_from_json
-from graphify.extract import extract
+from monarch_atlas.build import build_from_json
+from monarch_atlas.extract import extract
 
 
 def _write(path: Path, text: str) -> Path:
@@ -45,7 +45,7 @@ def _call_edges(result: dict, relations=("calls",)):
 def test_cpp_cross_file_member_call_connects_with_relative_paths(tmp_path):
     """The headline #1547 fix: a paired class no longer islands — Main.cpp's use of
     Foo connects to Foo's method across files. Use RELATIVE input paths (the real
-    `graphify extract .` usage), which is what exposes resolution gaps; an earlier
+    `atlas extract .` usage), which is what exposes resolution gaps; an earlier
     absolute-path-only test masked them.
 
     NOTE: the file-level `#include` edge (Main.cpp file -> Foo.h file) is NOT asserted

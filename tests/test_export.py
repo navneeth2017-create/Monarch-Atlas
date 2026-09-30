@@ -3,9 +3,9 @@ import math
 import re
 import tempfile
 from pathlib import Path
-from graphify.build import build_from_json
-from graphify.cluster import cluster
-from graphify.export import to_json, to_cypher, to_graphml, to_html, to_canvas, to_obsidian
+from monarch_atlas.build import build_from_json
+from monarch_atlas.cluster import cluster
+from monarch_atlas.export import to_json, to_cypher, to_graphml, to_html, to_canvas, to_obsidian
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -154,7 +154,7 @@ def test_to_json_field_order_stable_with_non_ascii_labels(tmp_path):
 def test_to_json_commit_fallback_uses_output_repo_not_cwd(tmp_path, monkeypatch):
     # Without an explicit built_at_commit, provenance must come from the repo
     # the graph is written into, not from whatever repo the shell happens to
-    # be in — running `graphify extract <target>` from another repo's root
+    # be in — running `atlas extract <target>` from another repo's root
     # used to stamp the invoker's HEAD into the target's graph.json.
     import subprocess
     import networkx as nx
@@ -166,7 +166,7 @@ def test_to_json_commit_fallback_uses_output_repo_not_cwd(tmp_path, monkeypatch)
         )
 
     target = tmp_path / "target"
-    (target / "graphify-out").mkdir(parents=True)
+    (target / "atlas-out").mkdir(parents=True)
     git(target, "init")
     git(target, "commit", "--allow-empty", "-m", "target")
     target_head = subprocess.run(
@@ -182,7 +182,7 @@ def test_to_json_commit_fallback_uses_output_repo_not_cwd(tmp_path, monkeypatch)
 
     G = nx.Graph()
     G.add_node("n1", label="n1")
-    out = target / "graphify-out" / "graph.json"
+    out = target / "atlas-out" / "graph.json"
     assert to_json(G, {0: ["n1"]}, str(out), force=True)
     assert json.loads(out.read_text())["built_at_commit"] == target_head
 
@@ -314,34 +314,34 @@ def test_to_html_title_uses_portable_path_not_host_absolute():
     G = make_graph()
     communities = cluster(G)
     with tempfile.TemporaryDirectory() as tmp:
-        userish = Path(tmp) / "Users" / "mike" / "proj" / "graphify-out" / "graph.html"
+        userish = Path(tmp) / "Users" / "mike" / "proj" / "atlas-out" / "graph.html"
         userish.parent.mkdir(parents=True)
         to_html(G, communities, str(userish))
         html = userish.read_text(encoding="utf-8")
     m = re.search(r"<title>(.*?)</title>", html)
     assert m, "expected a <title> tag"
     title = m.group(1)
-    assert title.startswith("graphify - ")
-    label = title[len("graphify - "):]
+    assert title.startswith("atlas - ")
+    label = title[len("atlas - "):]
     assert "mike" not in label
     assert "Users" not in label
     assert not label.startswith("/")
-    assert "graphify-out/graph.html" in label or label == "graph.html"
+    assert "atlas-out/graph.html" in label or label == "graph.html"
 
 
 def test_html_document_title_helper_windows_and_relative():
-    from graphify.exporters.html import _html_document_title
+    from monarch_atlas.exporters.html import _html_document_title
 
-    assert _html_document_title(r"C:\Users\mike\proj\graphify-out\graph.html") == "graphify-out/graph.html"
-    assert _html_document_title("/home/u/proj/graphify-out/graph.html") == "graphify-out/graph.html"
-    assert _html_document_title("graphify-out/graph.html") == "graphify-out/graph.html"
+    assert _html_document_title(r"C:\Users\mike\proj\atlas-out\graph.html") == "atlas-out/graph.html"
+    assert _html_document_title("/home/u/proj/atlas-out/graph.html") == "atlas-out/graph.html"
+    assert _html_document_title("atlas-out/graph.html") == "atlas-out/graph.html"
     assert _html_document_title("/tmp/only/graph.html") == "graph.html"
 
 def test_to_html_neighbor_links_have_no_inline_onclick_xss():
     """#1838: neighbor links dropped an unescaped JSON.stringify(nid) into a
     quoted inline onclick — which broke every link (the value's own quotes
     truncated the attribute) and let a node id/label containing a double-quote
-    (from a document or a scraped `graphify add` URL) inject a live event handler
+    (from a document or a scraped `atlas add` URL) inject a live event handler
     into the local report (stored XSS). The template must instead carry the id in
     an escaped data attribute and dispatch via one delegated listener."""
     G = make_graph()
@@ -714,13 +714,13 @@ def test_obsidian_safe_stem_all_dots_label_falls_back_to_unnamed():
     """#2205 follow-up: the `dot-` prefix only applies when a word char survives
     the dot strip. An all-dots label like "..." must hit the #1409 "unnamed"
     fallback, not produce the meaningless stem "dot-"."""
-    from graphify.export import _obsidian_safe_stem
+    from monarch_atlas.export import _obsidian_safe_stem
     assert _obsidian_safe_stem(".env") == "dot-env"        # #2205 fix unchanged
     assert _obsidian_safe_stem("...") == "unnamed"         # not "dot-"
     assert _obsidian_safe_stem("Database") == "Database"   # normal labels untouched
 
 
-# ── Existing-vault safety: graphify must not clobber user notes / .obsidian (#1506) ──
+# ── Existing-vault safety: atlas must not clobber user notes / .obsidian (#1506) ──
 
 def _two_node_graph():
     import networkx as nx
@@ -733,7 +733,7 @@ def _two_node_graph():
 
 def test_to_obsidian_preserves_existing_user_notes_and_obsidian_config():
     """#1506: exporting into an existing vault must not overwrite a user's note that
-    collides with a graphify node name, nor their .obsidian/ graph settings."""
+    collides with a atlas node name, nor their .obsidian/ graph settings."""
     G, communities = _two_node_graph()
     with tempfile.TemporaryDirectory() as tmp:
         vault = Path(tmp)
@@ -744,7 +744,7 @@ def test_to_obsidian_preserves_existing_user_notes_and_obsidian_config():
         # user content untouched
         assert "MY NOTES" in (vault / "Database.md").read_text()
         assert json.loads((vault / ".obsidian" / "graph.json").read_text()) == {"USER": "settings"}
-        # non-colliding graphify note still written
+        # non-colliding atlas note still written
         assert (vault / "Server.md").exists()
 
 
@@ -760,7 +760,7 @@ def test_to_obsidian_empty_dir_writes_full_vault():
 
 
 def test_to_obsidian_rerun_updates_own_notes_but_not_user_files():
-    """A re-run overwrites graphify's own prior notes (via the manifest) but leaves a
+    """A re-run overwrites atlas's own prior notes (via the manifest) but leaves a
     user-added note in the same dir alone."""
     G, communities = _two_node_graph()
     with tempfile.TemporaryDirectory() as tmp:
@@ -768,7 +768,7 @@ def test_to_obsidian_rerun_updates_own_notes_but_not_user_files():
         to_obsidian(G, communities, str(out), community_labels={0: "Backend"})
         (out / "UserNote.md").write_text("mine\n", encoding="utf-8")
         to_obsidian(G, communities, str(out), community_labels={0: "Backend2"})
-        assert (out / "Database.md").exists()  # graphify re-wrote its own
+        assert (out / "Database.md").exists()  # atlas re-wrote its own
         assert (out / "UserNote.md").read_text().strip() == "mine"  # user's untouched
 
 
@@ -785,7 +785,7 @@ def _four_node_two_community_graph():
 
 
 def test_to_obsidian_rerun_prunes_removed_nodes():
-    """#1896: re-exporting into the same vault must delete graphify's own notes for
+    """#1896: re-exporting into the same vault must delete atlas's own notes for
     nodes (and communities) that dropped out of the graph, so the vault mirrors the
     current graph rather than old-union-new. User files are never touched."""
     G4, comm4 = _four_node_two_community_graph()
@@ -800,7 +800,7 @@ def test_to_obsidian_rerun_prunes_removed_nodes():
         assert not (out / "Cache.md").exists()
         assert not (out / "Queue.md").exists()
         assert not (out / "_COMMUNITY_Infra.md").exists()
-        # surviving graphify notes and the user's own note remain
+        # surviving atlas notes and the user's own note remain
         assert (out / "Database.md").exists() and (out / "Server.md").exists()
         assert (out / "_COMMUNITY_Backend.md").exists()
         assert (out / "MyOwnNote.md").read_text().strip() == "mine"
@@ -938,37 +938,37 @@ def test_to_obsidian_community_notes_case_collision():
 
 def test_backup_no_graph_json(tmp_path):
     """No graph.json → no backup."""
-    from graphify.export import backup_if_protected
+    from monarch_atlas.export import backup_if_protected
     assert backup_if_protected(tmp_path) is None
 
 
 def test_backup_no_markers(tmp_path):
     """graph.json present but no sentinel and no curated labels → no backup."""
-    from graphify.export import backup_if_protected
+    from monarch_atlas.export import backup_if_protected
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
     assert backup_if_protected(tmp_path) is None
 
 
 def test_backup_semantic_marker(tmp_path):
-    """graph.json + .graphify_semantic_marker → backup taken."""
-    from graphify.export import backup_if_protected
+    """graph.json + .atlas_semantic_marker → backup taken."""
+    from monarch_atlas.export import backup_if_protected
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
     (tmp_path / "GRAPH_REPORT.md").write_text("# Report")
-    (tmp_path / ".graphify_semantic_marker").write_text('{"output_tokens": 1234}')
+    (tmp_path / ".atlas_semantic_marker").write_text('{"output_tokens": 1234}')
     result = backup_if_protected(tmp_path)
     assert result is not None
     assert result.is_dir()
     assert (result / "graph.json").exists()
     assert (result / "GRAPH_REPORT.md").exists()
-    assert (result / ".graphify_semantic_marker").exists()
+    assert (result / ".atlas_semantic_marker").exists()
 
 
 def test_backup_curated_labels(tmp_path):
-    """graph.json + non-default label in .graphify_labels.json → backup taken."""
+    """graph.json + non-default label in .atlas_labels.json → backup taken."""
     import json
-    from graphify.export import backup_if_protected
+    from monarch_atlas.export import backup_if_protected
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
-    (tmp_path / ".graphify_labels.json").write_text(json.dumps({"0": "Auth Pipeline", "1": "Community 1"}))
+    (tmp_path / ".atlas_labels.json").write_text(json.dumps({"0": "Auth Pipeline", "1": "Community 1"}))
     result = backup_if_protected(tmp_path)
     assert result is not None
 
@@ -976,18 +976,18 @@ def test_backup_curated_labels(tmp_path):
 def test_backup_default_labels_only(tmp_path):
     """All-default labels → no backup (not curated)."""
     import json
-    from graphify.export import backup_if_protected
+    from monarch_atlas.export import backup_if_protected
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
-    (tmp_path / ".graphify_labels.json").write_text(json.dumps({"0": "Community 0", "1": "Community 1"}))
+    (tmp_path / ".atlas_labels.json").write_text(json.dumps({"0": "Community 0", "1": "Community 1"}))
     assert backup_if_protected(tmp_path) is None
 
 
 def test_backup_same_day_no_accumulation(tmp_path):
     """Same content on same day returns existing backup dir without re-copying."""
-    from graphify.export import backup_if_protected
+    from monarch_atlas.export import backup_if_protected
     from datetime import date
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
-    (tmp_path / ".graphify_semantic_marker").write_text("{}")
+    (tmp_path / ".atlas_semantic_marker").write_text("{}")
     b1 = backup_if_protected(tmp_path)
     b2 = backup_if_protected(tmp_path)
     assert b1 is not None and b2 is not None
@@ -997,10 +997,10 @@ def test_backup_same_day_no_accumulation(tmp_path):
 
 def test_backup_same_day_changed_content(tmp_path):
     """Changed graph.json on same day overwrites the existing backup in place."""
-    from graphify.export import backup_if_protected
+    from monarch_atlas.export import backup_if_protected
     from datetime import date
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
-    (tmp_path / ".graphify_semantic_marker").write_text("{}")
+    (tmp_path / ".atlas_semantic_marker").write_text("{}")
     b1 = backup_if_protected(tmp_path)
     (tmp_path / "graph.json").write_text('{"nodes":[{"id":"x"}],"links":[]}')
     b2 = backup_if_protected(tmp_path)
@@ -1009,11 +1009,11 @@ def test_backup_same_day_changed_content(tmp_path):
 
 
 def test_backup_env_disable(tmp_path, monkeypatch):
-    """GRAPHIFY_NO_BACKUP=1 disables backup entirely."""
-    from graphify.export import backup_if_protected
-    monkeypatch.setenv("GRAPHIFY_NO_BACKUP", "1")
+    """ATLAS_NO_BACKUP=1 disables backup entirely."""
+    from monarch_atlas.export import backup_if_protected
+    monkeypatch.setenv("ATLAS_NO_BACKUP", "1")
     (tmp_path / "graph.json").write_text('{"nodes":[],"links":[]}')
-    (tmp_path / ".graphify_semantic_marker").write_text("{}")
+    (tmp_path / ".atlas_semantic_marker").write_text("{}")
     assert backup_if_protected(tmp_path) is None
 
 
@@ -1069,7 +1069,7 @@ def test_to_html_handles_null_source_file_and_label(tmp_path):
 
 
 def test_existing_graph_node_count(tmp_path):
-    from graphify.export import existing_graph_node_count, MALFORMED_GRAPH
+    from monarch_atlas.export import existing_graph_node_count, MALFORMED_GRAPH
     p = tmp_path / "graph.json"
     assert existing_graph_node_count(p) is None            # absent -> nothing to protect
     p.write_text("", encoding="utf-8")
@@ -1088,7 +1088,7 @@ def test_hyperedge_perimeter_uses_convex_hull_not_member_order():
     """The hyperedge polygon must be traced in hull order. Tracing `h.nodes`
     array order self-intersects whenever the layout does not place members in
     angular order, so `fill()` paints crossed wedges instead of one region."""
-    from graphify.exporters.html import _hyperedge_script
+    from monarch_atlas.exporters.html import _hyperedge_script
     script = _hyperedge_script("[]")
     assert "function convexHull(pts)" in script
     assert "const hull = convexHull(positions);" in script
@@ -1106,7 +1106,7 @@ def test_hyperedge_convex_hull_js_is_geometrically_sound():
     if node is None:
         import pytest
         pytest.skip("node not available")
-    from graphify.exporters.html import _hyperedge_script
+    from monarch_atlas.exporters.html import _hyperedge_script
     m = re.search(r"function convexHull\(pts\) \{.*?\n\}", _hyperedge_script("[]"), re.S)
     assert m, "convexHull not found in emitted script"
     harness = m.group(0) + r"""

@@ -12,15 +12,15 @@ from __future__ import annotations
 import json
 import unicodedata
 
-from graphify.cli import _stale_graph_sources
-from graphify.detect import detect
+from monarch_atlas.cli import _stale_graph_sources
+from monarch_atlas.detect import detect
 
 NFC_NAME = unicodedata.normalize("NFC", "café.md")          # café.md, composed
 NFD_NAME = unicodedata.normalize("NFD", "café.md")          # cafe + combining accent
 
 
 def _write_graph(tmp_path, source_files: list[str]):
-    out = tmp_path / "graphify-out"
+    out = tmp_path / "atlas-out"
     out.mkdir(exist_ok=True)
     graph_path = out / "graph.json"
     nodes = [
@@ -87,7 +87,7 @@ def test_alive_but_ignored_source_is_pruned(tmp_path):
     docs.mkdir()
     (docs / "keep.md").write_text("# keep\n\nstill here\n", encoding="utf-8")
     (docs / "secret.md").write_text("# secret\n\nexcluded\n", encoding="utf-8")
-    (tmp_path / ".graphifyignore").write_text("docs/secret.md\n", encoding="utf-8")
+    (tmp_path / ".atlasignore").write_text("docs/secret.md\n", encoding="utf-8")
 
     graph_path = _write_graph(tmp_path, ["docs/keep.md", "docs/secret.md"])
     detection, seen = _scan(tmp_path)

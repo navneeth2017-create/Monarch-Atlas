@@ -10,7 +10,7 @@ import sys
 
 import pytest
 
-from graphify.paths import write_text_atomic
+from monarch_atlas.paths import write_text_atomic
 
 
 def test_write_text_atomic_writes_and_leaves_no_tmp(tmp_path):
@@ -113,7 +113,7 @@ def test_write_text_atomic_writes_through_symlink(requires_symlinks, tmp_path):
 
 
 def test_write_json_atomic_roundtrip(tmp_path):
-    from graphify.paths import write_json_atomic
+    from monarch_atlas.paths import write_json_atomic
 
     p = tmp_path / "g.json"
     write_json_atomic(p, {"nodes": [1, 2], "x": "é"}, indent=2)
@@ -123,7 +123,7 @@ def test_write_json_atomic_roundtrip(tmp_path):
 
 def test_to_json_writes_atomically_no_tmp_leftover(tmp_path):
     import networkx as nx
-    from graphify.export import to_json
+    from monarch_atlas.export import to_json
 
     G = nx.Graph()
     G.add_node("a", label="a", file_type="code")
@@ -136,10 +136,10 @@ def test_to_json_writes_atomically_no_tmp_leftover(tmp_path):
 
 
 def test_save_manifest_writes_atomically(tmp_path):
-    from graphify.detect import save_manifest
+    from monarch_atlas.detect import save_manifest
 
     (tmp_path / "a.py").write_text("x = 1\n", encoding="utf-8")
-    mpath = tmp_path / "graphify-out" / "manifest.json"
+    mpath = tmp_path / "atlas-out" / "manifest.json"
     save_manifest({"code": [str(tmp_path / "a.py")]}, manifest_path=str(mpath),
                   kind="both", root=tmp_path)
     assert json.loads(mpath.read_text())  # non-empty, valid JSON
@@ -202,7 +202,7 @@ def test_os_replace_with_fallback_replaces_a_symlink_destination_in_place(tmp_pa
     its TARGET's content instead. The #3508 fallback must preserve replace's
     semantics, not copy2's, or a Windows quirk that triggers the fallback
     would silently clobber whatever a managed symlink pointed at."""
-    from graphify.paths import os_replace_with_fallback
+    from monarch_atlas.paths import os_replace_with_fallback
 
     target = tmp_path / "shared_target.txt"
     target.write_text("ORIGINAL SHARED CONTENT", encoding="utf-8")
@@ -233,7 +233,7 @@ def test_os_replace_with_fallback_restores_destination_on_final_rename_failure(t
     original content must be restored rather than leaving the destination
     missing -- a bare unlink-then-rename with no recovery would silently
     destroy the previous file on a mid-swap failure."""
-    from graphify.paths import os_replace_with_fallback
+    from monarch_atlas.paths import os_replace_with_fallback
 
     dst = tmp_path / "dst.json"
     dst.write_text("ORIGINAL", encoding="utf-8")
@@ -274,7 +274,7 @@ def test_os_replace_with_fallback_is_a_noop_when_src_equals_dst(tmp_path, monkey
     place, unlink src) renames src out from under itself the moment src and
     dst are the same path, then crashes trying to unlink a path that no
     longer exists."""
-    from graphify.paths import os_replace_with_fallback
+    from monarch_atlas.paths import os_replace_with_fallback
 
     p = tmp_path / "x.json"
     p.write_text("CONTENT", encoding="utf-8")
@@ -292,7 +292,7 @@ def test_os_replace_with_fallback_is_a_noop_when_src_equals_dst(tmp_path, monkey
 
 
 def test_write_json_atomic_ensure_ascii_false_preserves_utf8(tmp_path):
-    from graphify.paths import write_json_atomic
+    from monarch_atlas.paths import write_json_atomic
 
     p = tmp_path / "g.json"
     write_json_atomic(p, {"label": "Wörker 数据"}, ensure_ascii=False)
@@ -306,7 +306,7 @@ def test_atomic_replace_temp_name_is_bounded_and_does_not_embed_long_filename(tm
     """Regression #3351: temp filename must not grow with destination filename."""
     import tempfile
     from pathlib import Path
-    from graphify.paths import _WINDOWS_MAX_PATH, _atomic_replace
+    from monarch_atlas.paths import _WINDOWS_MAX_PATH, _atomic_replace
 
     base = str(tmp_path.resolve())
     # Sized to be a long name (> 100 chars) while fitting within MAX_PATH
@@ -339,7 +339,7 @@ def test_atomic_replace_temp_name_is_bounded_and_does_not_embed_long_filename(tm
 @pytest.mark.skipif(os.name != "nt", reason="Windows MAX_PATH test")
 def test_write_text_atomic_succeeds_near_windows_max_path(tmp_path):
     """Regression #3351: atomic write to a path at Windows MAX_PATH limit must succeed."""
-    from graphify.paths import _WINDOWS_MAX_PATH, write_text_atomic
+    from monarch_atlas.paths import _WINDOWS_MAX_PATH, write_text_atomic
 
     base = str(tmp_path.resolve())
     remaining = (_WINDOWS_MAX_PATH - 1) - len(base) - 1

@@ -1,12 +1,12 @@
-"""Regression tests for Graphify issue #3430:
+"""Regression tests for Atlas issue #3430:
 Loose/namespace-style sibling module imports below scan root.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.build import build_from_json
-from graphify.extract import _file_node_id, _repoint_python_sibling_imports, extract
+from monarch_atlas.build import build_from_json
+from monarch_atlas.extract import _file_node_id, _repoint_python_sibling_imports, extract
 
 
 def _edge_set(G):
@@ -131,7 +131,7 @@ def test_same_name_modules_in_separate_loose_directories(tmp_path):
     # that predates private import-resolution metadata and mask the ambiguity
     # guard's behavior.
     res = extract(
-        paths, root=tmp_path, parallel=False, cache_root=tmp_path / "graphify-cache"
+        paths, root=tmp_path, parallel=False, cache_root=tmp_path / "atlas-cache"
     )
     G = build_from_json(res, root=str(tmp_path), directed=True)
 

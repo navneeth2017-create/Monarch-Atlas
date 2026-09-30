@@ -1,4 +1,4 @@
-"""Tests for the OCaml extractor (graphify/extractors/ocaml.py)."""
+"""Tests for the OCaml extractor (monarch_atlas/extractors/ocaml.py)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -7,7 +7,7 @@ import pytest
 
 pytest.importorskip("tree_sitter_ocaml")
 
-from graphify.extract import extract_ocaml
+from monarch_atlas.extract import extract_ocaml
 
 
 def _write(tmp_path: Path, name: str, body: str) -> Path:

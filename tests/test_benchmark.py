@@ -1,11 +1,11 @@
-"""Tests for graphify/benchmark.py."""
+"""Tests for monarch_atlas/benchmark.py."""
 from __future__ import annotations
 import json
 import pytest
 import networkx as nx
 from networkx.readwrite import json_graph
 
-from graphify.benchmark import run_benchmark, print_benchmark, _query_subgraph_tokens, _SAMPLE_QUESTIONS, _safe, _hr
+from monarch_atlas.benchmark import run_benchmark, print_benchmark, _query_subgraph_tokens, _SAMPLE_QUESTIONS, _safe, _hr
 
 
 def _make_graph() -> nx.Graph:
@@ -193,6 +193,6 @@ def test_run_benchmark_rejects_oversized_graph(monkeypatch, tmp_path):
     G = _make_graph()
     graph_file = tmp_path / "graph.json"
     _write_graph(G, graph_file)
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 8)
+    monkeypatch.setattr("monarch_atlas.security._MAX_GRAPH_FILE_BYTES", 8)
     with pytest.raises(ValueError, match="exceeds"):
         run_benchmark(str(graph_file))

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import networkx as nx
 
-from graphify.build import (
+from monarch_atlas.build import (
     _disambiguate_file_node_labels,
     _is_file_node_label,
     _shortest_unique_suffix,
@@ -95,9 +95,9 @@ def test_three_way_collision_grows_suffix_until_unique():
 def test_end_to_end_build_and_lookup(tmp_path):
     """Full pipeline: two entry-point index.ts files get distinguishable labels
     and both resolve via serve._find_node."""
-    from graphify.extract import extract
-    from graphify.build import build_from_json
-    from graphify.serve import _find_node
+    from monarch_atlas.extract import extract
+    from monarch_atlas.build import build_from_json
+    from monarch_atlas.serve import _find_node
 
     fns = tmp_path / "supabase" / "functions"
     (fns / "process-order").mkdir(parents=True)

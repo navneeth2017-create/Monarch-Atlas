@@ -14,7 +14,7 @@ import json
 import networkx as nx
 import pytest
 
-from graphify.analyze import god_nodes
+from monarch_atlas.analyze import god_nodes
 
 
 def _graph():
@@ -79,8 +79,8 @@ def test_the_analyzer_signature_stays_backward_compatible():
 # ---------------------------------------------------------------------------
 
 def test_the_cli_command_takes_the_flag(tmp_path, monkeypatch, capsys):
-    import graphify.__main__ as mainmod
-    from graphify.export import to_json
+    import monarch_atlas.__main__ as mainmod
+    from monarch_atlas.export import to_json
     G = _graph()
     gp = tmp_path / "graph.json"
     to_json(G, {0: list(G.nodes)}, str(gp))
@@ -88,7 +88,7 @@ def test_the_cli_command_takes_the_flag(tmp_path, monkeypatch, capsys):
 
     def run(*extra):
         monkeypatch.setattr(mainmod.sys, "argv",
-                            ["graphify", "god-nodes", "--graph", str(gp), "--json", *extra])
+                            ["atlas", "god-nodes", "--graph", str(gp), "--json", *extra])
         try:
             mainmod.main()
         except SystemExit as exc:
@@ -103,10 +103,10 @@ def test_the_cli_command_takes_the_flag(tmp_path, monkeypatch, capsys):
 
 
 def test_a_bad_flag_value_is_a_usage_error(tmp_path, monkeypatch, capsys):
-    import graphify.__main__ as mainmod
+    import monarch_atlas.__main__ as mainmod
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda *_a, **_k: None)
     monkeypatch.setattr(mainmod.sys, "argv",
-                        ["graphify", "god-nodes", "--exclude-hubs", "lots"])
+                        ["atlas", "god-nodes", "--exclude-hubs", "lots"])
     with pytest.raises(SystemExit) as info:
         mainmod.main()
     assert info.value.code == 1

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import networkx as nx
 
-from graphify.multigraph_compat import (
+from monarch_atlas.multigraph_compat import (
     CapabilityCheck,
     MultigraphCapabilityResult,
     probe_multigraph_capabilities,

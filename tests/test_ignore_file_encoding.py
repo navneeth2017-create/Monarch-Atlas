@@ -1,7 +1,7 @@
 r"""An ignore file that is not valid UTF-8 must not silently lose its rules.
 
-`_load_dir_own_ignore` / `_load_graphifyignore` read .gitignore,
-.graphifyignore and $GIT_DIR/info/exclude with `errors="ignore"`, which turns a
+`_load_dir_own_ignore` / `_load_atlasignore` read .gitignore,
+.atlasignore and $GIT_DIR/info/exclude with `errors="ignore"`, which turns a
 mis-encoded byte into no byte at all. A file saved in the host ANSI codepage —
 Notepad's historical default on Windows, and still what `Set-Content` writes
 without `-Encoding` — is not valid UTF-8, so a rule reading `Orçamento/`
@@ -21,13 +21,13 @@ import unicodedata
 
 import pytest
 
-from graphify.detect import _read_ignore_text, detect
+from monarch_atlas.detect import _read_ignore_text, detect
 
 NAME = "Orçamento"  # "Orçamento" — ç is U+00E7, present in cp1252
 
 
 def _corpus(tmp_path, ignore_bytes: bytes, dirname: str = NAME):
-    (tmp_path / ".graphifyignore").write_bytes(ignore_bytes)
+    (tmp_path / ".atlasignore").write_bytes(ignore_bytes)
     d = tmp_path / dirname
     d.mkdir()
     (d / "contrato.py").write_text("x = 1", encoding="utf-8")
@@ -45,7 +45,7 @@ def _scanned(result) -> set[str]:
 # ---------------------------------------------------------------------------
 
 def test_ansi_encoded_rule_still_excludes(tmp_path):
-    """The reported case: a cp1252 .graphifyignore must still exclude."""
+    """The reported case: a cp1252 .atlasignore must still exclude."""
     _corpus(tmp_path, f"{NAME}/\n".encode("cp1252"))
     scanned = _scanned(detect(tmp_path))
     assert "contrato.py" not in scanned, (
@@ -54,12 +54,12 @@ def test_ansi_encoded_rule_still_excludes(tmp_path):
 
 
 def test_ansi_encoded_rule_warns_once_naming_the_file(tmp_path, capsys):
-    import graphify.detect as detect_mod
+    import monarch_atlas.detect as detect_mod
     detect_mod._warned_ignore_encodings.clear()
     _corpus(tmp_path, f"{NAME}/\n".encode("cp1252"))
     detect(tmp_path)
     err = capsys.readouterr().err
-    assert ".graphifyignore" in err and "UTF-8" in err, err
+    assert ".atlasignore" in err and "UTF-8" in err, err
 
 
 def test_utf8_rule_is_unaffected(tmp_path):
@@ -69,7 +69,7 @@ def test_utf8_rule_is_unaffected(tmp_path):
 
 
 def test_ascii_rules_are_untouched(tmp_path):
-    (tmp_path / ".graphifyignore").write_bytes(b"vendor/\n")
+    (tmp_path / ".atlasignore").write_bytes(b"vendor/\n")
     (tmp_path / "vendor").mkdir()
     (tmp_path / "vendor" / "lib.py").write_text("x = 1", encoding="utf-8")
     (tmp_path / "main.py").write_text("x = 1", encoding="utf-8")
@@ -78,7 +78,7 @@ def test_ascii_rules_are_untouched(tmp_path):
 
 
 def test_no_warning_for_a_clean_utf8_file(tmp_path, capsys):
-    import graphify.detect as detect_mod
+    import monarch_atlas.detect as detect_mod
     detect_mod._warned_ignore_encodings.clear()
     _corpus(tmp_path, f"{NAME}/\n".encode("utf-8"))
     detect(tmp_path)
@@ -90,14 +90,14 @@ def test_no_warning_for_a_clean_utf8_file(tmp_path, capsys):
 # ---------------------------------------------------------------------------
 
 def test_utf8_with_bom_is_still_stripped(tmp_path):
-    p = tmp_path / ".graphifyignore"
+    p = tmp_path / ".atlasignore"
     p.write_bytes(b"\xef\xbb\xbfvendor/\n")
     assert _read_ignore_text(p) == "vendor/\n"
 
 
 def test_decoding_never_raises_on_arbitrary_bytes(tmp_path):
     """The previous contract: reading an ignore file cannot blow up a scan."""
-    p = tmp_path / ".graphifyignore"
+    p = tmp_path / ".atlasignore"
     p.write_bytes(bytes(range(256)))
     assert isinstance(_read_ignore_text(p), str)
 
@@ -105,7 +105,7 @@ def test_decoding_never_raises_on_arbitrary_bytes(tmp_path):
 def test_no_byte_is_dropped_from_a_mis_encoded_file(tmp_path):
     """The actual regression: every rule survives, even if a third encoding
     renders it wrong, rather than being silently truncated to nothing."""
-    p = tmp_path / ".graphifyignore"
+    p = tmp_path / ".atlasignore"
     p.write_bytes("café/\nvendor/\n".encode("cp1252"))
     lines = [ln for ln in _read_ignore_text(p).splitlines() if ln]
     assert len(lines) == 2, lines
@@ -114,7 +114,7 @@ def test_no_byte_is_dropped_from_a_mis_encoded_file(tmp_path):
 
 
 def test_empty_file_is_empty(tmp_path):
-    p = tmp_path / ".graphifyignore"
+    p = tmp_path / ".atlasignore"
     p.write_bytes(b"")
     assert _read_ignore_text(p) == ""
 
@@ -129,7 +129,7 @@ def test_utf8_rules_still_match_across_normalisation_forms(tmp_path, form):
 
 
 def test_utf16_bom_encoded_rule_still_excludes(tmp_path):
-    """A UTF-16 (BOM) .graphifyignore — what PowerShell Set-Content and Notepad
+    """A UTF-16 (BOM) .atlasignore — what PowerShell Set-Content and Notepad
     'Unicode' emit — must decode by its BOM and apply, not fall to latin-1 and
     garble every rule into NUL-laden noise."""
     _corpus(tmp_path, f"{NAME}/\n".encode("utf-16"))
@@ -141,7 +141,7 @@ def test_utf16_bom_encoded_rule_still_excludes(tmp_path):
 
 def test_utf16_is_decoded_without_nul_garbage(tmp_path):
     """Direct check: the decoded text is clean UTF-16, not latin-1 mojibake."""
-    p = tmp_path / ".graphifyignore"
+    p = tmp_path / ".atlasignore"
     p.write_bytes("build/\nsecret.py\n".encode("utf-16"))
     text = _read_ignore_text(p)
     assert "\x00" not in text

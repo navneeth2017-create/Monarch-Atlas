@@ -18,10 +18,10 @@ from pathlib import Path
 
 import pytest
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 try:
-    from graphify.extract import _bind_member_field_tables
+    from monarch_atlas.extract import _bind_member_field_tables
 except ImportError:  # pre-fix tree
     _bind_member_field_tables = None
 

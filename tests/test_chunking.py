@@ -1,4 +1,4 @@
-"""Tests for token-aware chunking and parallel chunk execution in graphify.llm."""
+"""Tests for token-aware chunking and parallel chunk execution in monarch_atlas.llm."""
 import time
 from pathlib import Path
 from unittest.mock import patch
@@ -12,7 +12,7 @@ def no_tokenizer():
     of whether tiktoken is installed in the test environment. tiktoken's BPE
     compresses repeated/synthetic content heavily, which would make pack-size
     assertions tied to specific input sizes flaky."""
-    from graphify import llm
+    from monarch_atlas import llm
     with patch.object(llm, "_TOKENIZER", None):
         yield
 
@@ -21,7 +21,7 @@ def no_tokenizer():
 
 def test_pack_chunks_packs_small_files_together(tmp_path):
     """Many small files should land in a single chunk, not one chunk per file."""
-    from graphify.llm import _pack_chunks_by_tokens
+    from monarch_atlas.llm import _pack_chunks_by_tokens
 
     files = []
     for i in range(20):
@@ -41,7 +41,7 @@ def test_pack_chunks_starts_new_chunk_when_budget_would_overflow(tmp_path, no_to
     Budget 6000 fits two (5040 < 6000) but not three (7560 > 6000).
     Five files → 2/2/1 = three chunks.
     """
-    from graphify.llm import _pack_chunks_by_tokens
+    from monarch_atlas.llm import _pack_chunks_by_tokens
 
     files = []
     for i in range(5):
@@ -57,7 +57,7 @@ def test_pack_chunks_starts_new_chunk_when_budget_would_overflow(tmp_path, no_to
 
 def test_pack_chunks_groups_by_directory(tmp_path):
     """Files in the same directory should land in the same chunk when they fit."""
-    from graphify.llm import _pack_chunks_by_tokens
+    from monarch_atlas.llm import _pack_chunks_by_tokens
 
     dir_a = tmp_path / "a"
     dir_b = tmp_path / "b"
@@ -85,7 +85,7 @@ def test_pack_chunks_groups_by_directory(tmp_path):
 
 def test_pack_chunks_oversized_file_gets_its_own_chunk(tmp_path, no_tokenizer):
     """A file larger than the budget can't be split — it goes alone in a chunk."""
-    from graphify.llm import _pack_chunks_by_tokens
+    from monarch_atlas.llm import _pack_chunks_by_tokens
 
     big = tmp_path / "big.py"; big.write_text("x" * 200_000)  # ~50k tokens (cap-bound)
     small = tmp_path / "small.py"; small.write_text("x")
@@ -98,7 +98,7 @@ def test_pack_chunks_oversized_file_gets_its_own_chunk(tmp_path, no_tokenizer):
 
 
 def test_pack_chunks_rejects_non_positive_budget(tmp_path):
-    from graphify.llm import _pack_chunks_by_tokens
+    from monarch_atlas.llm import _pack_chunks_by_tokens
 
     f = tmp_path / "x.py"; f.write_text("a")
     with pytest.raises(ValueError):
@@ -110,7 +110,7 @@ def test_pack_chunks_rejects_non_positive_budget(tmp_path):
 def test_estimate_file_tokens_uses_tiktoken_when_available(tmp_path):
     """When tiktoken is installed, the estimator should call into it for
     accurate counts rather than the chars/4 heuristic."""
-    from graphify import llm
+    from monarch_atlas import llm
 
     f = tmp_path / "sample.py"
     text = "def hello():\n    return 'world'\n" * 50  # ~1500 chars
@@ -128,7 +128,7 @@ def test_estimate_file_tokens_uses_tiktoken_when_available(tmp_path):
 
 def test_estimate_file_tokens_falls_back_to_chars_when_no_tokenizer(tmp_path):
     """Without tiktoken installed, the estimator falls back to chars/4."""
-    from graphify import llm
+    from monarch_atlas import llm
 
     f = tmp_path / "sample.py"
     f.write_text("x" * 1_000)  # 1000 bytes
@@ -155,7 +155,7 @@ def _stub_chunk_result(file_count: int, idx: int) -> dict:
 def test_corpus_parallel_runs_chunks_concurrently(tmp_path):
     """With max_concurrency > 1, total wall time should be ~max(chunk times),
     not the sum. Each stub extraction sleeps; we assert wall time."""
-    from graphify.llm import extract_corpus_parallel
+    from monarch_atlas.llm import extract_corpus_parallel
 
     files = []
     for i in range(8):
@@ -166,7 +166,7 @@ def test_corpus_parallel_runs_chunks_concurrently(tmp_path):
         time.sleep(0.3)
         return _stub_chunk_result(len(chunk), 0)
 
-    with patch("graphify.llm.extract_files_direct", side_effect=slow_extract):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=slow_extract):
         t0 = time.time()
         # Force 4 chunks of 2 files each by setting a tight token budget.
         result = extract_corpus_parallel(
@@ -181,7 +181,7 @@ def test_corpus_parallel_runs_chunks_concurrently(tmp_path):
 
 def test_corpus_parallel_sequential_when_max_concurrency_is_one(tmp_path):
     """max_concurrency=1 should run sequentially (no thread pool)."""
-    from graphify.llm import extract_corpus_parallel
+    from monarch_atlas.llm import extract_corpus_parallel
 
     files = []
     for i in range(3):
@@ -194,7 +194,7 @@ def test_corpus_parallel_sequential_when_max_concurrency_is_one(tmp_path):
         call_order.append(tuple(p.name for p in chunk))
         return _stub_chunk_result(len(chunk), len(call_order))
 
-    with patch("graphify.llm.extract_files_direct", side_effect=record):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=record):
         extract_corpus_parallel(
             files, backend="kimi", token_budget=None, chunk_size=1, max_concurrency=1
         )
@@ -208,7 +208,7 @@ def test_corpus_parallel_merge_order_is_submission_order_not_completion(tmp_path
     not the order chunks' network calls happen to finish. We skew latencies so
     the first-submitted chunk finishes LAST; the merged result must still be in
     file/submission order so graph.json is stable run-to-run."""
-    from graphify.llm import extract_corpus_parallel
+    from monarch_atlas.llm import extract_corpus_parallel
 
     files = []
     for i in range(4):
@@ -229,7 +229,7 @@ def test_corpus_parallel_merge_order_is_submission_order_not_completion(tmp_path
             "output_tokens": 1,
         }
 
-    with patch("graphify.llm.extract_files_direct", side_effect=latency_skewed):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=latency_skewed):
         result = extract_corpus_parallel(
             files, backend="kimi", token_budget=None, chunk_size=1, max_concurrency=4
         )
@@ -253,7 +253,7 @@ def test_corpus_parallel_merge_order_is_submission_order_not_completion(tmp_path
 def test_corpus_parallel_continues_after_chunk_failure(tmp_path, capsys):
     """A single chunk raising should be logged but not abort the run.
     Other chunks' results should still be merged."""
-    from graphify.llm import extract_corpus_parallel
+    from monarch_atlas.llm import extract_corpus_parallel
 
     files = []
     for i in range(4):
@@ -268,7 +268,7 @@ def test_corpus_parallel_continues_after_chunk_failure(tmp_path, capsys):
             raise RuntimeError("simulated API error")
         return _stub_chunk_result(len(chunk), call_count["n"])
 
-    with patch("graphify.llm.extract_files_direct", side_effect=maybe_fail):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=maybe_fail):
         result = extract_corpus_parallel(
             files, backend="kimi", token_budget=None, chunk_size=1, max_concurrency=1
         )
@@ -284,8 +284,8 @@ def test_checkpoint_scopes_cache_writes_to_chunk_files(tmp_path):
     mis-attributed node clobber another corpus file's semantic cache. A chunk
     processing only A.py that returns a node attributed to B.py must leave B.py's
     existing cache entry untouched. Guards the call site the original fix missed."""
-    from graphify.llm import extract_corpus_parallel
-    from graphify.cache import save_semantic_cache, load_cached
+    from monarch_atlas.llm import extract_corpus_parallel
+    from monarch_atlas.cache import save_semantic_cache, load_cached
 
     a = tmp_path / "A.py"; a.write_text("def a(): pass")
     b = tmp_path / "B.py"; b.write_text("def b(): pass")
@@ -310,7 +310,7 @@ def test_checkpoint_scopes_cache_writes_to_chunk_files(tmp_path):
             "input_tokens": 1, "output_tokens": 1,
         }
 
-    with patch("graphify.llm.extract_files_direct", side_effect=stray):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=stray):
         extract_corpus_parallel(
             [a], backend="kimi", root=tmp_path,
             token_budget=None, chunk_size=1, max_concurrency=1,
@@ -323,7 +323,7 @@ def test_checkpoint_scopes_cache_writes_to_chunk_files(tmp_path):
     )
     # A.py (the actual chunk file) was legitimately cached. The checkpoint stamps
     # entries with the prompt that produced them (#1939), so read that namespace.
-    from graphify.llm import _extraction_system
+    from monarch_atlas.llm import _extraction_system
 
     a_cache = load_cached(a, tmp_path, kind="semantic", prompt=_extraction_system())
     assert a_cache and any(n["id"] == "a_ok" for n in a_cache["nodes"])
@@ -333,8 +333,8 @@ def test_truncated_chunk_is_cached_partial_and_missed_on_reload(tmp_path):
     """A single-file chunk that stays truncated is checkpointed as a PARTIAL
     entry, so reloading it is a cache miss (the file re-dispatches next run)
     instead of serving the incomplete node set forever."""
-    from graphify.llm import extract_corpus_parallel, _extraction_system
-    from graphify.cache import load_cached
+    from monarch_atlas.llm import extract_corpus_parallel, _extraction_system
+    from monarch_atlas.cache import load_cached
 
     doc = tmp_path / "doc.md"; doc.write_text("# Heading\nlots of prose\n")
 
@@ -346,7 +346,7 @@ def test_truncated_chunk_is_cached_partial_and_missed_on_reload(tmp_path):
             "finish_reason": "length",
         }
 
-    with patch("graphify.llm.extract_files_direct", side_effect=truncated):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=truncated):
         extract_corpus_parallel(
             [doc], backend="kimi", root=tmp_path,
             token_budget=None, chunk_size=1, max_concurrency=1,
@@ -360,8 +360,8 @@ def test_checkpoint_writes_deep_namespace_in_deep_mode(tmp_path):
     """#1894: the per-chunk checkpoint must follow the run's mode — a
     deep_mode=True run checkpoints into cache/semantic-deep/, leaving the
     standard cache/semantic/ namespace untouched (and vice versa)."""
-    from graphify.llm import extract_corpus_parallel, _extraction_system
-    from graphify.cache import load_cached
+    from monarch_atlas.llm import extract_corpus_parallel, _extraction_system
+    from monarch_atlas.cache import load_cached
 
     doc = tmp_path / "doc.md"
     doc.write_text("# Doc\n\nsome content\n")
@@ -372,7 +372,7 @@ def test_checkpoint_writes_deep_namespace_in_deep_mode(tmp_path):
             "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1,
         }
 
-    with patch("graphify.llm.extract_files_direct", side_effect=ok):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=ok):
         extract_corpus_parallel(
             [doc], backend="kimi", root=tmp_path,
             token_budget=None, chunk_size=1, max_concurrency=1,
@@ -396,7 +396,7 @@ def test_omitted_documents_are_reconciled_and_warned(tmp_path, capsys):
     """#1890: a chunk can return a clean, non-empty response that omits some of the
     documents it was given. Those docs must not vanish silently — the run reports
     them in `uncovered_files` and warns, instead of dropping them with no signal."""
-    from graphify.llm import extract_corpus_parallel
+    from monarch_atlas.llm import extract_corpus_parallel
 
     docs = []
     for i in range(4):
@@ -414,7 +414,7 @@ def test_omitted_documents_are_reconciled_and_warned(tmp_path, capsys):
                 nodes.append({"id": f"n{idx}", "source_file": name, "file_type": "document"})
         return {"nodes": nodes, "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1}
 
-    with patch("graphify.llm.extract_files_direct", side_effect=omit_odd):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=omit_odd):
         result = extract_corpus_parallel(
             docs, backend="kimi", root=tmp_path,
             token_budget=None, chunk_size=1, max_concurrency=1,
@@ -434,7 +434,7 @@ def test_out_of_scope_nodes_are_dropped_from_merged_result(tmp_path, capsys):
     the count — while keeping in-scope sibling attributions (a node attributed
     to a different dispatched file in the same chunk) and non-file concept
     source_files, mirroring the #1757 `.is_file()` condition."""
-    from graphify.llm import extract_corpus_parallel
+    from monarch_atlas.llm import extract_corpus_parallel
 
     a = tmp_path / "A.md"; a.write_text("# a\n")
     c = tmp_path / "C.md"; c.write_text("# c\n")
@@ -463,7 +463,7 @@ def test_out_of_scope_nodes_are_dropped_from_merged_result(tmp_path, capsys):
             "input_tokens": 1, "output_tokens": 1,
         }
 
-    with patch("graphify.llm.extract_files_direct", side_effect=stray):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=stray):
         result = extract_corpus_parallel(
             [a, c], backend="kimi", root=tmp_path,
             token_budget=None, chunk_size=2, max_concurrency=1,
@@ -491,7 +491,7 @@ def test_out_of_scope_nodes_are_dropped_from_merged_result(tmp_path, capsys):
 
 def test_out_of_scope_drop_count_is_zero_when_all_in_scope(tmp_path, capsys):
     """Counter-test: a clean run records out_of_scope_dropped == 0 and no warning."""
-    from graphify.llm import extract_corpus_parallel
+    from monarch_atlas.llm import extract_corpus_parallel
 
     a = tmp_path / "A.md"; a.write_text("# a\n")
 
@@ -501,7 +501,7 @@ def test_out_of_scope_drop_count_is_zero_when_all_in_scope(tmp_path, capsys):
             "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1,
         }
 
-    with patch("graphify.llm.extract_files_direct", side_effect=clean):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=clean):
         result = extract_corpus_parallel(
             [a], backend="kimi", root=tmp_path,
             token_budget=None, chunk_size=1, max_concurrency=1,
@@ -518,11 +518,11 @@ def test_checkpoint_caches_sliced_document_chunks(tmp_path, capsys):
     split into FileSlice units; before the fix each sliced chunk leaked the
     FileSlice object into the allowlist, so save_semantic_cache raised TypeError,
     the best-effort except swallowed it, and the slice was never checkpointed."""
-    from graphify.llm import (
+    from monarch_atlas.llm import (
         extract_corpus_parallel, expand_oversized_files, _FILE_CHAR_CAP, _extraction_system,
     )
-    from graphify.file_slice import FileSlice
-    from graphify.cache import load_cached
+    from monarch_atlas.file_slice import FileSlice
+    from monarch_atlas.cache import load_cached
 
     doc = tmp_path / "big.md"
     doc.write_text("# Title\n" + ("word " * 12000) + "\n## Section\n" + ("more " * 12000))
@@ -537,7 +537,7 @@ def test_checkpoint_caches_sliced_document_chunks(tmp_path, capsys):
             "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1,
         }
 
-    with patch("graphify.llm.extract_files_direct", side_effect=sliced):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=sliced):
         extract_corpus_parallel(
             [doc], backend="kimi", root=tmp_path,
             token_budget=None, chunk_size=1, max_concurrency=1,
@@ -555,7 +555,7 @@ def test_checkpoint_caches_sliced_document_chunks(tmp_path, capsys):
 
 def test_corpus_parallel_legacy_mode_when_token_budget_is_none(tmp_path):
     """token_budget=None should fall back to legacy fixed-count chunking."""
-    from graphify.llm import extract_corpus_parallel
+    from monarch_atlas.llm import extract_corpus_parallel
 
     files = []
     for i in range(45):
@@ -568,7 +568,7 @@ def test_corpus_parallel_legacy_mode_when_token_budget_is_none(tmp_path):
         chunks_seen.append(len(chunk))
         return _stub_chunk_result(len(chunk), len(chunks_seen))
 
-    with patch("graphify.llm.extract_files_direct", side_effect=record):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=record):
         extract_corpus_parallel(
             files, backend="kimi", token_budget=None, chunk_size=20, max_concurrency=1
         )
@@ -579,7 +579,7 @@ def test_corpus_parallel_legacy_mode_when_token_budget_is_none(tmp_path):
 
 def test_corpus_parallel_token_budget_default_packs_files(tmp_path):
     """With the default token_budget, many tiny files pack into one chunk."""
-    from graphify.llm import extract_corpus_parallel
+    from monarch_atlas.llm import extract_corpus_parallel
 
     files = []
     for i in range(50):
@@ -592,7 +592,7 @@ def test_corpus_parallel_token_budget_default_packs_files(tmp_path):
         chunks_seen.append(len(chunk))
         return _stub_chunk_result(len(chunk), len(chunks_seen))
 
-    with patch("graphify.llm.extract_files_direct", side_effect=record):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=record):
         extract_corpus_parallel(files, backend="kimi", max_concurrency=1)
 
     # 50 tiny files at default 60k token budget should pack into 1 chunk
@@ -616,7 +616,7 @@ def _stub_with_finish(file_count: int, finish_reason: str = "stop") -> dict:
 
 def test_adaptive_retry_returns_directly_when_not_truncated(tmp_path):
     """No retry when finish_reason='stop' — single call, result passes through."""
-    from graphify.llm import _extract_with_adaptive_retry
+    from monarch_atlas.llm import _extract_with_adaptive_retry
 
     files = [tmp_path / f"f{i}.py" for i in range(4)]
     for f in files:
@@ -628,7 +628,7 @@ def test_adaptive_retry_returns_directly_when_not_truncated(tmp_path):
         calls.append(len(chunk))
         return _stub_with_finish(len(chunk), finish_reason="stop")
 
-    with patch("graphify.llm.extract_files_direct", side_effect=stub):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=stub):
         result = _extract_with_adaptive_retry(
             files, backend="kimi", api_key=None, model=None, root=tmp_path, max_depth=3
         )
@@ -640,7 +640,7 @@ def test_adaptive_retry_returns_directly_when_not_truncated(tmp_path):
 def test_adaptive_retry_splits_when_finish_reason_length(tmp_path):
     """finish_reason='length' triggers split-in-half. Both halves succeed
     on the second try (mocked) and results merge."""
-    from graphify.llm import _extract_with_adaptive_retry
+    from monarch_atlas.llm import _extract_with_adaptive_retry
 
     files = [tmp_path / f"f{i}.py" for i in range(4)]
     for f in files:
@@ -653,7 +653,7 @@ def test_adaptive_retry_splits_when_finish_reason_length(tmp_path):
         finish = "length" if len(chunk) == 4 else "stop"
         return _stub_with_finish(len(chunk), finish_reason=finish)
 
-    with patch("graphify.llm.extract_files_direct", side_effect=stub):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=stub):
         result = _extract_with_adaptive_retry(
             files, backend="kimi", api_key=None, model=None, root=tmp_path, max_depth=3
         )
@@ -666,7 +666,7 @@ def test_adaptive_retry_splits_when_finish_reason_length(tmp_path):
 def test_adaptive_retry_recurses_for_persistent_truncation(tmp_path):
     """When even the half-chunk truncates, split again. With 8 files and a
     truncation cutoff at >2 files, splits 8 → 4 → 2 (4 leaves of 2)."""
-    from graphify.llm import _extract_with_adaptive_retry
+    from monarch_atlas.llm import _extract_with_adaptive_retry
 
     files = [tmp_path / f"f{i}.py" for i in range(8)]
     for f in files:
@@ -679,7 +679,7 @@ def test_adaptive_retry_recurses_for_persistent_truncation(tmp_path):
         finish = "length" if len(chunk) > 2 else "stop"
         return _stub_with_finish(len(chunk), finish_reason=finish)
 
-    with patch("graphify.llm.extract_files_direct", side_effect=stub):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=stub):
         result = _extract_with_adaptive_retry(
             files, backend="kimi", api_key=None, model=None, root=tmp_path, max_depth=3
         )
@@ -693,7 +693,7 @@ def test_adaptive_retry_recurses_for_persistent_truncation(tmp_path):
 def test_adaptive_retry_caps_at_max_depth(tmp_path, capsys):
     """If everything truncates, retries stop at max_depth — partial result
     kept with a warning, no infinite loop."""
-    from graphify.llm import _extract_with_adaptive_retry
+    from monarch_atlas.llm import _extract_with_adaptive_retry
 
     files = [tmp_path / f"f{i}.py" for i in range(8)]
     for f in files:
@@ -705,7 +705,7 @@ def test_adaptive_retry_caps_at_max_depth(tmp_path, capsys):
         calls.append(len(chunk))
         return _stub_with_finish(len(chunk), finish_reason="length")
 
-    with patch("graphify.llm.extract_files_direct", side_effect=always_truncate):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=always_truncate):
         _extract_with_adaptive_retry(
             files, backend="kimi", api_key=None, model=None, root=tmp_path, max_depth=2
         )
@@ -719,7 +719,7 @@ def test_adaptive_retry_caps_at_max_depth(tmp_path, capsys):
 def test_adaptive_retry_single_file_truncation_does_not_recurse(tmp_path, capsys):
     """A single file that truncates can't be split further — surface a
     warning and return what we got. No infinite loop."""
-    from graphify.llm import _extract_with_adaptive_retry
+    from monarch_atlas.llm import _extract_with_adaptive_retry
 
     f = tmp_path / "huge.py"; f.write_text("x")
 
@@ -729,7 +729,7 @@ def test_adaptive_retry_single_file_truncation_does_not_recurse(tmp_path, capsys
         calls.append(len(chunk))
         return _stub_with_finish(len(chunk), finish_reason="length")
 
-    with patch("graphify.llm.extract_files_direct", side_effect=stub):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=stub):
         _extract_with_adaptive_retry(
             [f], backend="kimi", api_key=None, model=None, root=tmp_path, max_depth=3
         )
@@ -742,14 +742,14 @@ def test_adaptive_retry_single_file_truncation_does_not_recurse(tmp_path, capsys
 def test_adaptive_retry_marks_single_file_truncation_partial(tmp_path):
     """A non-splittable single-file truncation keeps its partial result but
     marks every item ``_partial`` so it is not cached as complete."""
-    from graphify.llm import _extract_with_adaptive_retry
+    from monarch_atlas.llm import _extract_with_adaptive_retry
 
     f = tmp_path / "huge.py"; f.write_text("x")
 
     def stub(chunk, **kwargs):
         return _stub_with_finish(len(chunk), finish_reason="length")
 
-    with patch("graphify.llm.extract_files_direct", side_effect=stub):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=stub):
         result = _extract_with_adaptive_retry(
             [f], backend="kimi", api_key=None, model=None, root=tmp_path, max_depth=3
         )
@@ -761,7 +761,7 @@ def test_adaptive_retry_marks_single_file_truncation_partial(tmp_path):
 def test_adaptive_retry_marks_max_depth_giveup_partial(tmp_path):
     """When recursion caps at max_depth with everything still truncated, the
     merged partial result is marked ``_partial`` on every item."""
-    from graphify.llm import _extract_with_adaptive_retry
+    from monarch_atlas.llm import _extract_with_adaptive_retry
 
     files = [tmp_path / f"f{i}.py" for i in range(8)]
     for f in files:
@@ -770,7 +770,7 @@ def test_adaptive_retry_marks_max_depth_giveup_partial(tmp_path):
     def stub(chunk, **kwargs):
         return _stub_with_finish(len(chunk), finish_reason="length")
 
-    with patch("graphify.llm.extract_files_direct", side_effect=stub):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=stub):
         result = _extract_with_adaptive_retry(
             files, backend="kimi", api_key=None, model=None, root=tmp_path, max_depth=2
         )
@@ -782,7 +782,7 @@ def test_adaptive_retry_marks_max_depth_giveup_partial(tmp_path):
 def test_adaptive_retry_successful_split_is_not_marked_partial(tmp_path):
     """A truncation that IS recovered by splitting yields a complete result —
     it must NOT carry the partial marker."""
-    from graphify.llm import _extract_with_adaptive_retry
+    from monarch_atlas.llm import _extract_with_adaptive_retry
 
     files = [tmp_path / f"f{i}.py" for i in range(4)]
     for f in files:
@@ -792,7 +792,7 @@ def test_adaptive_retry_successful_split_is_not_marked_partial(tmp_path):
         finish = "length" if len(chunk) == 4 else "stop"
         return _stub_with_finish(len(chunk), finish_reason=finish)
 
-    with patch("graphify.llm.extract_files_direct", side_effect=stub):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=stub):
         result = _extract_with_adaptive_retry(
             files, backend="kimi", api_key=None, model=None, root=tmp_path, max_depth=3
         )
@@ -805,7 +805,7 @@ def test_corpus_parallel_uses_adaptive_retry(tmp_path):
     """End-to-end: extract_corpus_parallel routes through adaptive retry,
     so a chunk that truncates gets split and merged transparently before
     on_chunk_done fires."""
-    from graphify.llm import extract_corpus_parallel
+    from monarch_atlas.llm import extract_corpus_parallel
 
     files = [tmp_path / f"f{i}.py" for i in range(4)]
     for f in files:
@@ -819,7 +819,7 @@ def test_corpus_parallel_uses_adaptive_retry(tmp_path):
         return _stub_with_finish(len(chunk), finish_reason=finish)
 
     chunk_done_args = []
-    with patch("graphify.llm.extract_files_direct", side_effect=stub):
+    with patch("monarch_atlas.llm.extract_files_direct", side_effect=stub):
         result = extract_corpus_parallel(
             files,
             backend="kimi",
@@ -844,7 +844,7 @@ def test_estimate_file_tokens_handles_tiktoken_special_token(tmp_path):
     must not crash token estimation. tiktoken's default encode() raises on such
     strings appearing as ordinary text; we pass disallowed_special=() since this
     is only an estimate (#1685)."""
-    import graphify.llm as llm
+    import monarch_atlas.llm as llm
     if llm._TOKENIZER is None:
         import pytest
         pytest.skip("tiktoken not installed; estimation uses the char heuristic")
@@ -857,7 +857,7 @@ def test_estimate_file_tokens_handles_tiktoken_special_token(tmp_path):
 def test_pack_chunks_with_special_token_doc_does_not_crash(tmp_path):
     """End to end: packing a corpus that includes a special-token doc must not
     raise (the crash in #1685 happened during token-budget packing)."""
-    from graphify.llm import _pack_chunks_by_tokens
+    from monarch_atlas.llm import _pack_chunks_by_tokens
     doc = tmp_path / "doc.md"; doc.write_text("see <|endoftext|> and <|im_start|> tokens\n")
     code = tmp_path / "code.py"; code.write_text("def f():\n    return 1\n")
     chunks = _pack_chunks_by_tokens([doc, code], token_budget=60_000)

@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from graphify import detect as det
+from monarch_atlas import detect as det
 
 
 @pytest.fixture()

@@ -7,7 +7,7 @@ already skips ECMAScript/Python builtins; `_resolve_typescript_member_calls`
 must do the same.
 """
 from pathlib import Path
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _labels_by_id(r):

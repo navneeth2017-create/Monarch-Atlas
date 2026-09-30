@@ -1,6 +1,6 @@
-"""Tests for the global graph infrastructure (graphify/global_graph.py),
-prefix/prune helpers in graphify/build.py, and the cross-repo guard in
-graphify/dedup.py."""
+"""Tests for the global graph infrastructure (monarch_atlas/global_graph.py),
+prefix/prune helpers in monarch_atlas/build.py, and the cross-repo guard in
+monarch_atlas/dedup.py."""
 from __future__ import annotations
 
 import json
@@ -38,7 +38,7 @@ def _graph_to_json(G, path):
 # ── build.py helpers ──────────────────────────────────────────────────────────
 
 def test_prefix_graph_preserves_label():
-    from graphify.build import prefix_graph_for_global
+    from monarch_atlas.build import prefix_graph_for_global
     G = _make_graph([{"id": "userservice", "label": "UserService", "source_file": "src/user.py"}])
     H = prefix_graph_for_global(G, "repoA")
     assert "repoA::userservice" in H.nodes
@@ -47,7 +47,7 @@ def test_prefix_graph_preserves_label():
 
 
 def test_prefix_graph_sets_repo_and_local_id():
-    from graphify.build import prefix_graph_for_global
+    from monarch_atlas.build import prefix_graph_for_global
     G = _make_graph([{"id": "userservice", "label": "UserService"}])
     H = prefix_graph_for_global(G, "repoA")
     data = H.nodes["repoA::userservice"]
@@ -56,7 +56,7 @@ def test_prefix_graph_sets_repo_and_local_id():
 
 
 def test_prefix_graph_rewrites_edges():
-    from graphify.build import prefix_graph_for_global
+    from monarch_atlas.build import prefix_graph_for_global
     G = _make_graph(
         [{"id": "a", "label": "A"}, {"id": "b", "label": "B"}],
         [{"source": "a", "target": "b"}],
@@ -69,7 +69,7 @@ def test_prefix_graph_rewrites_edges():
 def test_prefix_graph_rewrites_edge_directional_attributes():
     """prefix_graph_for_global must update directional edge attributes (_src/_tgt)
     so they stay aligned with the prefixed node IDs (#2261)."""
-    from graphify.build import prefix_graph_for_global
+    from monarch_atlas.build import prefix_graph_for_global
     G = _make_graph(
         [{"id": "rota", "label": "rota.js"}, {"id": "collections", "label": "collections.js"}],
         [{"source": "rota", "target": "collections", "relation": "imports_from", "_src": "rota", "_tgt": "collections"}],
@@ -87,7 +87,7 @@ def test_prefix_graph_offsets_community_ids():
     0 of another into a single meta-node in the aggregated view. An offset must
     shift integer ids into a shared id space and keep the per-repo id in
     local_community."""
-    from graphify.build import prefix_graph_for_global
+    from monarch_atlas.build import prefix_graph_for_global
     G = _make_graph(
         [{"id": "a", "community": 0}, {"id": "b", "community": 1}], [],
     )
@@ -102,7 +102,7 @@ def test_prefix_graph_zero_offset_leaves_communities_untouched():
     """The default offset must be a no-op — no community rewrite, no
     local_community noise — so single-repo callers (global store, tests)
     keep their ids exactly as stored."""
-    from graphify.build import prefix_graph_for_global
+    from monarch_atlas.build import prefix_graph_for_global
     G = _make_graph(
         [{"id": "a", "community": 0}, {"id": "b", "community": 1}], [],
     )
@@ -115,7 +115,7 @@ def test_prefix_graph_zero_offset_leaves_communities_untouched():
 
 
 def test_prune_repo_removes_correct_nodes():
-    from graphify.build import prune_repo_from_graph
+    from monarch_atlas.build import prune_repo_from_graph
     G = nx.Graph()
     G.add_node("repoA::userservice", repo="repoA", label="UserService")
     G.add_node("repoB::userservice", repo="repoB", label="UserService")
@@ -128,7 +128,7 @@ def test_prune_repo_removes_correct_nodes():
 
 
 def test_prune_repo_returns_zero_if_not_present():
-    from graphify.build import prune_repo_from_graph
+    from monarch_atlas.build import prune_repo_from_graph
     G = nx.Graph()
     G.add_node("repoA::x", repo="repoA")
     removed = prune_repo_from_graph(G, "repoB")
@@ -143,11 +143,11 @@ def test_global_add_creates_global_graph(tmp_path):
     G = _make_graph([{"id": "userservice", "label": "UserService", "source_file": "src/user.py"}])
     _graph_to_json(G, src_graph)
 
-    global_dir = tmp_path / ".graphify"
-    with patch("graphify.global_graph._GLOBAL_DIR", global_dir), \
-         patch("graphify.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
-         patch("graphify.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
-        from graphify.global_graph import global_add
+    global_dir = tmp_path / ".atlas"
+    with patch("monarch_atlas.global_graph._GLOBAL_DIR", global_dir), \
+         patch("monarch_atlas.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
+         patch("monarch_atlas.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
+        from monarch_atlas.global_graph import global_add
         result = global_add(src_graph, "repoA")
 
     assert result["skipped"] is False
@@ -163,11 +163,11 @@ def test_global_add_skip_on_unchanged_hash(tmp_path):
     G = _make_graph([{"id": "userservice", "label": "UserService", "source_file": "src/user.py"}])
     _graph_to_json(G, src_graph)
 
-    global_dir = tmp_path / ".graphify"
-    with patch("graphify.global_graph._GLOBAL_DIR", global_dir), \
-         patch("graphify.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
-         patch("graphify.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
-        from graphify.global_graph import global_add
+    global_dir = tmp_path / ".atlas"
+    with patch("monarch_atlas.global_graph._GLOBAL_DIR", global_dir), \
+         patch("monarch_atlas.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
+         patch("monarch_atlas.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
+        from monarch_atlas.global_graph import global_add
         global_add(src_graph, "repoA")
         result2 = global_add(src_graph, "repoA")
 
@@ -182,13 +182,13 @@ def test_global_add_two_repos_no_collision(tmp_path):
     _graph_to_json(G1, g1)
     _graph_to_json(G2, g2)
 
-    global_dir = tmp_path / ".graphify"
+    global_dir = tmp_path / ".atlas"
     global_graph_path = global_dir / "global-graph.json"
     global_manifest_path = global_dir / "global-manifest.json"
-    with patch("graphify.global_graph._GLOBAL_DIR", global_dir), \
-         patch("graphify.global_graph._GLOBAL_GRAPH", global_graph_path), \
-         patch("graphify.global_graph._GLOBAL_MANIFEST", global_manifest_path):
-        from graphify.global_graph import global_add, _load_global_graph
+    with patch("monarch_atlas.global_graph._GLOBAL_DIR", global_dir), \
+         patch("monarch_atlas.global_graph._GLOBAL_GRAPH", global_graph_path), \
+         patch("monarch_atlas.global_graph._GLOBAL_MANIFEST", global_manifest_path):
+        from monarch_atlas.global_graph import global_add, _load_global_graph
         global_add(g1, "repoA")
         global_add(g2, "repoB")
         G = _load_global_graph()
@@ -203,31 +203,31 @@ def test_global_remove(tmp_path):
     G = _make_graph([{"id": "userservice", "label": "UserService", "source_file": "src/user.py"}])
     _graph_to_json(G, src_graph)
 
-    global_dir = tmp_path / ".graphify"
-    with patch("graphify.global_graph._GLOBAL_DIR", global_dir), \
-         patch("graphify.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
-         patch("graphify.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
-        from graphify.global_graph import global_add, global_remove
+    global_dir = tmp_path / ".atlas"
+    with patch("monarch_atlas.global_graph._GLOBAL_DIR", global_dir), \
+         patch("monarch_atlas.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
+         patch("monarch_atlas.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
+        from monarch_atlas.global_graph import global_add, global_remove
         global_add(src_graph, "repoA")
         removed = global_remove("repoA")
 
     assert removed > 0
     # manifest should no longer list repoA - need to re-patch for list call
     global_dir2 = global_dir  # same dir
-    with patch("graphify.global_graph._GLOBAL_DIR", global_dir2), \
-         patch("graphify.global_graph._GLOBAL_GRAPH", global_dir2 / "global-graph.json"), \
-         patch("graphify.global_graph._GLOBAL_MANIFEST", global_dir2 / "global-manifest.json"):
-        from graphify.global_graph import global_list
+    with patch("monarch_atlas.global_graph._GLOBAL_DIR", global_dir2), \
+         patch("monarch_atlas.global_graph._GLOBAL_GRAPH", global_dir2 / "global-graph.json"), \
+         patch("monarch_atlas.global_graph._GLOBAL_MANIFEST", global_dir2 / "global-manifest.json"):
+        from monarch_atlas.global_graph import global_list
         repos = global_list()
     assert "repoA" not in repos
 
 
 def test_global_remove_unknown_tag_raises(tmp_path):
-    global_dir = tmp_path / ".graphify"
-    with patch("graphify.global_graph._GLOBAL_DIR", global_dir), \
-         patch("graphify.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
-         patch("graphify.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
-        from graphify.global_graph import global_remove
+    global_dir = tmp_path / ".atlas"
+    with patch("monarch_atlas.global_graph._GLOBAL_DIR", global_dir), \
+         patch("monarch_atlas.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
+         patch("monarch_atlas.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
+        from monarch_atlas.global_graph import global_remove
         with pytest.raises(KeyError):
             global_remove("nonexistent")
 
@@ -239,11 +239,11 @@ def test_global_add_collision_warning(tmp_path, capsys):
     _graph_to_json(G, g1)
     _graph_to_json(G, g2)
 
-    global_dir = tmp_path / ".graphify"
-    with patch("graphify.global_graph._GLOBAL_DIR", global_dir), \
-         patch("graphify.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
-         patch("graphify.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
-        from graphify.global_graph import global_add
+    global_dir = tmp_path / ".atlas"
+    with patch("monarch_atlas.global_graph._GLOBAL_DIR", global_dir), \
+         patch("monarch_atlas.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
+         patch("monarch_atlas.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
+        from monarch_atlas.global_graph import global_add
         global_add(g1, "myrepo")
         global_add(g2, "myrepo")  # different source path, same tag
 
@@ -254,7 +254,7 @@ def test_global_add_collision_warning(tmp_path, capsys):
 # ── dedup guard ───────────────────────────────────────────────────────────────
 
 def test_dedup_raises_on_cross_repo_nodes():
-    from graphify.dedup import deduplicate_entities
+    from monarch_atlas.dedup import deduplicate_entities
     nodes = [
         {"id": "repoA::userservice", "label": "UserService", "repo": "repoA"},
         {"id": "repoB::userservice", "label": "UserService", "repo": "repoB"},
@@ -264,7 +264,7 @@ def test_dedup_raises_on_cross_repo_nodes():
 
 
 def test_dedup_ok_with_single_repo():
-    from graphify.dedup import deduplicate_entities
+    from monarch_atlas.dedup import deduplicate_entities
     nodes = [
         {"id": "repoA::userservice", "label": "UserService", "repo": "repoA"},
         {"id": "repoA::auth", "label": "Auth", "repo": "repoA"},
@@ -274,7 +274,7 @@ def test_dedup_ok_with_single_repo():
 
 
 def test_dedup_ok_with_no_repo_attr():
-    from graphify.dedup import deduplicate_entities
+    from monarch_atlas.dedup import deduplicate_entities
     nodes = [
         {"id": "userservice", "label": "UserService"},
         {"id": "auth", "label": "Auth"},
@@ -287,15 +287,15 @@ def test_dedup_ok_with_no_repo_attr():
 
 def test_merge_graphs_prefixes_ids(tmp_path):
     """merge-graphs should prefix node IDs with repo name to avoid silent collision."""
-    from graphify.build import prefix_graph_for_global
+    from monarch_atlas.build import prefix_graph_for_global
     from networkx.readwrite import json_graph as jg
 
     # Two graphs with same node ID
     G1 = _make_graph([{"id": "userservice", "label": "UserService", "source_file": "src/user.py"}])
     G2 = _make_graph([{"id": "userservice", "label": "UserService", "source_file": "src/user.py"}])
 
-    repo1 = tmp_path / "repo1" / "graphify-out"
-    repo2 = tmp_path / "repo2" / "graphify-out"
+    repo1 = tmp_path / "repo1" / "atlas-out"
+    repo2 = tmp_path / "repo2" / "atlas-out"
     repo1.mkdir(parents=True)
     repo2.mkdir(parents=True)
 
@@ -349,11 +349,11 @@ def test_global_add_rewires_edges_to_deduplicated_externals(tmp_path):
     _graph_to_json(GA, g1)
     _graph_to_json(GB, g2)
 
-    global_dir = tmp_path / ".graphify"
-    with patch("graphify.global_graph._GLOBAL_DIR", global_dir), \
-         patch("graphify.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
-         patch("graphify.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
-        from graphify.global_graph import global_add, _load_global_graph
+    global_dir = tmp_path / ".atlas"
+    with patch("monarch_atlas.global_graph._GLOBAL_DIR", global_dir), \
+         patch("monarch_atlas.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
+         patch("monarch_atlas.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
+        from monarch_atlas.global_graph import global_add, _load_global_graph
         global_add(g1, "repoA")
         global_add(g2, "repoB")
         G = _load_global_graph()
@@ -377,11 +377,11 @@ def test_global_add_rejects_oversized_source_graph(monkeypatch, tmp_path):
     G = _make_graph([{"id": "x", "label": "X", "source_file": "src/x.py"}])
     _graph_to_json(G, src_graph)
 
-    global_dir = tmp_path / ".graphify"
-    monkeypatch.setattr("graphify.security._MAX_GRAPH_FILE_BYTES", 8)
-    with patch("graphify.global_graph._GLOBAL_DIR", global_dir), \
-         patch("graphify.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
-         patch("graphify.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
-        from graphify.global_graph import global_add
+    global_dir = tmp_path / ".atlas"
+    monkeypatch.setattr("monarch_atlas.security._MAX_GRAPH_FILE_BYTES", 8)
+    with patch("monarch_atlas.global_graph._GLOBAL_DIR", global_dir), \
+         patch("monarch_atlas.global_graph._GLOBAL_GRAPH", global_dir / "global-graph.json"), \
+         patch("monarch_atlas.global_graph._GLOBAL_MANIFEST", global_dir / "global-manifest.json"):
+        from monarch_atlas.global_graph import global_add
         with pytest.raises(ValueError, match="exceeds"):
             global_add(src_graph, "repoA")

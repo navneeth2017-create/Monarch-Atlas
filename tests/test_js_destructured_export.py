@@ -12,7 +12,7 @@ dangled.
 """
 from __future__ import annotations
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 _NEXTAUTH_HELPER = "function NextAuth(config) { return {}; }\n"
 
@@ -23,7 +23,7 @@ def _extract(tmp_path, files: dict[str, str]):
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(body)
     r = extract([tmp_path / n for n in files],
-                cache_root=tmp_path / "graphify-out", parallel=False)
+                cache_root=tmp_path / "atlas-out", parallel=False)
     lbl = {n["id"]: n["label"] for n in r["nodes"]}
     return r, lbl
 

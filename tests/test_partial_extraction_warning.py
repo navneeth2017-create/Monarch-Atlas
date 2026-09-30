@@ -17,7 +17,7 @@ import re
 
 import pytest
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 # Any hardcoded issue citation, not just 2551 — re-introducing a different
 # number for a message that covers every grammar is the same mistake.
@@ -75,7 +75,7 @@ def test_a_clean_file_is_silent(tmp_path, capsys):
 
 
 def test_the_citation_is_gone_from_the_source_not_just_one_path():
-    import graphify.extract as ex
+    import monarch_atlas.extract as ex
     text = open(ex.__file__, encoding="utf-8").read()
     assert "may be partially extracted: {_shown}{_more} (#2551)" not in text
     assert "no symbols extracted" in text

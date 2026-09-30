@@ -1,4 +1,4 @@
-"""Tests for semantic evidence-binding in graphify.llm.
+"""Tests for semantic evidence-binding in monarch_atlas.llm.
 
 A code node the model returns whose symbol name has no evidence in the dispatched
 source is flagged ``verification = "unverified"`` (never dropped). This closes
@@ -9,7 +9,7 @@ rejects nodes attributed to a file that was NOT dispatched — cannot see.
 from pathlib import Path
 from unittest.mock import patch
 
-from graphify import llm
+from monarch_atlas import llm
 
 
 _SOURCE = (
@@ -32,7 +32,7 @@ def _run(files, nodes, tmp_path):
         "output_tokens": 1,
         "finish_reason": "stop",
     }
-    with patch("graphify.llm._call_openai_compat", return_value=result):
+    with patch("monarch_atlas.llm._call_openai_compat", return_value=result):
         return llm.extract_files_direct(files, backend="kimi", api_key="k", root=tmp_path)
 
 
@@ -143,7 +143,7 @@ def test_bind_node_evidence_returns_downgrade_count(tmp_path):
 def test_evidence_binding_handles_file_slice(tmp_path):
     # A slice reports its PARENT file as source_file; verification runs against
     # the slice bytes the model actually saw.
-    from graphify.file_slice import FileSlice
+    from monarch_atlas.file_slice import FileSlice
 
     src = tmp_path / "big.md"
     src.write_text("intro\n" + _SOURCE + "\ntail\n", encoding="utf-8")
@@ -187,7 +187,7 @@ def test_unverified_flag_does_not_fail_validation():
     # The flag lives on its own ``verification`` field, deliberately NOT on the
     # validated ``confidence`` key (whose vocabulary is edge-only), so it must
     # never make an otherwise-valid node fail validation.
-    from graphify.validate import validate_extraction
+    from monarch_atlas.validate import validate_extraction
 
     extraction = {
         "nodes": [{"id": "n1", "label": "foo", "file_type": "code",
@@ -201,7 +201,7 @@ def test_unverified_flag_does_not_fail_validation():
 def test_diagnostics_reports_unverified_node_count():
     # The consumer: diagnose_extraction surfaces the persisted verification flag
     # so it is not a dead field.
-    from graphify.diagnostics import diagnose_extraction, format_diagnostic_report
+    from monarch_atlas.diagnostics import diagnose_extraction, format_diagnostic_report
 
     extraction = {
         "nodes": [

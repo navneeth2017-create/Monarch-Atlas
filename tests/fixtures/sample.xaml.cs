@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace GraphifyDemo
+namespace AtlasDemo
 {
     public partial class MainWindow : Window
     {

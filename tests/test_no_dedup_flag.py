@@ -1,4 +1,4 @@
-"""`graphify extract --no-dedup` (#2881).
+"""`atlas extract --no-dedup` (#2881).
 
 The incremental merge path hardcoded `dedup=True`, so fuzzy dedup always ran
 over the COMBINED node set (existing graph + new chunk). On a large graph a
@@ -9,7 +9,7 @@ shrinks the graph legitimately. There was no way to opt out from the CLI.
 """
 from __future__ import annotations
 
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 
 
 def _corpus(tmp_path):
@@ -33,10 +33,10 @@ def _run(monkeypatch, argv):
 def _capture_dedup(monkeypatch):
     """Record the `dedup` kwarg both build entry points are called with.
 
-    Patching `graphify.build` does reach the CLI's `_build` / `_build_merge`
+    Patching `monarch_atlas.build` does reach the CLI's `_build` / `_build_merge`
     aliases, even though it refers to them by those names: the
 
-        from graphify.build import build as _build, build_merge as _build_merge
+        from monarch_atlas.build import build as _build, build_merge as _build_merge
 
     is function-local to `dispatch_command`, so the alias is bound when the
     command runs, which is after this patch is installed. A module-level import
@@ -44,7 +44,7 @@ def _capture_dedup(monkeypatch):
     turns that into a loud failure rather than a test that quietly asserts
     nothing.
     """
-    import graphify.build as buildmod
+    import monarch_atlas.build as buildmod
 
     seen: dict[str, bool] = {}
     real_build = buildmod.build
@@ -67,7 +67,7 @@ def _assert_spied(seen: dict, entry_point: str) -> None:
     """Fail loudly if the spy never fired, so no assertion is vacuous."""
     assert entry_point in seen, (
         f"{entry_point}() was never called through the patched "
-        f"graphify.build symbol — the spy is inert and every dedup assertion "
+        f"monarch_atlas.build symbol — the spy is inert and every dedup assertion "
         f"below it would be vacuous. Did the CLI's import of it move to module "
         f"scope, or did this run take a path that skips the build stage?"
     )
@@ -77,7 +77,7 @@ def test_no_dedup_flag_disables_dedup(monkeypatch, tmp_path):
     corpus = _corpus(tmp_path)
     seen = _capture_dedup(monkeypatch)
     code = _run(monkeypatch, [
-        "graphify", "extract", str(corpus), "--code-only",
+        "atlas", "extract", str(corpus), "--code-only",
         "--no-dedup", "--out", str(tmp_path / "out"),
     ])
     assert code == 0
@@ -89,7 +89,7 @@ def test_dedup_is_on_by_default(monkeypatch, tmp_path):
     corpus = _corpus(tmp_path)
     seen = _capture_dedup(monkeypatch)
     code = _run(monkeypatch, [
-        "graphify", "extract", str(corpus), "--code-only",
+        "atlas", "extract", str(corpus), "--code-only",
         "--out", str(tmp_path / "out"),
     ])
     assert code == 0
@@ -103,14 +103,14 @@ def test_no_dedup_reaches_the_incremental_merge(monkeypatch, tmp_path):
     # First run establishes graph.json, so the second run takes the
     # build_merge (incremental) path rather than build().
     assert _run(monkeypatch, [
-        "graphify", "extract", str(corpus), "--code-only",
+        "atlas", "extract", str(corpus), "--code-only",
         "--out", str(out),
     ]) == 0
 
     (corpus / "other.go").write_text("package main\nfunc other() {}\n")
     seen = _capture_dedup(monkeypatch)
     assert _run(monkeypatch, [
-        "graphify", "extract", str(corpus), "--code-only",
+        "atlas", "extract", str(corpus), "--code-only",
         "--no-dedup", "--out", str(out),
     ]) == 0
     _assert_spied(seen, "build_merge")
@@ -122,7 +122,7 @@ def test_no_dedup_reaches_the_incremental_merge(monkeypatch, tmp_path):
 def test_no_dedup_conflicts_with_dedup_llm(monkeypatch, tmp_path, capsys):
     corpus = _corpus(tmp_path)
     code = _run(monkeypatch, [
-        "graphify", "extract", str(corpus), "--code-only",
+        "atlas", "extract", str(corpus), "--code-only",
         "--no-dedup", "--dedup-llm", "--out", str(tmp_path / "out"),
     ])
     assert code == 2
@@ -135,7 +135,7 @@ def test_no_dedup_conflicts_with_dedup_llm(monkeypatch, tmp_path, capsys):
 # are preserved, but exact-id collisions still collapse (a structural invariant
 # of the graph, not a dedup responsibility), so the flag cannot corrupt it.
 
-from graphify.build import build
+from monarch_atlas.build import build
 
 
 def test_no_dedup_preserves_fuzzy_near_duplicates_but_dedup_merges_them():

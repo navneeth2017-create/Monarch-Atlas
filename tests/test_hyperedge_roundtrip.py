@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import json
 
-from graphify.build import build_from_json
-from graphify.export import to_json
+from monarch_atlas.build import build_from_json
+from monarch_atlas.export import to_json
 
 
 def _node(nid: str) -> dict:

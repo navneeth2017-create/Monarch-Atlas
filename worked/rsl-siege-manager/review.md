@@ -2,7 +2,7 @@
 
 **Corpus:** [`glitchwerks/rsl-siege-manager`](https://github.com/glitchwerks/rsl-siege-manager) @ `6085fd66`
 **Date:** 2026-05-15
-**Run:** tests included, no `.graphifyignore`
+**Run:** tests included, no `.atlasignore`
 **Counts:** 1886 nodes · 3876 edges · 141 communities · 90% EXTRACTED / 10% INFERRED (avg INFERRED confidence 0.62)
 **Cost:** $0 (tree-sitter only; this corpus's natural file mix surfaced no non-code files in meaningful quantity)
 **Setup:** ~10 minutes of CLI time end-to-end
@@ -32,11 +32,11 @@ Six of the top ten — positions 1, 2, 3, 5, 6, and 8 — are test factory funct
 
 The god-node list is labeled "your core abstractions" in the report. On this corpus, no developer would nominate `_make_siege()` as a core abstraction of a siege-assignment web app. Degree centrality on a well-tested codebase will tend to surface test factories: by design, factories create the primary domain objects that every test then exercises, so they accumulate edges from every part of the suite. The pattern is structural — the better the test coverage, the more saturated the factory's degree count.
 
-For users running graphify on a codebase with substantial test coverage, the documented mitigation (a `.graphifyignore` excluding `tests/`, `__tests__/`, etc.) is effective at removing this class of false-positive. See Finding 2 for what the same corpus surfaces without tests.
+For users running atlas on a codebase with substantial test coverage, the documented mitigation (a `.atlasignore` excluding `tests/`, `__tests__/`, etc.) is effective at removing this class of false-positive. See Finding 2 for what the same corpus surfaces without tests.
 
 ## Finding 2 — Without tests, god nodes mix domain types with entry points and utilities
 
-For comparison, an earlier run of the same corpus with `.graphifyignore` excluding `backend/tests/` and `frontend/src/**/__tests__/` produced this god-node list:
+For comparison, an earlier run of the same corpus with `.atlasignore` excluding `backend/tests/` and `frontend/src/**/__tests__/` produced this god-node list:
 
 ```
 1. `SiegeMember` - 55 edges
@@ -51,7 +51,7 @@ For comparison, an earlier run of the same corpus with `.graphifyignore` excludi
 10. `Self-Host on Azure Wiki Page` - 23 edges
 ```
 
-(That run's artifacts are not committed here — only the tests-included artifacts are kept — but the list is reproducible by re-running with the same `.graphifyignore`.)
+(That run's artifacts are not committed here — only the tests-included artifacts are kept — but the list is reproducible by re-running with the same `.atlasignore`.)
 
 Three of ten — `SiegeMember`, `BuildingType`, `MemberRole` (positions 1, 7, 9) — are legitimate domain models a developer would identify.
 
@@ -117,7 +117,7 @@ These are Alembic migration revision docstrings parsed as standalone graph nodes
 
 The report labels these as "possible documentation gaps or missing edges." For users with corpora that contain Alembic migrations, pytest docstrings, or other docstring-heavy auto-generated files, this label can be misleading — these are change annotations or test descriptions, not architectural entities with missing connections.
 
-A `.graphifyignore` rule for `**/alembic/versions/*.py` reduces the isolated-node count materially on this corpus; users with similar setups may want a default recipe.
+A `.atlasignore` rule for `**/alembic/versions/*.py` reduces the isolated-node count materially on this corpus; users with similar setups may want a default recipe.
 
 ## Finding 6 — Suggested questions skew toward graph-property prompts
 
@@ -151,4 +151,4 @@ Patterns from this review that may be worth tracking upstream:
 2. **Cross-language INFERRED edges in monorepos** — name-based matches between Python and TypeScript types in mixed-language repos may warrant a higher confidence threshold or a "potential contract" label rather than the current "surprising connection" framing.
 3. **Docstring-heavy files (Alembic, pytest)** — defaulting to skip migration `versions/` directories, or detecting and grouping docstring nodes that share a structural pattern, would reduce the isolated-node noise materially.
 
-These are observations, not change requests — users running graphify on similar corpora may find the same patterns useful to know about.
+These are observations, not change requests — users running atlas on similar corpora may find the same patterns useful to know about.

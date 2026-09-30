@@ -1,4 +1,4 @@
-"""Regression tests for `graphify path` arrow direction (#849) and determinism +
+"""Regression tests for `atlas path` arrow direction (#849) and determinism +
 honest edge labels (#2074)."""
 from __future__ import annotations
 import json
@@ -8,7 +8,7 @@ import sys
 import networkx as nx
 import pytest
 from networkx.readwrite import json_graph
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 
 
 def _write_graph(tmp_path):
@@ -33,7 +33,7 @@ def _write_graph(tmp_path):
 def _run(monkeypatch, graph_path, src, tgt, capsys, *extra):
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(mainmod.sys, "argv",
-        ["graphify", "path", src, tgt, "--graph", str(graph_path), *extra])
+        ["atlas", "path", src, tgt, "--graph", str(graph_path), *extra])
     mainmod.main()
     return capsys.readouterr().out
 
@@ -105,7 +105,7 @@ def test_endpoint_falls_back_to_score_head(monkeypatch, tmp_path, capsys):
     # and the disconnected components make that a "No path found" exit(0).
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(mainmod.sys, "argv",
-        ["graphify", "path", "Rejection judge", "Judge Helper 0", "--graph", str(p)])
+        ["atlas", "path", "Rejection judge", "Judge Helper 0", "--graph", str(p)])
     with pytest.raises(SystemExit) as exc_info:
         mainmod.main()
     assert exc_info.value.code == 0
@@ -152,7 +152,7 @@ def test_path_deterministic_across_hash_seeds(tmp_path):
     for seed in ("0", "1", "2", "3", "4", "5", "6", "7"):
         env = {**os.environ, "PYTHONHASHSEED": seed}
         r = subprocess.run(
-            [sys.executable, "-m", "graphify", "path", "Alpha", "Beta", "--graph", str(gp)],
+            [sys.executable, "-m", "monarch_atlas", "path", "Alpha", "Beta", "--graph", str(gp)],
             capture_output=True, text=True, env=env, cwd=str(tmp_path),
         )
         assert r.returncode == 0, r.stderr
@@ -289,7 +289,7 @@ def test_explain_direction_recovered_from_src_tgt_markers(monkeypatch, tmp_path,
     gp.write_text(json.dumps(data))
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(mainmod.sys, "argv",
-        ["graphify", "explain", "hub", "--graph", str(gp)])
+        ["atlas", "explain", "hub", "--graph", str(gp)])
     mainmod.main()
     out = capsys.readouterr().out
     assert "<-- spoke.ts [calls]" in out

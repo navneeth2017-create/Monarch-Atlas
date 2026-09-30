@@ -1,6 +1,6 @@
-# graphify Benchmarks
+# atlas Benchmarks
 
-How graphify performs as conversational long-term memory and as a
+How atlas performs as conversational long-term memory and as a
 code-intelligence layer, measured on an open harness with competing systems run
 under identical conditions (same model, same budgets, same grader).
 
@@ -8,7 +8,7 @@ Last updated: 2026-07-05.
 
 ## Summary
 
-graphify's deterministic graph plus hybrid retrieval has the best retrieval
+atlas's deterministic graph plus hybrid retrieval has the best retrieval
 recall on LOCOMO of any system tested, the best LOCOMO QA accuracy per dollar,
 ties for the best LongMemEval score, and builds its index with zero LLM credits.
 Every system was run on the same harness with one shared model (Kimi K2.6),
@@ -25,7 +25,7 @@ Highlights:
 
 ## Results at a glance
 
-| Suite | Dataset (n) | Metric | graphify | Field |
+| Suite | Dataset (n) | Metric | atlas | Field |
 |---|---|---|---|---|
 | Memory | LOCOMO (300) | QA accuracy | 45.3% | supermemory 49.7% (11x ingest cost), bm25 31.3%, mem0 27.3% |
 | Memory | LOCOMO (300) | recall@10 | 0.497 | bm25 0.362, mem0 0.048 |
@@ -35,7 +35,7 @@ Highlights:
 
 ## Harness
 
-graphify's own harness. Competing systems (mem0, supermemory) are run as
+atlas's own harness. Competing systems (mem0, supermemory) are run as
 adapters inside it, so every system sees the same model, token budget, and
 grader.
 
@@ -44,7 +44,7 @@ ingest  ->  index  ->  search  ->  answer  ->  grade
 (build)     (store)    (retrieve)  (Kimi K2.6) (key-fact coverage)
 ```
 
-- Memory suite (`memory/`): graphify's graph retrieval vs dedicated memory
+- Memory suite (`memory/`): atlas's graph retrieval vs dedicated memory
   systems (mem0, supermemory) and classic baselines (BM25, dense RAG,
   hybrid RRF). mem0 and supermemory run self-hosted as adapters, wired through
   a proxy so their LLM calls also use Kimi K2.6.
@@ -99,15 +99,15 @@ Sorted by recall@10.
 
 | System | QA accuracy | recall@10 | Ingest cost |
 |---|---|---|---|
-| **graphify** (graph-expand) | **45.3%** | **0.497** | ~$1.40 |
+| **atlas** (graph-expand) | **45.3%** | **0.497** | ~$1.40 |
 | hybrid RRF | 43.3% | 0.493 | $0 (shared index) |
-| graphify (SurrealDB engine) | 43.3% | 0.485 | $0 (shared index) |
+| atlas (SurrealDB engine) | 43.3% | 0.485 | $0 (shared index) |
 | dense RAG | 41.3% | 0.439 | $0 (shared index) |
 | BM25 | 31.3% | 0.362 | $0 (shared index) |
 | supermemory | 49.7% | 0.149* | $15.67 |
 | mem0 | 27.3% | 0.048 | $3.48 |
 
-Bold marks graphify's primary configuration, not the column maximum. Baselines
+Bold marks atlas's primary configuration, not the column maximum. Baselines
 retrieve from the same harness-built index, so they incur no separate ingest
 cost.
 
@@ -117,7 +117,7 @@ QA-accuracy axis (a shared Kimi reader and judge over each system's hits) is the
 clean comparison.
 
 Reading: supermemory scores a few points higher on raw QA, but at about 11x the
-ingest cost ($15.67 vs $1.40) and with about 3x worse retrieval recall. graphify
+ingest cost ($15.67 vs $1.40) and with about 3x worse retrieval recall. atlas
 has the best retrieval recall on LOCOMO of any system tested, the best QA of the
 systems on the shared embedder, and does it for about a tenth of supermemory's
 cost. It retrieves the right memory about 10x more often than mem0 and answers
@@ -129,22 +129,22 @@ setting.
 
 | System | QA accuracy | recall@10 |
 |---|---|---|
-| **graphify** (graph-expand) | **76%** | **0.844** |
+| **atlas** (graph-expand) | **76%** | **0.844** |
 | dense RAG | 76% | 0.848 |
-| graphify (SurrealDB engine) | 74% | 0.833 |
+| atlas (SurrealDB engine) | 74% | 0.833 |
 | hybrid RRF | 74% | 0.822 |
 | BM25 | 70% | 0.710 |
 | mem0 | 70% | 0.344 |
 
-graphify ties dense RAG for the best QA accuracy (76%); dense RAG edges it on
+atlas ties dense RAG for the best QA accuracy (76%); dense RAG edges it on
 recall (0.848 vs 0.844). Both retrieve far more than mem0 (recall 0.344).
 
 ## Results: code intelligence
 
 On ERPNext (a roughly 1M-LOC production repo), giving a fixed coding agent one
-graphify tool lifts key-fact coverage across the graded question set (n=6) from
+atlas tool lifts key-fact coverage across the graded question set (n=6) from
 70.8% (a grep and read baseline) to 82.0%, at about 140K tokens per query.
-graphify pays for itself in accuracy against searching raw files, and avoids the
+atlas pays for itself in accuracy against searching raw files, and avoids the
 context-stuffing anti-pattern of packing the whole repo into every turn (which
 costs roughly 20x the tokens for lower coverage).
 
@@ -163,11 +163,11 @@ semantic retrieval scale with it, and the AST extraction itself stays stable.
 
 ## Cost and token economics
 
-- Graph construction costs zero LLM credits. graphify extracts with tree-sitter
+- Graph construction costs zero LLM credits. atlas extracts with tree-sitter
   (deterministic, about 40 languages) and a local embedder, so building the
   index uses no API tokens. Most memory and semantic-retrieval systems pay a
   per-document LLM ingest cost.
-- Memory ingest is about 11x cheaper: graphify's LOCOMO ingest runs around
+- Memory ingest is about 11x cheaper: atlas's LOCOMO ingest runs around
   $1.40 against supermemory's $15.67.
 - Every number here is backed by a per-run spend ledger in the harness output.
 
@@ -180,7 +180,7 @@ the harness. Each run respects `--max-spend` and writes a spend ledger.
 # Memory (LOCOMO). This invokes the SurrealDB-engine row (43.3%); the
 # graph-expand headline (45.3%) is a separate adapter in the same harness.
 python memory/runner.py --phase 3 --split locomo --n 300 \
-  --adapters graphify_v1_surreal --cn natural --workers 6 --max-spend 15
+  --adapters atlas_v1_surreal --cn natural --workers 6 --max-spend 15
 
 # Code cross-tool (ERPNext)
 python crosstool/run.py --repo erpnext --max-spend <budget>

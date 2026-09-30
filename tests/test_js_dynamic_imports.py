@@ -18,8 +18,8 @@ from pathlib import Path
 
 import networkx as nx
 
-from graphify.affected import DEFAULT_AFFECTED_RELATIONS, affected_nodes
-from graphify.extract import _file_node_id, extract
+from monarch_atlas.affected import DEFAULT_AFFECTED_RELATIONS, affected_nodes
+from monarch_atlas.extract import _file_node_id, extract
 
 
 def _write(path: Path, text: str) -> Path:

@@ -10,8 +10,8 @@ extraction; anything differing in any field still survives.
 
 import collections
 
-from graphify.diagnostics import diagnose_extraction
-from graphify.extract import extract
+from monarch_atlas.diagnostics import diagnose_extraction
+from monarch_atlas.extract import extract
 
 
 def _edge_counts(result):

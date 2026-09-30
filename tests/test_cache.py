@@ -1,7 +1,7 @@
-"""Tests for graphify/cache.py."""
+"""Tests for monarch_atlas/cache.py."""
 import pytest
 from pathlib import Path
-from graphify.cache import file_hash, cache_dir, load_cached, save_cached, cached_files, clear_cache, _body_content
+from monarch_atlas.cache import file_hash, cache_dir, load_cached, save_cached, cached_files, clear_cache, _body_content
 
 
 @pytest.fixture
@@ -67,10 +67,10 @@ def test_cached_files(tmp_path, cache_root):
 
 
 def test_clear_cache(tmp_file, cache_root):
-    """clear_cache removes all .json files from graphify-out/cache/ (all subdirs)."""
+    """clear_cache removes all .json files from atlas-out/cache/ (all subdirs)."""
     save_cached(tmp_file, {"nodes": [], "edges": []}, root=cache_root)
     # Since v0.5.3 entries go into cache/ast/, not the flat cache/ dir
-    cache_base = cache_root / "graphify-out" / "cache"
+    cache_base = cache_root / "atlas-out" / "cache"
     assert len(list(cache_base.rglob("*.json"))) > 0
     clear_cache(cache_root)
     assert len(list(cache_base.rglob("*.json"))) == 0
@@ -190,7 +190,7 @@ def test_md_edit_above_hr_changes_hash(tmp_path):
 
 # --- #777: portable cache source_file fields --------------------------------
 # ``save_cached`` relativizes ``source_file`` entries inside the cache file
-# so a committed ``graphify-out/cache/`` is portable across machines and
+# so a committed ``atlas-out/cache/`` is portable across machines and
 # CI runners. ``load_cached`` re-absolutizes them so consumers (extract,
 # merge into graph.json) see the same shape that fresh extraction emits.
 
@@ -198,7 +198,7 @@ def test_save_cached_relativizes_source_file(tmp_path):
     """The on-disk cache JSON contains forward-slash relative source_file
     entries — no absolute prefix from the saving machine leaks in."""
     import json
-    from graphify.cache import save_cached, file_hash, cache_dir
+    from monarch_atlas.cache import save_cached, file_hash, cache_dir
 
     (tmp_path / "src").mkdir()
     src = tmp_path / "src" / "foo.py"
@@ -228,7 +228,7 @@ def test_save_cached_survives_a_winerror_17_replace(tmp_path, monkeypatch):
     exactly this AST cache write path. WinError 17 is a plain OSError, not a
     PermissionError, so it must still trigger the copy-then-delete fallback."""
     import os
-    from graphify.cache import save_cached, file_hash, cache_dir
+    from monarch_atlas.cache import save_cached, file_hash, cache_dir
 
     src = tmp_path / "foo.py"
     src.write_text("def x(): pass\n")
@@ -256,7 +256,7 @@ def test_load_cached_absolutizes_source_file(tmp_path):
     """``load_cached`` returns the same absolute-path shape that a fresh
     extraction produces, so consumers don't need to special-case cache
     hits vs. fresh extraction."""
-    from graphify.cache import save_cached, load_cached
+    from monarch_atlas.cache import save_cached, load_cached
 
     (tmp_path / "src").mkdir()
     src = tmp_path / "src" / "foo.py"
@@ -274,11 +274,11 @@ def test_load_cached_absolutizes_source_file(tmp_path):
 
 
 def test_load_cached_passes_through_legacy_absolute_source_file(tmp_path):
-    """Cache entries written by an older graphify (with absolute source_file
+    """Cache entries written by an older atlas (with absolute source_file
     inside) must still load correctly: the absolutize step is a no-op for
     already-absolute values."""
     import json
-    from graphify.cache import load_cached, file_hash, cache_dir
+    from monarch_atlas.cache import load_cached, file_hash, cache_dir
 
     (tmp_path / "src").mkdir()
     src = tmp_path / "src" / "foo.py"
@@ -304,7 +304,7 @@ def test_cache_portable_across_roots(tmp_path):
     AND its embedded source_file is stored relative."""
     import json
     import shutil
-    from graphify.cache import save_cached, load_cached, file_hash, cache_dir
+    from monarch_atlas.cache import save_cached, load_cached, file_hash, cache_dir
 
     repo_a = tmp_path / "repo_a"
     repo_a.mkdir()
@@ -341,7 +341,7 @@ def _reset_stat_index():
     """The stat-index location/anchor are chosen once per process via module
     globals (#1747/#2199). Reset them so each test sees a fresh-process
     decision — same pattern as tests/test_stat_index_portability.py."""
-    from graphify import cache as _cache
+    from monarch_atlas import cache as _cache
 
     _cache._stat_index_root = None
     _cache._stat_index_anchor = None
@@ -392,14 +392,14 @@ def _graph_ids(result: dict) -> tuple[list[str], list[tuple]]:
 
 def test_warm_cache_from_another_root_does_not_leak_that_root(tmp_path, monkeypatch):
     """#2257: extract corpus under root A (populating the cache), copy the tree
-    AND graphify-out to root B, extract under B on the warm cache.
+    AND atlas-out to root B, extract under B on the warm cache.
 
     No node id or edge endpoint may carry root A's slug, and the ids must match
     a cold B extraction exactly.
     """
     import shutil
 
-    import graphify.extract as ex
+    import monarch_atlas.extract as ex
 
     a_slug = "aaa_root_marker"
     b_slug = "bbb_root_marker"
@@ -408,14 +408,14 @@ def test_warm_cache_from_another_root_does_not_leak_that_root(tmp_path, monkeypa
 
     _reset_stat_index()
     result_a = ex.extract(paths_a, cache_root=corpus_a, root=corpus_a, parallel=False)
-    from graphify import cache as _cache
+    from monarch_atlas import cache as _cache
     _cache._flush_stat_index()
     assert result_a["nodes"], "run A should have extracted something"
 
     # The entries on disk must be portable BY CONSTRUCTION: neither the scan
     # root's slug (ids are casefolded, paths are not — compare case-insensitively)
     # nor any absolute path from root A may be embedded in them.
-    entries = sorted((corpus_a / "graphify-out" / "cache" / "ast").rglob("*.json"))
+    entries = sorted((corpus_a / "atlas-out" / "cache" / "ast").rglob("*.json"))
     assert entries, "run A should have written AST cache entries"
     for entry in entries:
         blob = entry.read_text(encoding="utf-8")
@@ -425,13 +425,13 @@ def test_warm_cache_from_another_root_does_not_leak_that_root(tmp_path, monkeypa
         )
         assert str(corpus_a) not in blob, f"{entry.name} embeds an absolute scan path"
 
-    # Move the corpus; graphify-out/ (cache + stat index) rides along. copy2
+    # Move the corpus; atlas-out/ (cache + stat index) rides along. copy2
     # preserves mtime_ns so the stat-index fastpath stays warm.
     corpus_b = tmp_path / b_slug / "corpus"
     corpus_b.parent.mkdir()
     shutil.copytree(corpus_a, corpus_b, copy_function=shutil.copy2)
     paths_b = sorted(p for p in corpus_b.rglob("*") if p.is_file()
-                     and "graphify-out" not in p.parts)
+                     and "atlas-out" not in p.parts)
 
     # Warmth probe: _safe_extract_with_xaml_root runs only on a cache MISS. If
     # run B silently re-extracts, cold ids come out clean and every assertion
@@ -460,7 +460,7 @@ def test_warm_cache_from_another_root_does_not_leak_that_root(tmp_path, monkeypa
 
     # ...and the replay is not merely clean but IDENTICAL to a cold B run.
     monkeypatch.undo()
-    shutil.rmtree(corpus_b / "graphify-out")
+    shutil.rmtree(corpus_b / "atlas-out")
     _reset_stat_index()
     cold_b = ex.extract(paths_b, cache_root=corpus_b, root=corpus_b, parallel=False)
     cold_ids, cold_edges = _graph_ids(cold_b)
@@ -485,7 +485,7 @@ def test_cached_ids_round_trip_under_the_same_root(tmp_path):
     f = root / "src" / "foo.py"
     f.write_text("def x(): pass\n")
 
-    from graphify.extract import _make_id
+    from monarch_atlas.extract import _make_id
 
     minted = _make_id(str(f))
     result = {
@@ -538,7 +538,7 @@ def test_warm_hit_with_relative_inputs_from_above_the_root(tmp_path, monkeypatch
     JS-family suffix is in ``_JS_CACHE_BYPASS_SUFFIXES``; the defect itself is
     language-agnostic (the gate is shared).
     """
-    import graphify.extract as ex
+    import monarch_atlas.extract as ex
 
     project = tmp_path / "project"
     (project / "src" / "pages").mkdir(parents=True)
@@ -591,8 +591,8 @@ def test_warm_hit_with_relative_inputs_from_above_the_root(tmp_path, monkeypatch
 
 
 # --- AST cache versioning ----------------------------------------------------
-# AST cache entries are the output of graphify's own extractor code, so they
-# are only valid for the graphify version that wrote them. Keying purely on
+# AST cache entries are the output of atlas's own extractor code, so they
+# are only valid for the atlas version that wrote them. Keying purely on
 # file content meant extractor fixes shipped in a new release kept serving
 # stale pre-fix results. The AST cache is therefore namespaced by package
 # version; the semantic cache is NOT (invalidating it would re-bill LLM
@@ -601,7 +601,7 @@ def test_warm_hit_with_relative_inputs_from_above_the_root(tmp_path, monkeypatch
 def test_ast_cache_invalidated_on_version_bump(tmp_path, monkeypatch):
     """An AST entry written by version X must not be served after upgrading
     to version Y — the file is unchanged but the extractor is not."""
-    import graphify.cache as cache_mod
+    import monarch_atlas.cache as cache_mod
 
     f = tmp_path / "mod.py"
     f.write_text("def f(): pass\n")
@@ -612,7 +612,7 @@ def test_ast_cache_invalidated_on_version_bump(tmp_path, monkeypatch):
 
     monkeypatch.setattr(cache_mod, "_EXTRACTOR_VERSION", "0.8.1", raising=False)
     assert load_cached(f, root=tmp_path, kind="ast") is None, (
-        "AST cache entry from a previous graphify version must not be served"
+        "AST cache entry from a previous atlas version must not be served"
     )
 
 
@@ -621,12 +621,12 @@ def test_ast_cache_schema_rejects_same_version_legacy_collision(
 ):
     """A key-schema change must not replay a poisoned same-version AST entry."""
     import json
-    import graphify.cache as cache_mod
+    import monarch_atlas.cache as cache_mod
 
     target = tmp_path / "real.py"
     target.write_text("value = 1\n")
     monkeypatch.setattr(cache_mod, "_EXTRACTOR_VERSION", "0.9.46", raising=False)
-    old_dir = tmp_path / cache_mod._GRAPHIFY_OUT / "cache" / "ast" / "v0.9.46"
+    old_dir = tmp_path / cache_mod._ATLAS_OUT / "cache" / "ast" / "v0.9.46"
     old_dir.mkdir(parents=True)
     old_hash = file_hash(target, tmp_path)
     (old_dir / f"{old_hash}.json").write_text(json.dumps({
@@ -642,7 +642,7 @@ def test_ast_cache_schema_rejects_same_version_legacy_collision(
 def test_ast_cache_version_bump_cleans_stale_entries(tmp_path, monkeypatch):
     """Upgrading removes AST entries left behind by previous versions so the
     cache directory does not grow one full copy per release."""
-    import graphify.cache as cache_mod
+    import monarch_atlas.cache as cache_mod
 
     f = tmp_path / "mod.py"
     f.write_text("def f(): pass\n")
@@ -661,11 +661,11 @@ def test_ast_cache_version_bump_cleans_stale_entries(tmp_path, monkeypatch):
 
 
 def test_legacy_unversioned_ast_entries_not_served(tmp_path):
-    """Entries written by pre-versioning graphify (flat cache/ or unversioned
+    """Entries written by pre-versioning atlas (flat cache/ or unversioned
     cache/ast/) are by definition from an older extractor and must not be
     served — that staleness is exactly what version namespacing fixes."""
     import json
-    from graphify.cache import file_hash, _GRAPHIFY_OUT
+    from monarch_atlas.cache import file_hash, _ATLAS_OUT
 
     f = tmp_path / "mod.py"
     f.write_text("def f(): pass\n")
@@ -673,7 +673,7 @@ def test_legacy_unversioned_ast_entries_not_served(tmp_path):
     payload = json.dumps({"nodes": [{"id": "stale"}], "edges": []})
 
     # Unversioned cache/ast/{hash}.json (pre-versioning layout)
-    unversioned = tmp_path / _GRAPHIFY_OUT / "cache" / "ast"
+    unversioned = tmp_path / _ATLAS_OUT / "cache" / "ast"
     unversioned.mkdir(parents=True)
     (unversioned / f"{h}.json").write_text(payload)
     # Legacy flat cache/{hash}.json (pre-0.5.3 layout)
@@ -685,7 +685,7 @@ def test_legacy_unversioned_ast_entries_not_served(tmp_path):
 def test_semantic_cache_survives_version_bump(tmp_path, monkeypatch):
     """The semantic cache is deliberately not versioned: entries are produced
     by the LLM from file contents, and re-extraction costs real money."""
-    import graphify.cache as cache_mod
+    import monarch_atlas.cache as cache_mod
 
     f = tmp_path / "doc.md"
     f.write_text("# Title\n\nBody.\n")
@@ -709,7 +709,7 @@ def test_save_cached_in_root_symlink_keeps_symlink_name(tmp_path):
     manifest case (cache lookup is content-hashed, not key-matched), but
     keeps the on-disk shape consistent with what callers passed in."""
     import json
-    from graphify.cache import save_cached, file_hash, cache_dir
+    from monarch_atlas.cache import save_cached, file_hash, cache_dir
 
     (tmp_path / "sub").mkdir()
     target = tmp_path / "sub" / "target.py"
@@ -740,7 +740,7 @@ def test_file_hash_distinguishes_walked_symlink_paths_portably(
     requires_symlinks, tmp_path
 ):
     """Aliases of one target need separate portable extraction-cache keys."""
-    from graphify import cache as cache_mod
+    from monarch_atlas import cache as cache_mod
 
     _reset_stat_index()
     hashes_by_root = []
@@ -782,7 +782,7 @@ def test_warm_cache_keeps_target_and_symlink_sources_distinct(
     """#2832: a warm cache must not move target nodes onto its symlink."""
     from collections import Counter
 
-    import graphify.extract as extract_mod
+    import monarch_atlas.extract as extract_mod
 
     _reset_stat_index()
     physical_root = tmp_path / "repo"
@@ -825,7 +825,7 @@ def test_semantic_cache_self_heals_legacy_symlink_collision(
     """A poisoned legacy entry misses once, then walked groups round-trip."""
     import json
 
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     _reset_stat_index()
     physical_root = tmp_path / "repo"
@@ -876,7 +876,7 @@ def test_semantic_symlink_policy_uses_walked_identity(
     requires_symlinks, tmp_path
 ):
     """Alias authorization and partial state must not leak to its target."""
-    from graphify.cache import load_cached, save_semantic_cache
+    from monarch_atlas.cache import load_cached, save_semantic_cache
 
     _reset_stat_index()
     target = tmp_path / "real.md"
@@ -909,7 +909,7 @@ def test_semantic_symlink_root_accepts_resolved_policy_paths_without_alias_leak(
     requires_symlinks, tmp_path
 ):
     """Resolved root spellings apply only to the matching walked identity."""
-    from graphify.cache import load_cached, save_semantic_cache
+    from monarch_atlas.cache import load_cached, save_semantic_cache
 
     _reset_stat_index()
     physical_root = tmp_path / "repo"
@@ -950,7 +950,7 @@ def test_semantic_symlink_root_keeps_external_policy_path_absolute(
     requires_symlinks, tmp_path
 ):
     """An allowed absolute source outside a symlinked root stays external."""
-    from graphify.cache import load_cached, save_semantic_cache
+    from monarch_atlas.cache import load_cached, save_semantic_cache
 
     _reset_stat_index()
     physical_root = tmp_path / "repo"
@@ -980,7 +980,7 @@ def test_semantic_prune_removes_orphan_entries(tmp_path):
     """Changing a file's content leaves the old content-hash entry orphaned;
     pruning against the new live hash removes the stale entry and keeps the
     current one."""
-    from graphify.cache import prune_semantic_cache
+    from monarch_atlas.cache import prune_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# A\n\nContent A.\n")
@@ -1005,7 +1005,7 @@ def test_semantic_prune_keeps_live_unchanged_entries(tmp_path):
     """Pruning against the FULL live set must keep every live entry — guards
     the trap of pruning against an incremental changed-subset, which would
     delete all unchanged docs' valid entries."""
-    from graphify.cache import prune_semantic_cache
+    from monarch_atlas.cache import prune_semantic_cache
 
     live_hashes = set()
     for i in range(5):
@@ -1025,7 +1025,7 @@ def test_semantic_prune_keeps_live_unchanged_entries(tmp_path):
 def test_semantic_prune_handles_deleted_file(tmp_path):
     """An entry for a file that no longer exists (dropped from the live set) is
     pruned."""
-    from graphify.cache import prune_semantic_cache
+    from monarch_atlas.cache import prune_semantic_cache
 
     f = tmp_path / "gone.md"
     f.write_text("# Gone\n\nWill be deleted.\n")
@@ -1044,7 +1044,7 @@ def test_semantic_prune_handles_deleted_file(tmp_path):
 def test_semantic_prune_ignores_ast_and_tmp(tmp_path):
     """Prune touches only cache/semantic/*.json: AST entries and atomic-write
     *.tmp temporaries are left untouched."""
-    from graphify.cache import prune_semantic_cache
+    from monarch_atlas.cache import prune_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Doc\n\nBody.\n")
@@ -1069,7 +1069,7 @@ def test_semantic_prune_ignores_ast_and_tmp(tmp_path):
 def test_save_semantic_cache_overwrites_by_default(tmp_path):
     """Default save_semantic_cache replaces a file's cached entry (the final,
     authoritative write in the extract pipeline)."""
-    from graphify.cache import save_semantic_cache
+    from monarch_atlas.cache import save_semantic_cache
     f = tmp_path / "doc.md"; f.write_text("# Doc\n")
     save_semantic_cache([{"id": "a", "source_file": "doc.md"}], [], root=tmp_path)
     save_semantic_cache([{"id": "b", "source_file": "doc.md"}], [], root=tmp_path)
@@ -1081,7 +1081,7 @@ def test_save_semantic_cache_overwrites_by_default(tmp_path):
 def test_save_semantic_cache_rejects_out_of_scope_source_file(tmp_path):
     """#1757: an undispatched file must keep its complete cache entry when a
     semantic result misattributes a node to it."""
-    from graphify.cache import save_semantic_cache
+    from monarch_atlas.cache import save_semantic_cache
 
     intended = tmp_path / "intended.md"
     intended.write_text("# Intended\n")
@@ -1132,7 +1132,7 @@ def test_save_semantic_cache_rejects_out_of_scope_source_file(tmp_path):
 
 def test_semantic_cache_deep_mode_roundtrip_under_deep_namespace(tmp_path):
     """mode='deep' saves under cache/semantic-deep/ and reads back from it."""
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Doc\n\nBody.\n")
@@ -1141,13 +1141,13 @@ def test_semantic_cache_deep_mode_roundtrip_under_deep_namespace(tmp_path):
     )
     assert saved == 1
 
-    deep_dir = tmp_path / "graphify-out" / "cache" / "semantic-deep"
+    deep_dir = tmp_path / "atlas-out" / "cache" / "semantic-deep"
     h = file_hash(f, tmp_path)
     assert (deep_dir / f"{h}.json").exists(), (
         "deep entry must land under cache/semantic-deep/"
     )
     # And NOT in the plain namespace.
-    plain_dir = tmp_path / "graphify-out" / "cache" / "semantic"
+    plain_dir = tmp_path / "atlas-out" / "cache" / "semantic"
     assert not (plain_dir / f"{h}.json").exists()
 
     nodes, edges, hyper, uncached = check_semantic_cache(
@@ -1160,7 +1160,7 @@ def test_semantic_cache_deep_mode_roundtrip_under_deep_namespace(tmp_path):
 def test_semantic_cache_deep_invisible_to_plain_reads_and_vice_versa(tmp_path):
     """Deep entries must not satisfy mode=None reads (and plain entries must
     not satisfy deep reads) — the namespaces are fully isolated."""
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     deep_doc = tmp_path / "deep.md"
     deep_doc.write_text("# Deep\n")
@@ -1190,14 +1190,14 @@ def test_semantic_cache_deep_invisible_to_plain_reads_and_vice_versa(tmp_path):
 def test_semantic_cache_mode_none_layout_unchanged(tmp_path):
     """Omitting mode writes exactly the historical cache/semantic/ layout —
     forward-compat for older installed callers that never pass mode."""
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Doc\n")
     save_semantic_cache([{"id": "n", "source_file": "doc.md"}], [], root=tmp_path)
     h = file_hash(f, tmp_path)
-    assert (tmp_path / "graphify-out" / "cache" / "semantic" / f"{h}.json").exists()
-    assert not (tmp_path / "graphify-out" / "cache" / "semantic-deep").exists(), (
+    assert (tmp_path / "atlas-out" / "cache" / "semantic" / f"{h}.json").exists()
+    assert not (tmp_path / "atlas-out" / "cache" / "semantic-deep").exists(), (
         "mode=None must never create the deep namespace"
     )
     nodes, _, _, uncached = check_semantic_cache([str(f)], root=tmp_path)
@@ -1206,14 +1206,14 @@ def test_semantic_cache_mode_none_layout_unchanged(tmp_path):
 
 def test_clear_cache_removes_deep_namespace(tmp_path):
     """clear_cache sweeps cache/semantic-deep/ alongside semantic/ and ast/."""
-    from graphify.cache import save_semantic_cache
+    from monarch_atlas.cache import save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Doc\n")
     save_semantic_cache([{"id": "p", "source_file": "doc.md"}], [], root=tmp_path)
     save_semantic_cache([{"id": "d", "source_file": "doc.md"}], [],
                         root=tmp_path, mode="deep")
-    base = tmp_path / "graphify-out" / "cache"
+    base = tmp_path / "atlas-out" / "cache"
     assert list((base / "semantic").glob("*.json"))
     assert list((base / "semantic-deep").glob("*.json"))
 
@@ -1225,7 +1225,7 @@ def test_clear_cache_removes_deep_namespace(tmp_path):
 
 def test_cached_files_includes_deep_namespace(tmp_path):
     """cached_files reports deep-namespace entries too."""
-    from graphify.cache import save_semantic_cache
+    from monarch_atlas.cache import save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Doc\n")
@@ -1239,7 +1239,7 @@ def test_semantic_prune_sweeps_both_namespaces_against_same_live_set(tmp_path):
     cache/semantic-deep/ against the SAME live-hash set (liveness is
     content-based, mode-independent). Orphans go in both namespaces; live
     entries survive in both."""
-    from graphify.cache import prune_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import prune_semantic_cache, save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# A\n\nContent A.\n")
@@ -1254,8 +1254,8 @@ def test_semantic_prune_sweeps_both_namespaces_against_same_live_set(tmp_path):
     save_semantic_cache([{"id": "db", "source_file": "doc.md"}], [],
                         root=tmp_path, mode="deep")
 
-    plain_dir = tmp_path / "graphify-out" / "cache" / "semantic"
-    deep_dir = tmp_path / "graphify-out" / "cache" / "semantic-deep"
+    plain_dir = tmp_path / "atlas-out" / "cache" / "semantic"
+    deep_dir = tmp_path / "atlas-out" / "cache" / "semantic-deep"
     for d in (plain_dir, deep_dir):
         assert (d / f"{h_old}.json").exists()
         assert (d / f"{h_live}.json").exists()
@@ -1270,7 +1270,7 @@ def test_semantic_prune_sweeps_both_namespaces_against_same_live_set(tmp_path):
 def test_save_semantic_cache_merge_existing_unions(tmp_path):
     """#1715: merge_existing=True unions with the prior entry so a file split
     across chunks (checkpointed per chunk) keeps every slice."""
-    from graphify.cache import save_semantic_cache
+    from monarch_atlas.cache import save_semantic_cache
     f = tmp_path / "big.md"; f.write_text("# Big\n")
     # chunk 1 slice
     save_semantic_cache([{"id": "a", "source_file": "big.md"}],
@@ -1293,7 +1293,7 @@ def test_save_semantic_cache_drops_edges_to_out_of_scope_nodes(tmp_path):
     written entry must carry no reference to the skipped id, while a
     duplicate-attribution node (also defined in a written group) must not be
     over-pruned."""
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     allowed = tmp_path / "allowed.md"
     allowed.write_text("# Allowed\n")
@@ -1331,7 +1331,7 @@ def test_save_semantic_cache_drops_edges_to_ghost_file_nodes(tmp_path):
     """#1916 (ghost variant): a node group whose source_file does not exist is
     silently skipped by the write loop; edges in a written group referencing
     its node ids must not survive into the cache."""
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     real = tmp_path / "real.md"
     real.write_text("# Real\n")
@@ -1362,7 +1362,7 @@ def test_save_semantic_cache_drops_hyperedges_touching_skipped_nodes(tmp_path):
     """#1916: a hyperedge whose member list intersects the skipped ids is
     dropped whole (mirroring the #1895 semantics), while hyperedges over
     surviving nodes are kept."""
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     allowed = tmp_path / "allowed.md"
     allowed.write_text("# Allowed\n")
@@ -1394,7 +1394,7 @@ def test_save_semantic_cache_unscoped_preserves_dangling_refs_verbatim(tmp_path)
     """#1916 guard-rail: unscoped callers (allowed_source_files=None) must stay
     byte-identical — no pruning happens even when an edge or hyperedge
     references a node grouped under a ghost file."""
-    from graphify.cache import save_semantic_cache
+    from monarch_atlas.cache import save_semantic_cache
 
     doc = tmp_path / "doc.md"
     doc.write_text("# Doc\n")
@@ -1421,7 +1421,7 @@ def test_save_semantic_cache_merge_existing_prunes_only_incoming(tmp_path):
     """#1916 + #1715: with merge_existing=True (the llm.py checkpoint path),
     only the INCOMING slice is pruned before the union — the prior cached
     entry's valid edges must survive untouched."""
-    from graphify.cache import save_semantic_cache
+    from monarch_atlas.cache import save_semantic_cache
 
     big = tmp_path / "big.md"
     big.write_text("# Big\n")
@@ -1465,7 +1465,7 @@ def test_save_semantic_cache_merge_existing_prunes_only_incoming(tmp_path):
 def test_prompt_fingerprint_stable_and_prompt_sensitive(tmp_path):
     """The fingerprint is stable for identical prompts and differs when the
     prompt text changes — the whole invalidation signal rests on this."""
-    from graphify.cache import prompt_fingerprint
+    from monarch_atlas.cache import prompt_fingerprint
 
     assert prompt_fingerprint("extract a graph") == prompt_fingerprint("extract a graph")
     assert prompt_fingerprint("extract a graph") != prompt_fingerprint("extract a graph v2")
@@ -1480,7 +1480,7 @@ def test_prompt_fingerprint_stable_and_prompt_sensitive(tmp_path):
 def test_prompt_fingerprint_ignores_line_endings(tmp_path):
     """A CRLF checkout of the same spec must not look like a prompt change —
     otherwise every Windows run re-bills the whole corpus."""
-    from graphify.cache import prompt_fingerprint
+    from monarch_atlas.cache import prompt_fingerprint
 
     assert prompt_fingerprint("a\r\nb\r\n") == prompt_fingerprint("a\nb\n")
     assert prompt_fingerprint("a  \nb\n") == prompt_fingerprint("a\nb\n")
@@ -1489,7 +1489,7 @@ def test_prompt_fingerprint_ignores_line_endings(tmp_path):
 def test_semantic_cache_prompt_change_invalidates(tmp_path):
     """The reported bug (#1939): after the extraction prompt changes, an
     unchanged file must MISS instead of replaying the older vintage."""
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Doc\n\nBody.\n")
@@ -1518,14 +1518,14 @@ def test_semantic_cache_prompt_change_invalidates(tmp_path):
 
 def test_semantic_cache_prompt_namespaced_layout(tmp_path):
     """Fingerprinted entries live under cache/semantic/p{fp}/, never flat."""
-    from graphify.cache import prompt_fingerprint, save_semantic_cache
+    from monarch_atlas.cache import prompt_fingerprint, save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Doc\n")
     save_semantic_cache([{"id": "n", "source_file": "doc.md"}], [],
                         root=tmp_path, prompt="PROMPT V1")
 
-    sem = tmp_path / "graphify-out" / "cache" / "semantic"
+    sem = tmp_path / "atlas-out" / "cache" / "semantic"
     h = file_hash(f, tmp_path)
     assert (sem / f"p{prompt_fingerprint('PROMPT V1')}" / f"{h}.json").exists()
     assert not (sem / f"{h}.json").exists(), (
@@ -1536,14 +1536,14 @@ def test_semantic_cache_prompt_namespaced_layout(tmp_path):
 def test_semantic_cache_prompt_and_mode_compose(tmp_path):
     """The prompt fingerprint nests inside the deep namespace (#1894), so the
     two dimensions are independent."""
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Doc\n")
     save_semantic_cache([{"id": "d", "source_file": "doc.md"}], [],
                         root=tmp_path, mode="deep", prompt="PROMPT V1")
 
-    deep = tmp_path / "graphify-out" / "cache" / "semantic-deep"
+    deep = tmp_path / "atlas-out" / "cache" / "semantic-deep"
     assert list(deep.glob("p*/*.json")), "deep + prompt must nest under semantic-deep/p{fp}/"
 
     # Right mode, wrong prompt -> miss. Right prompt, wrong mode -> miss.
@@ -1562,7 +1562,7 @@ def test_semantic_cache_legacy_entries_served_with_warning(tmp_path):
     """Entries written before fingerprinting have unknowable vintage. They are
     still served — dropping them would re-bill a whole corpus on upgrade — but
     the user is told how many, which is the signal #1939 says is missing today."""
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     a = tmp_path / "a.md"
     a.write_text("# A\n")
@@ -1584,7 +1584,7 @@ def test_semantic_cache_fingerprinted_entry_beats_legacy(tmp_path):
     """Once a file is re-extracted under the current prompt, its fingerprinted
     entry wins and the stale flat one is no longer consulted (no warning)."""
     import warnings as _warnings
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Doc\n")
@@ -1605,7 +1605,7 @@ def test_semantic_cache_merge_existing_never_fuses_legacy_vintage(tmp_path):
     """merge_existing must not union a pre-fingerprint entry into a write it is
     about to stamp as current-vintage — that would mix two prompts inside one
     entry and then attest the result to a prompt that produced half of it."""
-    from graphify.cache import load_cached, save_semantic_cache
+    from monarch_atlas.cache import load_cached, save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Doc\n")
@@ -1627,7 +1627,7 @@ def test_semantic_cache_merge_existing_never_fuses_legacy_vintage(tmp_path):
 def test_semantic_prune_and_clear_reach_fingerprint_subdirs(tmp_path):
     """A glob that stopped at the top level would leave every fingerprinted
     entry unprunable, re-growing the unbounded-orphan problem of #1527."""
-    from graphify.cache import (
+    from monarch_atlas.cache import (
         cached_files, clear_cache, prune_semantic_cache, save_semantic_cache,
     )
 
@@ -1646,14 +1646,14 @@ def test_semantic_prune_and_clear_reach_fingerprint_subdirs(tmp_path):
     save_semantic_cache([{"id": "n", "source_file": "doc.md"}], [],
                         root=tmp_path, prompt="PROMPT V1")
     clear_cache(tmp_path)
-    assert not list((tmp_path / "graphify-out" / "cache" / "semantic").glob("**/*.json"))
+    assert not list((tmp_path / "atlas-out" / "cache" / "semantic").glob("**/*.json"))
 
 
 def test_semantic_cache_unreadable_prompt_file_warns_and_falls_back(tmp_path):
     """A skill snippet substitutes SPEC_PATH by hand. If it lands on a path that
     isn't there, the fallback to the unattributed layout must be loud: silently
     reverting to unversioned keying is exactly the #1939 behavior being fixed."""
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Doc\n")
@@ -1670,7 +1670,7 @@ def test_semantic_cache_unreadable_prompt_file_warns_and_falls_back(tmp_path):
 def test_prompt_file_reflects_edited_spec(tmp_path):
     """The prompt-file fingerprint is memoized per (path, size, mtime); an edited
     spec must still register as a new prompt rather than reusing a stale memo."""
-    from graphify.cache import check_semantic_cache, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, save_semantic_cache
 
     spec = tmp_path / "extraction-spec.md"
     spec.write_text("prompt one", encoding="utf-8")
@@ -1757,7 +1757,7 @@ def test_corrupt_semantic_entry_warns_and_is_a_miss(tmp_path):
     the semantic extraction forever with no diagnostic. check_semantic_cache
     treats it as a miss (uncached) AND emits one aggregate warning naming the
     count, mirroring the pre-fingerprint legacy-hit warning."""
-    from graphify.cache import (
+    from monarch_atlas.cache import (
         check_semantic_cache,
         save_semantic_cache,
         cache_dir,
@@ -1788,7 +1788,7 @@ def test_edge_only_semantic_result_not_cached(tmp_path):
     """#2927: an edge-only semantic result (0 nodes, 0 hyperedges) represents an
     omission by the model and must NOT be written to cache, so subsequent runs
     can re-dispatch and retry the file (#933/#1666)."""
-    from graphify.cache import check_semantic_cache, load_cached, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, load_cached, save_semantic_cache
 
     f = tmp_path / "doc.md"
     f.write_text("# Architecture\nSome prose.\n", encoding="utf-8")
@@ -1807,7 +1807,7 @@ def test_edge_only_semantic_result_not_cached(tmp_path):
 
 def test_node_only_and_node_edge_semantic_results_cached(tmp_path):
     """Normal extractions (nodes-only and nodes+edges) continue to cache normally."""
-    from graphify.cache import load_cached, save_semantic_cache
+    from monarch_atlas.cache import load_cached, save_semantic_cache
 
     f1 = tmp_path / "doc1.md"
     f1.write_text("# Doc 1\n", encoding="utf-8")
@@ -1834,7 +1834,7 @@ def test_node_only_and_node_edge_semantic_results_cached(tmp_path):
 
 def test_hyperedge_only_semantic_result_cached(tmp_path):
     """#1920: hyperedge-only documents are valid semantic output and must be cached."""
-    from graphify.cache import check_semantic_cache, load_cached, save_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache, load_cached, save_semantic_cache
 
     f = tmp_path / "hyper.md"
     f.write_text("# Pipeline Concept\n", encoding="utf-8")
@@ -1858,7 +1858,7 @@ def test_poisoned_edge_only_cache_entry_treated_as_miss(tmp_path):
     """#2927 healing: a legacy on-disk cache entry containing edges but no nodes
     or hyperedges must be rejected by load_cached as a cache MISS."""
     import json
-    from graphify.cache import cache_dir, file_hash, load_cached, prompt_fingerprint
+    from monarch_atlas.cache import cache_dir, file_hash, load_cached, prompt_fingerprint
 
     f = tmp_path / "poisoned.md"
     f.write_text("# Poisoned\n", encoding="utf-8")
@@ -1886,7 +1886,7 @@ def test_existing_hyperedge_only_cache_entry_remains_hit(tmp_path):
     """#1920 / #2927: an existing on-disk cache entry with hyperedges but no nodes
     remains a valid cache hit."""
     import json
-    from graphify.cache import cache_dir, file_hash, load_cached, prompt_fingerprint
+    from monarch_atlas.cache import cache_dir, file_hash, load_cached, prompt_fingerprint
 
     f = tmp_path / "valid_hyper.md"
     f.write_text("# Hyper\n", encoding="utf-8")
@@ -1917,7 +1917,7 @@ def test_existing_hyperedge_only_cache_entry_remains_hit(tmp_path):
 def test_scope_semantic_result_drops_out_of_scope_groups(tmp_path):
     """Stray items attributed to a non-dispatched file are removed; allowed
     and source-less items pass through."""
-    from graphify.cache import scope_semantic_result
+    from monarch_atlas.cache import scope_semantic_result
 
     result = {
         "nodes": [
@@ -1950,7 +1950,7 @@ def test_scope_semantic_result_drops_out_of_scope_groups(tmp_path):
 def test_scope_semantic_result_matches_absolute_and_relative_forms(tmp_path):
     """An absolute in-root source_file and its relative form are the same
     identity — both must match the allowlist entry (#2197 normalization)."""
-    from graphify.cache import scope_semantic_result
+    from monarch_atlas.cache import scope_semantic_result
 
     result = {
         "nodes": [
@@ -1975,7 +1975,7 @@ def test_scope_semantic_result_prunes_edges_referencing_dropped_ids(tmp_path):
     node id only defined by a DROPPED group would materialize that id as a
     phantom node at build time; it must be dropped too. A duplicate-attribution
     id (defined by both a kept and a dropped group) keeps its edges."""
-    from graphify.cache import scope_semantic_result
+    from monarch_atlas.cache import scope_semantic_result
 
     result = {
         "nodes": [
@@ -2007,7 +2007,7 @@ def test_scope_semantic_result_prunes_edges_referencing_dropped_ids(tmp_path):
 def test_scope_semantic_result_unscoped_is_a_no_op():
     """allowed_source_files=None must leave the result untouched (same contract
     as save_semantic_cache's unscoped callers)."""
-    from graphify.cache import scope_semantic_result
+    from monarch_atlas.cache import scope_semantic_result
 
     result = {
         "nodes": [{"id": "n", "source_file": "anywhere.md"}],

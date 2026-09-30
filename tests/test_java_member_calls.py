@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _calls(tmp_path: Path, files: dict[str, str]):
@@ -19,7 +19,7 @@ def _calls(tmp_path: Path, files: dict[str, str]):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding="utf-8")
         paths.append(path)
-    result = extract(paths, cache_root=tmp_path / "graphify-out")
+    result = extract(paths, cache_root=tmp_path / "atlas-out")
     calls = {
         (edge["source"], edge["target"])
         for edge in result["edges"]

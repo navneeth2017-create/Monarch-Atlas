@@ -9,13 +9,13 @@ from pathlib import Path
 
 import pytest
 
-from graphify.detect import detect
-from graphify.extract import collect_files, extract
-from graphify.build import build_from_json
-from graphify.cluster import cluster, score_all
-from graphify.analyze import god_nodes, surprising_connections, suggest_questions
-from graphify.report import generate
-from graphify.export import to_json, to_html, to_obsidian
+from monarch_atlas.detect import detect
+from monarch_atlas.extract import collect_files, extract
+from monarch_atlas.build import build_from_json
+from monarch_atlas.cluster import cluster, score_all
+from monarch_atlas.analyze import god_nodes, surprising_connections, suggest_questions
+from monarch_atlas.report import generate
+from monarch_atlas.export import to_json, to_html, to_obsidian
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

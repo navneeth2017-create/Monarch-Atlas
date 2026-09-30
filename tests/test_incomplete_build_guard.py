@@ -1,4 +1,4 @@
-"""Tests for the incomplete-build shrink-guard on `graphify extract`.
+"""Tests for the incomplete-build shrink-guard on `atlas extract`.
 
 A full build writes the graph with `to_json(..., force=True)`, which bypasses the
 #479 shrink guard. When this run's extraction was incomplete (an AST pass crashed
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 
 
 def _make_docs_corpus(tmp_path):
@@ -32,7 +32,7 @@ def _seed_to_json_recorder(monkeypatch, *, returns=True):
         rec["force"] = force
         return returns
 
-    monkeypatch.setattr("graphify.export.to_json", _stub)
+    monkeypatch.setattr("monarch_atlas.export.to_json", _stub)
     return rec
 
 
@@ -52,11 +52,11 @@ def _arm_extract(monkeypatch, tmp_path, *, chunk_total, chunk_succeeded, extra_a
             "edges": [], "hyperedges": [], "input_tokens": 10, "output_tokens": 5,
         }
 
-    monkeypatch.setattr("graphify.llm.extract_corpus_parallel", _stub_corpus)
+    monkeypatch.setattr("monarch_atlas.llm.extract_corpus_parallel", _stub_corpus)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(corpus), "--backend", "claude",
+        ["atlas", "extract", str(corpus), "--backend", "claude",
          "--out", str(out_dir), *extra_argv],
     )
     return out_dir
@@ -75,7 +75,7 @@ def test_partial_extraction_refuses_to_shrink_existing_graph(monkeypatch, tmp_pa
     err = capsys.readouterr().err
     assert "Refusing to overwrite" in err
     # The manifest must not be stamped for a graph we declined to write.
-    assert not (out_dir / "graphify-out" / "manifest.json").exists()
+    assert not (out_dir / "atlas-out" / "manifest.json").exists()
 
 
 def test_partial_extraction_writes_when_not_shrinking(monkeypatch, tmp_path):
@@ -123,7 +123,7 @@ def _seed_existing_graph(gout, n):
 def _arm_no_cluster(monkeypatch, tmp_path, *, extra_argv=()):
     corpus = _make_docs_corpus(tmp_path)
     out_dir = tmp_path / "out"
-    gout = out_dir / "graphify-out"
+    gout = out_dir / "atlas-out"
     _seed_existing_graph(gout, 5)  # existing complete graph
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake-key")
 
@@ -135,11 +135,11 @@ def _arm_no_cluster(monkeypatch, tmp_path, *, extra_argv=()):
                            "file_type": "document", "label": "Notes"}],
                 "edges": [], "hyperedges": [], "input_tokens": 1, "output_tokens": 1}
 
-    monkeypatch.setattr("graphify.llm.extract_corpus_parallel", _stub_corpus)
+    monkeypatch.setattr("monarch_atlas.llm.extract_corpus_parallel", _stub_corpus)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(corpus), "--backend", "claude", "--no-cluster",
+        ["atlas", "extract", str(corpus), "--backend", "claude", "--no-cluster",
          "--out", str(out_dir), *extra_argv],
     )
     return gout / "graph.json"

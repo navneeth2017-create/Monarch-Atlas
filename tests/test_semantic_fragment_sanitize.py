@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 
-from graphify.llm import _parse_llm_json, _sanitize_fragment
+from monarch_atlas.llm import _parse_llm_json, _sanitize_fragment
 
 
 def test_sanitize_drops_non_dict_edge_entries():

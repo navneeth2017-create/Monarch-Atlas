@@ -8,7 +8,7 @@ Defaults to the current directory if no path is given.
 Clears the AST cache between runs so every file is re-extracted.
 
 Example output:
-    === Graphify AST Extraction Benchmark ===
+    === Atlas AST Extraction Benchmark ===
     Files:        1,247
     Languages:    Python (412), TypeScript (389), Go (201), ...
 
@@ -31,8 +31,8 @@ _project_root = Path(__file__).resolve().parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
-from graphify.extract import extract, collect_files
-from graphify.cache import clear_cache
+from monarch_atlas.extract import extract, collect_files
+from monarch_atlas.cache import clear_cache
 
 
 def _count_by_ext(paths: list[Path]) -> dict[str, int]:
@@ -119,7 +119,7 @@ def main() -> None:
         print(f"Error: {target} does not exist", file=sys.stderr)
         sys.exit(1)
 
-    print("=== Graphify AST Extraction Benchmark ===\n")
+    print("=== Atlas AST Extraction Benchmark ===\n")
     print(f"Scanning {target} ...", flush=True)
 
     paths = collect_files(target)

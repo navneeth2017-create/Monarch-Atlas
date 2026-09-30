@@ -5,7 +5,7 @@ whole command string — quoted arguments and heredoc bodies included. So
 `git commit -m "add flag support"` fired ("flag " contains "ag "), a PR body
 containing "you can find it here" fired, and writing a design doc that
 mentions grep fired on the write. Each false positive injects a nudge where
-graphify has nothing to say, training the agent to skim the line where it is
+atlas has nothing to say, training the agent to skim the line where it is
 right.
 """
 from __future__ import annotations
@@ -13,7 +13,7 @@ from __future__ import annotations
 import pytest
 
 try:
-    from graphify.cli import _bash_invokes_search
+    from monarch_atlas.cli import _bash_invokes_search
 except ImportError:  # pre-fix tree
     _bash_invokes_search = None
 

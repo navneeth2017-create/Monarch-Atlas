@@ -1,9 +1,9 @@
 """Go intra-module imports must reach the imported package's files (#3746).
 
-`graphify/extractors/go.py` turns every `import "x/y"` into an `imports_from`
+`monarch_atlas/extractors/go.py` turns every `import "x/y"` into an `imports_from`
 edge whose target id is minted from the raw string (`go_pkg_x_y`). That node
 has no source file and nothing links it onward, so an importer never reaches
-the package it depends on: `graphify affected <file>` misses every consumer
+the package it depends on: `atlas affected <file>` misses every consumer
 that arrives through an import, while qualified calls (`b.F()`) do resolve,
 because the call pass filters callees by `_go_import_path_for_file`.
 
@@ -19,7 +19,7 @@ sinks on purpose; the last test pins that.
 """
 from pathlib import Path
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _extract(root: Path) -> dict:

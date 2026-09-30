@@ -8,7 +8,7 @@ function-value types, so it was never captured either. Generator *methods*
 """
 from pathlib import Path
 
-from graphify.extract import _file_stem, _make_id, extract
+from monarch_atlas.extract import _file_stem, _make_id, extract
 
 
 def _write(path: Path, text: str) -> Path:

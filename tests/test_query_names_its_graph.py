@@ -1,6 +1,6 @@
 """A query answer must say which graph it came from.
 
-`graphify-out/` resolves against the CWD. Running `graphify query` from a parent
+`atlas-out/` resolves against the CWD. Running `atlas query` from a parent
 project while thinking about a vendored subproject answers from the parent's
 graph — and the answer is well-formed, confident, and wrong. Nothing in the
 output named the graph file, the scan root, or the node count, so the only way to
@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from graphify.build import build_from_json
-from graphify.serve import _display_graph_path, _query_graph_text
+from monarch_atlas.build import build_from_json
+from monarch_atlas.serve import _display_graph_path, _query_graph_text
 
 
 def _graph(n=2):
@@ -39,18 +39,18 @@ def _header(G, **kw):
 
 def test_header_names_the_graph_and_its_size(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    gp = tmp_path / "graphify-out" / "graph.json"
+    gp = tmp_path / "atlas-out" / "graph.json"
     gp.parent.mkdir(parents=True)
     gp.write_text("{}", encoding="utf-8")
     header = _header(_graph(4), graph_path=str(gp))
-    assert header.startswith("Graph: graphify-out/graph.json (4 nodes) | ")
+    assert header.startswith("Graph: atlas-out/graph.json (4 nodes) | ")
     assert "Traversal:" in header
 
 
 def test_a_graph_outside_the_cwd_is_shown_in_full(tmp_path, monkeypatch):
     """The case the issue is about: the answer came from somewhere else."""
     here = tmp_path / "parent"
-    other = tmp_path / "elsewhere" / "graphify-out"
+    other = tmp_path / "elsewhere" / "atlas-out"
     here.mkdir()
     other.mkdir(parents=True)
     gp = other / "graph.json"
@@ -73,7 +73,7 @@ def test_the_node_count_is_the_graphs_not_the_traversals():
     graph is the whole corpus. Conflating them would hide the mismatch this is
     meant to surface."""
     G = _graph(6)
-    header = _header(G, graph_path="graphify-out/graph.json")
+    header = _header(G, graph_path="atlas-out/graph.json")
     assert "(6 nodes)" in header
     assert G.number_of_nodes() == 6
 
@@ -84,10 +84,10 @@ def test_the_node_count_is_the_graphs_not_the_traversals():
 
 def test_display_is_relative_under_cwd(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    p = tmp_path / "graphify-out" / "graph.json"
+    p = tmp_path / "atlas-out" / "graph.json"
     p.parent.mkdir(parents=True)
     p.write_text("{}", encoding="utf-8")
-    assert _display_graph_path(str(p)) == "graphify-out/graph.json"
+    assert _display_graph_path(str(p)) == "atlas-out/graph.json"
 
 
 def test_display_uses_posix_separators(tmp_path, monkeypatch):
@@ -121,14 +121,14 @@ def test_two_projects_produce_distinguishable_headers(tmp_path, monkeypatch):
     """The end-to-end point: the parent and the subproject must not look alike."""
     parent = tmp_path / "Proj"
     sub = parent / "Sub"
-    (parent / "graphify-out").mkdir(parents=True)
-    (sub / "graphify-out").mkdir(parents=True)
+    (parent / "atlas-out").mkdir(parents=True)
+    (sub / "atlas-out").mkdir(parents=True)
     for d in (parent, sub):
-        (d / "graphify-out" / "graph.json").write_text("{}", encoding="utf-8")
+        (d / "atlas-out" / "graph.json").write_text("{}", encoding="utf-8")
 
     monkeypatch.chdir(parent)
-    h_parent = _header(_graph(9), graph_path=str(parent / "graphify-out" / "graph.json"))
-    h_sub = _header(_graph(3), graph_path=str(sub / "graphify-out" / "graph.json"))
+    h_parent = _header(_graph(9), graph_path=str(parent / "atlas-out" / "graph.json"))
+    h_sub = _header(_graph(3), graph_path=str(sub / "atlas-out" / "graph.json"))
     assert h_parent != h_sub
     assert "(9 nodes)" in h_parent and "(3 nodes)" in h_sub
-    assert "Sub/graphify-out/graph.json" in h_sub
+    assert "Sub/atlas-out/graph.json" in h_sub

@@ -11,10 +11,10 @@ import os
 
 import pytest
 
-from graphify.extractors.resolution import _source_key
+from monarch_atlas.extractors.resolution import _source_key
 
 try:
-    from graphify.extractors.resolution import _cached_source_key
+    from monarch_atlas.extractors.resolution import _cached_source_key
 except ImportError:  # pre-fix tree: the memoized helper does not exist
     _cached_source_key = None
 

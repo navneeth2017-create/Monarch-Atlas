@@ -1,8 +1,8 @@
-"""skillgen: render graphify's committed skill artifacts from edited fragments.
+"""skillgen: render atlas's committed skill artifacts from edited fragments.
 
 Build-time only. Nothing here ships in the wheel. Fragments under
 ``tools/skillgen/fragments/`` are the single source of truth a human edits; the
-files under ``graphify/skill*.md`` and ``graphify/skills/<platform>/references/``
+files under ``monarch_atlas/skill*.md`` and ``monarch_atlas/skills/<platform>/references/``
 are generated, committed artifacts. This module renders those artifacts and
 guards them against drift.
 
@@ -30,7 +30,7 @@ import sys
 from collections import Counter
 try:
     import tomllib  # Python 3.11+ stdlib
-except ModuleNotFoundError:  # Python 3.10 - graphify supports >=3.10
+except ModuleNotFoundError:  # Python 3.10 - atlas supports >=3.10
     import tomli as tomllib  # type: ignore[no-redef]
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -44,8 +44,8 @@ PLATFORMS_TOML = SKILLGEN_DIR / "platforms.toml"
 
 # Immutable coverage baseline for --audit-coverage. The working-tree skill bodies
 # are being replaced by the lean core, so the audit reads each host's v8 body
-# straight from git instead of from disk. claude's v8 body is graphify/skill.md;
-# every other split host has its own graphify/skill-<host>.md. Auditing each host
+# straight from git instead of from disk. claude's v8 body is monarch_atlas/skill.md;
+# every other split host has its own monarch_atlas/skill-<host>.md. Auditing each host
 # against ITS OWN v8 body is the per-host guard: a drop that only hits one host
 # (e.g. trae losing its AGENTS.md integration section) is invisible when every
 # host is checked against claude's monolith, so the audit must be per-host.
@@ -60,27 +60,27 @@ _V8_BASELINE_SHA = "47042beb05d1f6dd2186c0c499ae2840ce604ead"
 def _v8_baseline_ref(platform_key: str) -> str:
     """The git ref for a split host's own pre-split skill body."""
     if platform_key == "claude":
-        return f"{_V8_BASELINE_SHA}:graphify/skill.md"
+        return f"{_V8_BASELINE_SHA}:monarch_atlas/skill.md"
     if platform_key == "agents":
         # `agents` is a post-v8 platform with no own v8 body — it re-homes amp's
         # agents-md body at the generic ~/.agents/skills location. Its render is
         # amp's modulo the install/uninstall command wording (prose, not headings),
         # so amp's v8 body is the correct per-host coverage baseline.
-        return f"{_V8_BASELINE_SHA}:graphify/skill-amp.md"
-    return f"{_V8_BASELINE_SHA}:graphify/skill-{platform_key}.md"
+        return f"{_V8_BASELINE_SHA}:monarch_atlas/skill-amp.md"
+    return f"{_V8_BASELINE_SHA}:monarch_atlas/skill-{platform_key}.md"
 
 # Immutable baseline for --always-on-roundtrip. The six always-on instruction
-# blocks used to be triple-quoted constants in graphify/__main__.py; they are now
-# packaged graphify/always_on/*.md files the module reads at load. This ref points
+# blocks used to be triple-quoted constants in monarch_atlas/__main__.py; they are now
+# packaged monarch_atlas/always_on/*.md files the module reads at load. This ref points
 # at the pre-extraction source (v8, before the extraction commit on this branch)
 # so the round-trip validator can prove each rendered file reproduces its former
 # constant byte for byte. It deliberately does NOT track HEAD: once the extraction
 # lands, HEAD's constants are _always_on(...) calls, not the literals the
 # validator needs to compare against.
-ALWAYS_ON_BASELINE_REF = f"{_V8_BASELINE_SHA}:graphify/__main__.py"
+ALWAYS_ON_BASELINE_REF = f"{_V8_BASELINE_SHA}:monarch_atlas/__main__.py"
 
 # The always-on instruction blocks: rendered-file basename -> the __main__.py
-# constant it must reproduce. Rendered to graphify/always_on/<basename>.md from
+# constant it must reproduce. Rendered to monarch_atlas/always_on/<basename>.md from
 # the matching fragment under fragments/always-on/. These are not platform-
 # specific, so they render once in a full run (not under --platform).
 ALWAYS_ON_BLOCKS = {
@@ -101,13 +101,13 @@ ALWAYS_ON_BLOCKS = {
 # one-time, audited edit to the otherwise-immutable v8 baseline.
 ALWAYS_ON_SANCTIONED_EDITS: dict[str, tuple[tuple[str, str], ...]] = {
     # #1530: install guidance must stay host-generic — do not tell agents to
-    # invoke a literal `skill` tool with `skill: "graphify"`, which is
+    # invoke a literal `skill` tool with `skill: "atlas"`, which is
     # host-specific and not valid in every environment.
     "_AGENTS_MD_SECTION": (
         (
-            "When the user types `/graphify`, invoke the `skill` tool with "
-            '`skill: "graphify"` before doing anything else.',
-            "When the user types `/graphify`, use the installed graphify skill or instructions "
+            "When the user types `/atlas`, invoke the `skill` tool with "
+            '`skill: "atlas"` before doing anything else.',
+            "When the user types `/atlas`, use the installed atlas skill or instructions "
             "before doing anything else.",
         ),
     ),
@@ -141,8 +141,8 @@ _EXTRACTION_SOURCE = {
 _QUERY_REFERENCE = "references/query/default.md"
 _QUERY_STUB = "query-stub/default.md"
 # The hooks reference is host-flavored. Most hosts read CLAUDE.md and wire
-# always-on via `graphify claude install` (the shared body). The agents-md hosts
-# (trae, trae-cn, amp) read AGENTS.md and wire it via `graphify <host> install`.
+# always-on via `atlas claude install` (the shared body). The agents-md hosts
+# (trae, trae-cn, amp) read AGENTS.md and wire it via `atlas <host> install`.
 # The agents-md fragment is a per-host template: the install/uninstall commands,
 # the host display name, the heading suffix, and the PreToolUse caveat are slots
 # filled from _AGENTS_MD_HOOKS per host. trae carries the v8 caveat that Trae does
@@ -162,32 +162,32 @@ _HOOKS_SOURCE = {
 _TRAE_PRETOOLUSE_NOTE = (
     "\n> **Note:** Unlike Claude Code, Trae does NOT support PreToolUse hooks. "
     "The AGENTS.md rules are the always-on mechanism — there is no automatic graph "
-    "rebuild on tool use. Run `/graphify --update` manually after code changes if "
+    "rebuild on tool use. Run `/atlas --update` manually after code changes if "
     "the graph needs refreshing.\n"
 )
 _AGENTS_MD_HOOKS: dict[str, dict[str, str]] = {
     "trae": {
         "heading_suffix": " (Trae)",
         "host_display": "Trae",
-        "install_block": "graphify trae install       # or: graphify trae-cn install",
-        "uninstall_block": "graphify trae uninstall     # or: graphify trae-cn uninstall   # remove the section",
+        "install_block": "atlas trae install       # or: atlas trae-cn install",
+        "uninstall_block": "atlas trae uninstall     # or: atlas trae-cn uninstall   # remove the section",
         "pretooluse_note": _TRAE_PRETOOLUSE_NOTE,
     },
     "amp": {
         "heading_suffix": "",
         "host_display": "Amp",
-        "install_block": "graphify amp install",
-        "uninstall_block": "graphify amp uninstall  # remove the section",
+        "install_block": "atlas amp install",
+        "uninstall_block": "atlas amp uninstall  # remove the section",
         "pretooluse_note": "",
     },
     "agents": {
         # The generic cross-framework Agent-Skills target. Mirrors amp's bare,
         # caveat-free agents-md section, worded for an unspecified host and
-        # pointing at `graphify agents install` (which wires AGENTS.md, like amp).
+        # pointing at `atlas agents install` (which wires AGENTS.md, like amp).
         "heading_suffix": "",
         "host_display": "your agent",
-        "install_block": "graphify agents install",
-        "uninstall_block": "graphify agents uninstall  # remove the section",
+        "install_block": "atlas agents install",
+        "uninstall_block": "atlas agents uninstall  # remove the section",
         "pretooluse_note": "",
     },
 }
@@ -204,7 +204,7 @@ _HOOKS_TARGET = {
 # are intentional consolidations, not content drops, and the audit must not flag
 # them. Two classes:
 #
-# 1. SHARED_INTRO_ALLOWLIST — the lean intro consolidation. "## What graphify is
+# 1. SHARED_INTRO_ALLOWLIST — the lean intro consolidation. "## What atlas is
 #    for" is the lean intro the core carries; the minimal v8 bodies (kilo, vscode)
 #    had verbose intro prose with no such heading, while the richer v8 bodies
 #    already had it. Listing it documents the wave-2/3 intro consolidation; it
@@ -225,7 +225,7 @@ _HOOKS_TARGET = {
 # Adding a heading here is a deliberate, reviewed act: it asserts "this v8
 # heading was consolidated on purpose and its content is covered elsewhere."
 SHARED_INTRO_ALLOWLIST: frozenset[str] = frozenset({
-    "## What graphify is for",  # lean intro; v8 hosts had verbose intro prose, no heading.
+    "## What atlas is for",  # lean intro; v8 hosts had verbose intro prose, no heading.
 })
 
 _CONSOLIDATION_ALLOWLIST: dict[str, frozenset[str]] = {
@@ -271,7 +271,7 @@ class Platform:
     # split-only template inputs
     core: str | None = None
     refs_dst: str | None = None
-    name: str = "graphify"
+    name: str = "atlas"
     description: str | None = None
     trigger: str | None = None  # removed — not part of Agent Skills spec (#1180)
     dispatch: str | None = None
@@ -309,7 +309,7 @@ def load_platforms() -> dict[str, Platform]:
             skill_dst=cfg["skill_dst"],
             core=cfg.get("core"),
             refs_dst=cfg.get("refs_dst"),
-            name=cfg.get("name", "graphify"),
+            name=cfg.get("name", "atlas"),
             description=cfg.get("description"),
             trigger=cfg.get("trigger"),
             dispatch=cfg.get("dispatch"),
@@ -366,9 +366,9 @@ def _render_frontmatter(platform: Platform) -> str:
 # would drift), the composed body is translated deterministically:
 #
 #   * ```` ```bash ```` fences become ```` ```powershell ```` fences;
-#   * the inline ``$(cat graphify-out/.graphify_python) -c "..."`` python blocks
+#   * the inline ``$(cat atlas-out/.atlas_python) -c "..."`` python blocks
 #     become single-quoted here-strings piped to the interpreter's stdin
-#     (``@'...'@ | & (Get-Content graphify-out\.graphify_python) -``). A
+#     (``@'...'@ | & (Get-Content atlas-out\.atlas_python) -``). A
 #     single-quoted here-string is verbatim, so the bash ``\"`` escapes are
 #     dropped and no PowerShell escaping is introduced; piping the program to
 #     stdin (``python -``) sidesteps Windows PowerShell 5.1's native-argument
@@ -381,14 +381,14 @@ def _render_frontmatter(platform: Platform) -> str:
 # untranslated bash to the Windows variant. ``_POWERSHELL_BANNED_TOKENS`` is the
 # belt-and-braces post-check on the final body.
 
-_PY_INVOKE_POSIX = '$(cat graphify-out/.graphify_python) -c "'
+_PY_INVOKE_POSIX = '$(cat atlas-out/.atlas_python) -c "'
 _PY_INVOKE_PS_OPEN = "@'"
-_PY_INVOKE_PS_CLOSE = "'@ | & (Get-Content graphify-out\\.graphify_python) -"
-_MKDIR_POSIX = "mkdir -p graphify-out"
-_MKDIR_PS = "New-Item -ItemType Directory -Force -Path graphify-out | Out-Null"
-_FIND_CHUNKS_POSIX = "find graphify-out -maxdepth 1 -name '.graphify_chunk_*.json' -delete 2>/dev/null"
+_PY_INVOKE_PS_CLOSE = "'@ | & (Get-Content atlas-out\\.atlas_python) -"
+_MKDIR_POSIX = "mkdir -p atlas-out"
+_MKDIR_PS = "New-Item -ItemType Directory -Force -Path atlas-out | Out-Null"
+_FIND_CHUNKS_POSIX = "find atlas-out -maxdepth 1 -name '.atlas_chunk_*.json' -delete 2>/dev/null"
 _FIND_CHUNKS_PS = (
-    "Get-ChildItem graphify-out -Filter '.graphify_chunk_*.json' -File "
+    "Get-ChildItem atlas-out -Filter '.atlas_chunk_*.json' -File "
     "-ErrorAction SilentlyContinue | Remove-Item -Force"
 )
 
@@ -448,8 +448,8 @@ def _translate_bash_block(lines: list[str]) -> list[str]:
             out.append(_FIND_CHUNKS_PS)
         elif line.strip().startswith("rm -f "):
             out.append(_rm_to_remove_item(line))
-        elif not line.strip() or line.lstrip().startswith("#") or line.startswith("graphify "):
-            out.append(line)  # blank lines, comments, and graphify CLI calls are shell-neutral
+        elif not line.strip() or line.lstrip().startswith("#") or line.startswith("atlas "):
+            out.append(line)  # blank lines, comments, and atlas CLI calls are shell-neutral
         else:
             raise ValueError(f"cannot translate bash line to PowerShell: {line!r}")
     if in_py:
@@ -619,7 +619,7 @@ def render(platform: Platform) -> list[RenderedArtifact]:
 
 
 def render_always_on() -> list[RenderedArtifact]:
-    """Render the six always-on instruction blocks to graphify/always_on/*.md.
+    """Render the six always-on instruction blocks to monarch_atlas/always_on/*.md.
 
     These are the blocks the installer injects into shared files (CLAUDE.md,
     AGENTS.md, GEMINI.md, .github/copilot-instructions.md, Antigravity rules,
@@ -631,7 +631,7 @@ def render_always_on() -> list[RenderedArtifact]:
     out: list[RenderedArtifact] = []
     for basename in sorted(ALWAYS_ON_BLOCKS):
         body = _read_fragment(f"always-on/{basename}.md")
-        out.append(RenderedArtifact(f"graphify/always_on/{basename}.md", body))
+        out.append(RenderedArtifact(f"monarch_atlas/always_on/{basename}.md", body))
     return out
 
 
@@ -773,8 +773,8 @@ def _v8_available() -> bool:
 def audit_coverage(platform: Platform) -> list[str]:
     """Assert every heading of THIS host's v8 body single-homes in its render.
 
-    The audit reads the host's OWN v8 skill body (graphify/skill.md for claude,
-    graphify/skill-<host>.md otherwise) and checks that every v8 heading lands in
+    The audit reads the host's OWN v8 skill body (monarch_atlas/skill.md for claude,
+    monarch_atlas/skill-<host>.md otherwise) and checks that every v8 heading lands in
     that host's generated core or in exactly one of its reference fragments. This
     is the per-host guard: a content drop that only hits one host (the trae native
     AGENTS.md integration regression that motivated this change) is invisible when
@@ -782,7 +782,7 @@ def audit_coverage(platform: Platform) -> list[str]:
     against itself.
 
     v8 headings are exempt and documented as deltas, not holes:
-      - waves 2-3 consolidations (the lean "## What graphify is for" intro and the
+      - waves 2-3 consolidations (the lean "## What atlas is for" intro and the
         per-host re-homed step/part headings on the minimal kilo/vscode bodies),
         tracked in the audit allowlist.
     Anything NOT exempt and NOT single-homed fails the audit.
@@ -893,7 +893,7 @@ def _is_enum_line(line: str) -> bool:
 def _is_frontmatter_description_line(line: str) -> bool:
     """Whether a line is a YAML frontmatter description field.
 
-    The unified description (graphify #1106) rewrites the frontmatter
+    The unified description (atlas #1106) rewrites the frontmatter
     ``description`` on every host, monoliths included. That line is now an
     allowed diff against v8 alongside the enum unification.
     """
@@ -903,20 +903,20 @@ def _is_frontmatter_description_line(line: str) -> bool:
 def _is_chunk_cleanup_line(line: str) -> bool:
     """Whether a line is the Step 9 chunk-file cleanup ``rm -f`` command.
 
-    The bare glob ``.graphify_chunk_*.json`` in the v8 cleanup line aborts the
+    The bare glob ``.atlas_chunk_*.json`` in the v8 cleanup line aborts the
     whole ``rm`` under fish/zsh when no chunk files exist (no-match is a hard
-    error there, unlike bash). The fix (graphify #1172) drops the glob from the
+    error there, unlike bash). The fix (atlas #1172) drops the glob from the
     ``rm`` and deletes the chunk files with ``find ... -delete`` instead. That
     rewrite touches the single cleanup line in place (no line added or removed),
     so it joins the enum and description unifications as an allowed monolith diff.
-    Both the v8 form (bare ``.graphify_chunk_*.json`` glob, removed) and the fixed
+    Both the v8 form (bare ``.atlas_chunk_*.json`` glob, removed) and the fixed
     form (``find ... -delete``, added) match here so the multiset diff classifies
     each side of the change.
     """
     s = line.lstrip()
     if not s.startswith("rm -f"):
         return False
-    return ".graphify_chunk_*.json" in line or ("find " in line and "-name '.graphify_chunk_" in line)
+    return ".atlas_chunk_*.json" in line or ("find " in line and "-name '.atlas_chunk_" in line)
 
 
 def _is_trigger_line(line: str) -> bool:
@@ -963,13 +963,13 @@ def _is_cache_unlink_fix_line(line: str) -> bool:
     """Whether a line is part of the stale-cache unlink fix (#1392).
 
     The cache file was written only on a hit, so a miss left a prior run's
-    ``.graphify_cached.json`` for Part C to merge. The miss branch now deletes it.
+    ``.atlas_cached.json`` for Part C to merge. The miss branch now deletes it.
     """
     return (
-        ".graphify_cached.json').unlink(missing_ok=True)" in line
+        ".atlas_cached.json').unlink(missing_ok=True)" in line
         or line.strip() == "else:"
         or "Always (re)write the cache file" in line
-        or "stale .graphify_cached.json" in line
+        or "stale .atlas_cached.json" in line
     )
 
 
@@ -990,7 +990,7 @@ def _is_zero_node_guard_fix_line(line: str) -> bool:
         or s == "raise SystemExit(1)"
         or "to_json(G, communities," in line
         or s == "if not wrote:"
-        or "refused to shrink graphify-out/graph.json" in line
+        or "refused to shrink atlas-out/graph.json" in line
         or "Guard BEFORE any write" in line
         or "GRAPH_REPORT.md / analysis sidecar" in line
         or "Persist the graph first" in line
@@ -1006,9 +1006,9 @@ def _is_manifest_root_fix_line(line: str) -> bool:
     ``root=``, so the manifest stored absolute path keys and a clone or move
     broke ``--update`` — every cached file missed and the whole corpus
     re-extracted. The call now threads ``root='INPUT_PATH'`` so keys are
-    relativized to the scan root, matching the native ``graphify update`` path.
+    relativized to the scan root, matching the native ``atlas update`` path.
     Both the old bare call (removed) and the new rooted call (added) match here;
-    the ``import`` guard avoids matching the ``from graphify.detect import
+    the ``import`` guard avoids matching the ``from monarch_atlas.detect import
     save_manifest`` line.
     """
     return "save_manifest(" in line and "import" not in line
@@ -1022,7 +1022,7 @@ def _is_manifest_stamp_fix_line(line: str) -> bool:
     ``--update`` — its content lost forever. The manifest is now built with
     ``cli._stamped_manifest_files`` (only files that actually produced output)
     plus ``clear_semantic``/``scan_corpus``, mirroring the native
-    ``graphify extract`` path. The rooted ``save_manifest`` call itself is
+    ``atlas extract`` path. The rooted ``save_manifest`` call itself is
     covered by ``_is_manifest_root_fix_line``; these are the added helper import
     and derivation lines, plus the single ``#2015`` explanatory comment.
     """
@@ -1054,13 +1054,13 @@ def _is_no_api_key_fix_line(line: str) -> bool:
     """Whether a line is part of the "no API key required" clarity (#1461).
 
     The aider/devin monoliths described Step 3 semantic extraction without ever
-    stating that graphify needs no API key, and (like the subagent-host skills)
+    stating that atlas needs no API key, and (like the subagent-host skills)
     framed the no-key path only around dispatching subagents. Terminal hosts that
     run the CLI directly and can't dispatch subagents looped for minutes insisting
     on a missing key. A single blockquote added after the "two parts" line states
     that no key is ever required and gives a non-subagent fallback.
     """
-    return "graphify needs no API key" in line
+    return "atlas needs no API key" in line
 
 
 def _is_shebang_allowlist_fix_line(line: str) -> bool:
@@ -1069,7 +1069,7 @@ def _is_shebang_allowlist_fix_line(line: str) -> bool:
     The interpreter-detection guard rejected any shebang containing a character
     outside ``[!a-zA-Z0-9/_.-]``, but Homebrew installs versioned Python under
     ``python@3.13``, so a valid interpreter path legitimately contains ``@`` and
-    detection fell through to a bare ``python3`` that lacked graphify. ``@`` is now
+    detection fell through to a bare ``python3`` that lacked atlas. ``@`` is now
     allowed, matching the #473 hooks.py fix; injection chars are still rejected.
     Both the old (removed) and new (added) allowlist forms match here.
     """
@@ -1077,9 +1077,9 @@ def _is_shebang_allowlist_fix_line(line: str) -> bool:
 
 
 def _is_obsidian_usage_comment_line(line: str) -> bool:
-    """Whether a line is part of the ``/graphify`` usage-comment fix (#1681).
+    """Whether a line is part of the ``/atlas`` usage-comment fix (#1681).
 
-    The Usage block's bare ``/graphify`` comment said "full pipeline on current
+    The Usage block's bare ``/atlas`` comment said "full pipeline on current
     directory -> Obsidian vault", contradicting Step 6 (HTML always; Obsidian vault
     only when ``--obsidian`` is explicitly given). The comment now describes the
     real default. Both the old (removed) and new (added) comment forms match here.
@@ -1090,15 +1090,15 @@ def _is_obsidian_usage_comment_line(line: str) -> bool:
 def _is_uv_from_interpreter_fix_line(line: str) -> bool:
     """Whether a line is part of the uv interpreter-detection fix (#1735).
 
-    Step 1's POSIX interpreter probe ran ``uv tool run graphifyy python -c ...``,
-    but ``graphifyy`` exposes its executable as ``graphify``, so uv treated
-    ``python`` as a missing ``graphifyy`` command and the probe silently failed
+    Step 1's POSIX interpreter probe ran ``uv tool run monarch-atlas python -c ...``,
+    but ``monarch-atlas`` exposes its executable as ``atlas``, so uv treated
+    ``python`` as a missing ``monarch-atlas`` command and the probe silently failed
     (the ``2>/dev/null`` swallowed uv's "use --from" hint), leaving PYTHON on a
-    graphify-less system interpreter. The probe now runs
-    ``uv tool run --from graphifyy python -c ...``. Both the old (removed) and new
+    atlas-less system interpreter. The probe now runs
+    ``uv tool run --from monarch-atlas python -c ...``. Both the old (removed) and new
     (added) forms match here.
     """
-    return "uv tool run" in line and "graphifyy python" in line
+    return "uv tool run" in line and "monarch-atlas python" in line
 
 
 def _is_semantic_cache_scope_fix_line(line: str) -> bool:
@@ -1113,7 +1113,7 @@ def _is_semantic_cache_scope_fix_line(line: str) -> bool:
     stripped = line.strip()
     return (
         stripped.startswith("uncached = [line for line in Path(")
-        and ".graphify_uncached.txt" in stripped
+        and ".atlas_uncached.txt" in stripped
     ) or stripped.startswith("saved = save_semantic_cache(")
 
 
@@ -1122,7 +1122,7 @@ def _is_community_label_export_fix_line(line: str) -> bool:
 
     Step 5 curated the community labels but never re-exported graph.json, so the
     persisted nodes shipped without ``community_name`` (only the
-    ``.graphify_labels.json`` sidecar carried the names). Step 5 now imports
+    ``.atlas_labels.json`` sidecar carried the names). Step 5 now imports
     ``to_json`` and re-exports with ``community_labels=labels`` after the curated
     dict exists, honoring (not forcing past) the #479 shrink-guard — the ``if not
     wrote:`` / refused-to-shrink lines are already sanctioned by the #1392
@@ -1133,7 +1133,7 @@ def _is_community_label_export_fix_line(line: str) -> bool:
     stripped = line.strip()
     return (
         "community_labels=labels" in line
-        or stripped == "from graphify.export import to_json"
+        or stripped == "from monarch_atlas.export import to_json"
         or "curated community_name (#2490)" in line
         or "shrink-guard passes on node count" in line
         or "surface the guard message - do not force past it" in line
@@ -1253,7 +1253,7 @@ def always_on_roundtrip() -> list[str]:
     problems: list[str] = []
     rendered = {a.path: a.content for a in render_always_on()}
     for basename, const_name in sorted(ALWAYS_ON_BLOCKS.items()):
-        path = f"graphify/always_on/{basename}.md"
+        path = f"monarch_atlas/always_on/{basename}.md"
         if const_name not in baseline:
             problems.append(f"could not find constant {const_name} in {ALWAYS_ON_BASELINE_REF}")
             continue
@@ -1276,7 +1276,7 @@ def always_on_roundtrip() -> list[str]:
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="python -m tools.skillgen",
-        description="Render and guard graphify's committed skill artifacts.",
+        description="Render and guard atlas's committed skill artifacts.",
     )
     p.add_argument("--platform", help="render or check just this platform key")
     p.add_argument("--check", action="store_true", help="byte-diff render vs committed + expected/, exit 1 on drift")

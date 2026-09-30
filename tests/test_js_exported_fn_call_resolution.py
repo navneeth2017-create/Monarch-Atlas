@@ -8,7 +8,7 @@ baz()`) produced no `calls` edge, because only the use-fact path consults the
 import alias table; the plain-name global resolver has no `baz` to match.
 """
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 MOD = "export function foo() { return 1; }\nexport function bar() { return 2; }\n"
 

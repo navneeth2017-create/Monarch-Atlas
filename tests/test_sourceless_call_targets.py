@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def _nodes(result: dict) -> dict[str, dict]:

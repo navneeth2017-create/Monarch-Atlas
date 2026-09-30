@@ -3,7 +3,7 @@
     ModuleVersion     = '1.0.0'
     GUID              = 'aaaabbbb-cccc-dddd-eeee-ffffffffffff'
     Author            = 'Test Author'
-    Description       = 'A sample module manifest for graphify tests.'
+    Description       = 'A sample module manifest for atlas tests.'
     NestedModules     = @('Helpers.psm1', 'Logger.psm1')
     RequiredModules   = @(
         'PSReadLine',

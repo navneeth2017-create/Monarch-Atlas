@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from graphify.extract import extract, _make_id
+from monarch_atlas.extract import extract, _make_id
 
 
 def _real(tmp_path: Path) -> Path:

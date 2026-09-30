@@ -1,6 +1,6 @@
 """The Gemini CLI BeforeTool guard nudges toward the graph, shell-agnostically.
 
-Since #522 it runs as `graphify hook-guard gemini` (not a `python -c` one-liner
+Since #522 it runs as `atlas hook-guard gemini` (not a `python -c` one-liner
 that depended on a bare `python` on PATH and embedded PowerShell-hostile
 backticks). It always returns {"decision":"allow"} so a tool is never blocked,
 and appends additionalContext only when a graph exists.
@@ -10,21 +10,21 @@ import os
 import subprocess
 import sys
 
-from graphify.__main__ import _gemini_hook
+from monarch_atlas.__main__ import _gemini_hook
 
 
 def _env():
     e = dict(os.environ)
-    e.pop("GRAPHIFY_OUT", None)
+    e.pop("ATLAS_OUT", None)
     return e
 
 
 def _run(cwd, *, graph: bool):
     if graph:
-        (cwd / "graphify-out").mkdir(parents=True, exist_ok=True)
-        (cwd / "graphify-out" / "graph.json").write_text("{}", encoding="utf-8")
+        (cwd / "atlas-out").mkdir(parents=True, exist_ok=True)
+        (cwd / "atlas-out" / "graph.json").write_text("{}", encoding="utf-8")
     return subprocess.run(
-        [sys.executable, "-m", "graphify", "hook-guard", "gemini"],
+        [sys.executable, "-m", "monarch_atlas", "hook-guard", "gemini"],
         input="", capture_output=True, text=True, cwd=cwd, env=_env(),
     )
 
@@ -35,14 +35,14 @@ def test_matcher_and_command_shape():
     cmd = h["hooks"][0]["command"]
     # #522: no bare `python` dependency, no embedded quote/backtick soup.
     assert "python -c" not in cmd
-    assert "graphify" in cmd and "hook-guard gemini" in cmd
+    assert "atlas" in cmd and "hook-guard gemini" in cmd
 
 
 def test_allows_and_nudges_with_graph(tmp_path):
     out = _run(tmp_path, graph=True).stdout
     payload = json.loads(out)
     assert payload["decision"] == "allow"
-    assert "graphify query" in payload["additionalContext"]
+    assert "atlas query" in payload["additionalContext"]
 
 
 def test_allows_without_nudge_when_no_graph(tmp_path):
@@ -59,13 +59,13 @@ def test_never_blocks(tmp_path):
     assert payload["decision"] == "allow"
 
 
-def test_honors_graphify_out_override(tmp_path):
+def test_honors_atlas_out_override(tmp_path):
     custom = tmp_path / "custom-out"
     custom.mkdir()
     (custom / "graph.json").write_text("{}", encoding="utf-8")
-    env = dict(os.environ, GRAPHIFY_OUT=str(custom))
+    env = dict(os.environ, ATLAS_OUT=str(custom))
     r = subprocess.run(
-        [sys.executable, "-m", "graphify", "hook-guard", "gemini"],
+        [sys.executable, "-m", "monarch_atlas", "hook-guard", "gemini"],
         input="", capture_output=True, text=True, cwd=tmp_path, env=env,
     )
-    assert "graphify query" in json.loads(r.stdout).get("additionalContext", "")
+    assert "atlas query" in json.loads(r.stdout).get("additionalContext", "")

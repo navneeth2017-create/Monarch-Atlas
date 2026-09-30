@@ -10,8 +10,8 @@ unusable member with a stderr WARNING.
 """
 from __future__ import annotations
 
-from graphify.build import build_from_json
-from graphify.llm import _sanitize_fragment
+from monarch_atlas.build import build_from_json
+from monarch_atlas.llm import _sanitize_fragment
 
 
 def _node(nid: str) -> dict:

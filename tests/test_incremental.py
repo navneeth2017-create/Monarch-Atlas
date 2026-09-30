@@ -1,4 +1,4 @@
-"""Integration tests for incremental graphify extract behavior."""
+"""Integration tests for incremental atlas extract behavior."""
 from __future__ import annotations
 import json
 import os
@@ -24,7 +24,7 @@ _LLM_ENV_KEYS = (
 def _run(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
     env = {k: v for k, v in os.environ.items() if k not in _LLM_ENV_KEYS}
     return subprocess.run(
-        [PYTHON, "-m", "graphify"] + args,
+        [PYTHON, "-m", "monarch_atlas"] + args,
         cwd=cwd,
         capture_output=True,
         text=True,
@@ -47,14 +47,14 @@ def test_manifest_written_after_extract(tmp_path):
     # Should fail with no API key — but NOT with a path error
     assert "no LLM API key" in r.stderr or r.returncode != 0
     # manifest should NOT exist (run failed before writing)
-    manifest = docs / "graphify-out" / "manifest.json"
+    manifest = docs / "atlas-out" / "manifest.json"
     assert not manifest.exists()
 
 
 def test_incremental_mode_detected_via_manifest(tmp_path):
     """If manifest.json + graph.json exist, incremental mode message is shown."""
     docs = _make_docs_corpus(tmp_path)
-    out = docs / "graphify-out"
+    out = docs / "atlas-out"
     out.mkdir()
     (out / "graph.json").write_text(json.dumps({"nodes": [], "links": []}))
     (out / "manifest.json").write_text(json.dumps({"document": [str(docs / "intro.md")]}))
@@ -84,7 +84,7 @@ def test_extract_no_cluster_incremental_noop_preserves_existing_graph(tmp_path):
 
     first = _run(["extract", str(project), "--no-cluster"], tmp_path)
     assert first.returncode == 0, first.stderr
-    graph_path = project / "graphify-out" / "graph.json"
+    graph_path = project / "atlas-out" / "graph.json"
     before_text = graph_path.read_text(encoding="utf-8")
     before = json.loads(before_text)
     assert before.get("nodes"), "first run should produce a non-empty code graph"
@@ -124,7 +124,7 @@ def test_extract_no_cluster_incremental_changed_file_preserves_unchanged_files(t
 
     first = _run(["extract", str(proj), "--code-only", "--no-cluster"], tmp_path)
     assert first.returncode == 0, first.stderr
-    gj = proj / "graphify-out" / "graph.json"
+    gj = proj / "atlas-out" / "graph.json"
     base = json.loads(gj.read_text(encoding="utf-8"))
     base_ids = {n["id"] for n in base["nodes"]}
     # Sanity: importer file, target file, and target symbol all present.
@@ -195,7 +195,7 @@ def test_update_preserves_generic_rust_self_call_to_unchanged_impl(tmp_path):
 
     def has_call() -> bool:
         graph = json.loads(
-            (proj / "graphify-out" / "graph.json").read_text(encoding="utf-8")
+            (proj / "atlas-out" / "graph.json").read_text(encoding="utf-8")
         )
         nodes = {
             (node.get("label"), node.get("source_file")): node["id"]
@@ -234,7 +234,7 @@ def test_extract_no_cluster_incremental_code_only_preserves_doc_nodes(tmp_path):
 
     first = _run(["extract", str(proj), "--code-only", "--no-cluster"], tmp_path)
     assert first.returncode == 0, first.stderr
-    gj = proj / "graphify-out" / "graph.json"
+    gj = proj / "atlas-out" / "graph.json"
     g = json.loads(gj.read_text(encoding="utf-8"))
     assert g.get("nodes"), "first run should produce a non-empty code graph"
 
@@ -272,7 +272,7 @@ def test_incremental_python_relative_import_target_canonicalizes(tmp_path):
     imports_from edge must stamp target_file so the #2169 remap canonicalizes
     its target on an incremental extraction where the target file is NOT in
     the batch — instead of leaving an absolute-path-derived dangling id."""
-    from graphify.extract import extract, _make_id
+    from monarch_atlas.extract import extract, _make_id
 
     # realpath: on macOS the pytest tmp dir can sit behind a symlink
     # (/tmp -> /private/tmp); anchor everything on the resolved form so the
@@ -325,7 +325,7 @@ def test_incremental_md_reference_target_canonicalizes(tmp_path):
     target_file so the #2169 remap canonicalizes its target on an incremental
     extraction where the linked doc is NOT in the batch — instead of the
     md->md reference dangling on an absolute-path-derived id and dropping."""
-    from graphify.extract import extract, _make_id
+    from monarch_atlas.extract import extract, _make_id
 
     tmp = Path(os.path.realpath(tmp_path))
     docs = tmp / "docs"
@@ -365,7 +365,7 @@ def test_incremental_md_reference_target_canonicalizes(tmp_path):
 
 
 def test_update_prunes_a_removed_imports_edge(tmp_path):
-    """#1521: when an import is deleted from a file, `graphify update` must prune
+    """#1521: when an import is deleted from a file, `atlas update` must prune
     the edge it produced — preserving it (keyed only on endpoint membership) left a
     stale edge that drove phantom circular-dependency findings."""
     proj = tmp_path / "proj"
@@ -377,7 +377,7 @@ def test_update_prunes_a_removed_imports_edge(tmp_path):
     # initial extract -> the import edge a -> b exists
     r1 = _run(["extract", str(proj), "--no-cluster"], tmp_path)
     assert r1.returncode == 0, r1.stderr
-    gj = proj / "graphify-out" / "graph.json"
+    gj = proj / "atlas-out" / "graph.json"
     before = _edges(gj)
     assert any(e.get("relation") in ("imports", "imports_from") and
                str(e.get("source_file", "")).endswith("a.py") for e in before), \

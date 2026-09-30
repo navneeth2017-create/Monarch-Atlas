@@ -1,4 +1,4 @@
-# Graphify Evaluation - Mixed Corpus (2026-04-04)
+# Atlas Evaluation - Mixed Corpus (2026-04-04)
 
 **Evaluator:** Claude Sonnet 4.6 (live execution)
 **Corpus:** 3 Python files + 1 markdown paper + 1 Arabic PNG image
@@ -42,7 +42,7 @@ Total:       18 nodes, 19 edges  →  graph: 20 nodes, 19 edges (2 external deps
 | 1 | Clustering & Scoring | 0.29 | cluster.py, `cluster()`, `score_all()`, `cohesion_score()`, `build_graph()`, `_split_community()`, graspologic |
 | 2 | Graph Building | 0.50 | build.py, `build()`, `build_from_json()`, networkx |
 
-**Finding:** Communities are semantically correct - the three graphify modules map cleanly
+**Finding:** Communities are semantically correct - the three atlas modules map cleanly
 to their functional roles. `build.py` has the highest cohesion (0.50) because it's a tight,
 self-contained module. `analyze.py` is lowest (0.22) because its functions don't call each
 other - each is a standalone analysis pass, making the subgraph sparse.
@@ -55,7 +55,7 @@ other - each is a standalone analysis pass, making the subgraph sparse.
 ## 4. Query Tests (live BFS traversal)
 
 All three queries ran against the real graph.json, returned relevant subgraphs, and were
-saved to `graphify-out/memory/`.
+saved to `atlas-out/memory/`.
 
 ### Q1: "what does cluster do and how does it connect to build?"
 - BFS from `cluster()` reached 20 nodes (full graph - small corpus)
@@ -83,7 +83,7 @@ Memory files created: 3
   query_..._how_does_score_all...md           1,763 bytes
   query_..._what_does_cluster...md            1,838 bytes
 
-detect() on eval root with graphify-out/memory/ present:
+detect() on eval root with atlas-out/memory/ present:
   Memory files found by next scan: 3 / 3  ✓
 ```
 
@@ -97,7 +97,7 @@ The graph grows from what you ask, not just what you add.
 
 **Image:** `attention_arabic.png` - Arabic notes on the Transformer paper
 
-**What graphify extracts (Claude vision reads directly, no reshaper/bidi needed):**
+**What atlas extracts (Claude vision reads directly, no reshaper/bidi needed):**
 
 | Arabic | English |
 |--------|---------|
@@ -110,7 +110,7 @@ The graph grows from what you ask, not just what you add.
 | التطبيع الطبقي | Layer normalization |
 | المصدر: Vaswani et al., 2017 - arXiv: 1706.03762 | Source citation |
 
-**Nodes graphify would extract:**
+**Nodes atlas would extract:**
 - `MultiHeadAttention` (آلية الانتباه) - hyperparameters: h=8, d_model=512, d_k=64
 - `PositionalEncoding` (الترميز الموضعي) - feeds into transformer input
 - `LayerNorm` (التطبيع الطبقي) - applied per sublayer
@@ -118,7 +118,7 @@ The graph grows from what you ask, not just what you add.
 
 **Key finding:** Arabic text OCR works natively via Claude vision. No preprocessing, no
 reshaper libraries, no bidi algorithms. The model reads Arabic, Persian, Hebrew, Chinese etc.
-identically to English. The image node in graphify is just a path - the vision subagent does
+identically to English. The image node in atlas is just a path - the vision subagent does
 the rest.
 
 ---

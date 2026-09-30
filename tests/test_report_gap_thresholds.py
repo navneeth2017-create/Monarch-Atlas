@@ -23,7 +23,7 @@ import re
 
 import networkx as nx
 
-from graphify.report import generate
+from monarch_atlas.report import generate
 
 
 def _graph_and_communities():

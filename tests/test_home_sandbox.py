@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from graphify.__main__ import claude_uninstall
+from monarch_atlas.__main__ import claude_uninstall
 
 # Module import happens during collection, before any fixture runs, so this
 # captures the developer's actual home directory for comparison below.
@@ -46,9 +46,9 @@ def test_global_uninstall_is_captured_by_sandbox(tmp_path, tmp_path_factory):
     an explicit `remove_user_skill=True`. Both scopes are exercised here so the
     sandbox (#2168) is still proven to capture the global delete.
     """
-    skill = Path.home() / ".claude" / "skills" / "graphify" / "SKILL.md"
+    skill = Path.home() / ".claude" / "skills" / "atlas" / "SKILL.md"
     skill.parent.mkdir(parents=True)
-    skill.write_text("# graphify skill (sandbox copy)\n", encoding="utf-8")
+    skill.write_text("# atlas skill (sandbox copy)\n", encoding="utf-8")
 
     project_dir = tmp_path / "some-project"
     project_dir.mkdir()

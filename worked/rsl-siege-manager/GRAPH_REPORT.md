@@ -11,7 +11,7 @@
 ## Graph Freshness
 - Built from commit: `6085fd66`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
-- Run `graphify update .` after code changes (no API cost).
+- Run `atlas update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - [[_COMMUNITY_Community 0|Community 0]]
@@ -446,7 +446,7 @@ Nodes (3): Returns None for a filename that does not match the pattern., Returns
 ## Knowledge Gaps
 - **752 isolated node(s):** `initial schema  Revision ID: 0001 Revises: Create Date: 2026-03-16`, `add autofill and attack day preview columns to siege  Revision ID: 0002 Revises:`, `make siege date nullable  Revision ID: 0003 Revises: 0002 Create Date: 2026-03-1`, `Add post_priority_config table`, `Add description to post_priority_config` (+747 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **52 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **52 thin communities (<3 nodes) omitted from report** — run `atlas query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_

@@ -4,7 +4,7 @@ import networkx as nx
 
 
 def build_graph(nodes: list[dict], edges: list[dict]) -> nx.Graph:
-    """Build a NetworkX graph from graphify node/edge dicts.
+    """Build a NetworkX graph from monarch_atlas node/edge dicts.
 
     Preserves original edge direction as _src/_tgt attributes so that
     display functions can show relationships in the correct direction,

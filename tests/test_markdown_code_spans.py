@@ -12,9 +12,9 @@ import json
 import os
 from pathlib import Path
 
-from graphify.extract import extract
-from graphify.extractors.markdown import _code_span_mention, extract_markdown
-from graphify.markdown_resolution import _match_cited_file
+from monarch_atlas.extract import extract
+from monarch_atlas.extractors.markdown import _code_span_mention, extract_markdown
+from monarch_atlas.markdown_resolution import _match_cited_file
 
 _WIDGET_PY = '''\
 class Widget:
@@ -243,14 +243,14 @@ def test_mentions_survive_a_rebuild_over_an_existing_graph(tmp_path):
     code symbol, never a file, so it must survive a no-change rebuild and the
     incremental rebuilds of either side.
     """
-    from graphify.watch import _rebuild_code
+    from monarch_atlas.watch import _rebuild_code
 
     corpus = tmp_path / "corpus"
     corpus.mkdir()
     (corpus / "widget.py").write_text(_WIDGET_PY)
     doc = corpus / "doc.md"
     doc.write_text("# Doc\n\n## Usage\n\nBuild a `Widget`.\n")
-    graph_path = corpus / "graphify-out" / "graph.json"
+    graph_path = corpus / "atlas-out" / "graph.json"
 
     def mention_edges():
         links = json.loads(graph_path.read_text(encoding="utf-8"))["links"]

@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from graphify import cache
+from monarch_atlas import cache
 
 
 def _settle(path: Path) -> None:
@@ -74,7 +74,7 @@ def test_file_hash_is_order_independent_across_roots(tmp_path, monkeypatch):
     root) that enters the digest, so the same (file, root) returns the same
     digest regardless of what root was hashed first."""
     import hashlib
-    from graphify import cache
+    from monarch_atlas import cache
     monkeypatch.setattr(cache, "_stat_index", {})
     monkeypatch.setattr(cache, "_stat_index_root", None)
 
@@ -103,7 +103,7 @@ def test_file_hash_is_order_independent_across_roots(tmp_path, monkeypatch):
 def test_file_hash_ignores_legacy_unsalted_entry(tmp_path, monkeypatch):
     """A pre-#1989 entry carrying a bare "hash" (no salt) is never trusted."""
     import hashlib
-    from graphify import cache
+    from monarch_atlas import cache
     monkeypatch.setattr(cache, "_stat_index", {})
     monkeypatch.setattr(cache, "_stat_index_root", None)
     f = tmp_path / "m.py"; f.write_text("x = 1\n")

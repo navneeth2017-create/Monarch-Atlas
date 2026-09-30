@@ -23,8 +23,8 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from graphify.build import build_from_json
-from graphify.export import (
+from monarch_atlas.build import build_from_json
+from monarch_atlas.export import (
     _obsidian_safe_stem,
     to_cypher,
     to_graphml,

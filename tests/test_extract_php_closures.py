@@ -1,5 +1,5 @@
 from pathlib import Path
-from graphify.extract import extract_php
+from monarch_atlas.extract import extract_php
 import pytest
 
 
@@ -110,7 +110,7 @@ def test_php_file_scope_arg_closure_call_resolves_to_the_closure(tmp_path):
     (tmp_path / "__probe.php").write_bytes(b"<?php\n")
     if not _php_grammar_available(tmp_path):
         pytest.skip("PHP grammar not installed")
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     (tmp_path / "app.php").write_bytes(b"""<?php
 function handler($x) { return $x; }
 $assigned = function($x) { return handler($x); };
@@ -157,7 +157,7 @@ def test_php_method_scope_closure_call_attributes_to_closure_not_method(tmp_path
     (tmp_path / "__probe.php").write_bytes(b"<?php\n")
     if not _php_grammar_available(tmp_path):
         pytest.skip("PHP grammar not installed")
-    from graphify.extract import extract
+    from monarch_atlas.extract import extract
     (tmp_path / "svc.php").write_bytes(b"""<?php
 function target($x) { return $x; }
 class Service {

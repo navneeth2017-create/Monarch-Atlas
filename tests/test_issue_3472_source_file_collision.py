@@ -8,7 +8,7 @@ from pathlib import Path
 import networkx as nx
 import pytest
 
-from graphify.build import build, build_merge
+from monarch_atlas.build import build, build_merge
 
 
 def test_semantic_absolute_path_same_file_retains_attributes(tmp_path, capsys):
@@ -21,7 +21,7 @@ def test_semantic_absolute_path_same_file_retains_attributes(tmp_path, capsys):
     - semantic attributes (rationale, summary) are merged onto survivor
     """
     root = tmp_path.resolve()
-    graph_path = root / "graphify-out" / "graph.json"
+    graph_path = root / "atlas-out" / "graph.json"
     graph_path.parent.mkdir(parents=True)
 
     ast_node = {
@@ -114,7 +114,7 @@ def test_build_merge_infers_root_for_semantic_absolute_path(tmp_path, capsys):
     so absolute source_file from semantic chunks still collapses with stored relative keys.
     """
     root = tmp_path.resolve()
-    graph_path = root / "graphify-out" / "graph.json"
+    graph_path = root / "atlas-out" / "graph.json"
     graph_path.parent.mkdir(parents=True)
 
     ast_node = {

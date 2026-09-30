@@ -1,11 +1,11 @@
-"""Tests for `graphify extract` CLI dispatch path in graphify.__main__."""
+"""Tests for `atlas extract` CLI dispatch path in monarch_atlas.__main__."""
 from __future__ import annotations
 
 import os
 
 import pytest
 
-import graphify.__main__ as mainmod
+import monarch_atlas.__main__ as mainmod
 
 
 def _make_corpus(tmp_path):
@@ -29,7 +29,7 @@ def test_extract_exits_nonzero_when_ast_extraction_raises(
     (corpus / "main.go").write_text("package main\nfunc main() {}\n")
     out_dir = tmp_path / "out"
 
-    import graphify.extract as extractmod
+    import monarch_atlas.extract as extractmod
 
     def _ast_failed(paths, **kwargs):
         raise RuntimeError("worker pool failed")
@@ -39,7 +39,7 @@ def test_extract_exits_nonzero_when_ast_extraction_raises(
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "extract", str(corpus), "--code-only",
+        ["atlas", "extract", str(corpus), "--code-only",
          "--out", str(out_dir)],
     )
 
@@ -48,10 +48,10 @@ def test_extract_exits_nonzero_when_ast_extraction_raises(
 
     assert exc_info.value.code == 1
     assert (
-        "[graphify extract] AST extraction failed: worker pool failed"
+        "[atlas extract] AST extraction failed: worker pool failed"
         in capsys.readouterr().err
     )
-    assert not (out_dir / "graphify-out" / "graph.json").exists(), (
+    assert not (out_dir / "atlas-out" / "graph.json").exists(), (
         "graph.json must not be written when the whole AST pass is lost"
     )
 
@@ -66,7 +66,7 @@ def test_extract_allow_partial_continues_past_ast_failure(
     out_dir = tmp_path / "out"
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake-key")
 
-    import graphify.extract as extractmod
+    import monarch_atlas.extract as extractmod
 
     def _ast_failed(paths, **kwargs):
         raise RuntimeError("worker pool failed")
@@ -88,13 +88,13 @@ def test_extract_allow_partial_continues_past_ast_failure(
         return {**chunk, "input_tokens": 100, "output_tokens": 50}
 
     monkeypatch.setattr(
-        "graphify.llm.extract_corpus_parallel", _one_chunk_succeeded
+        "monarch_atlas.llm.extract_corpus_parallel", _one_chunk_succeeded
     )
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "extract", str(corpus), "--backend", "claude",
+        ["atlas", "extract", str(corpus), "--backend", "claude",
          "--allow-partial", "--out", str(out_dir)],
     )
 
@@ -104,7 +104,7 @@ def test_extract_allow_partial_continues_past_ast_failure(
         assert exc.code in (None, 0), f"unexpected exit code {exc.code}"
 
     assert "AST extraction failed" in capsys.readouterr().err
-    assert (out_dir / "graphify-out" / "graph.json").exists(), (
+    assert (out_dir / "atlas-out" / "graph.json").exists(), (
         "--allow-partial must still write the best-effort graph"
     )
 
@@ -115,8 +115,8 @@ def test_extract_exits_nonzero_when_all_semantic_chunks_fail(
     """When every semantic chunk errors (e.g. backend SDK not installed),
     the CLI must exit non-zero instead of silently writing an AST-only graph.
 
-    The bug this guards: `pip install graphifyy` doesn't pull in `anthropic`,
-    so `graphify extract --backend claude` would print per-chunk errors and
+    The bug this guards: `pip install monarch-atlas` doesn't pull in `anthropic`,
+    so `atlas extract --backend claude` would print per-chunk errors and
     still exit 0 with a graph.json. Callers checking exit status saw success.
     """
     corpus = _make_corpus(tmp_path)
@@ -141,13 +141,13 @@ def test_extract_exits_nonzero_when_all_semantic_chunks_fail(
         }
 
     monkeypatch.setattr(
-        "graphify.llm.extract_corpus_parallel", _all_chunks_failed
+        "monarch_atlas.llm.extract_corpus_parallel", _all_chunks_failed
     )
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "extract", str(corpus), "--backend", "claude",
+        ["atlas", "extract", str(corpus), "--backend", "claude",
          "--out", str(out_dir)],
     )
 
@@ -165,7 +165,7 @@ def test_extract_exits_nonzero_when_all_semantic_chunks_fail(
 
     # No graph.json should have been written - the failure must abort before
     # the merge/cluster/write phase, not after.
-    assert not (out_dir / "graphify-out" / "graph.json").exists(), (
+    assert not (out_dir / "atlas-out" / "graph.json").exists(), (
         "graph.json must not be written when semantic extraction fails"
     )
 
@@ -192,7 +192,7 @@ def test_extract_succeeds_when_at_least_one_chunk_completes(
         }
 
     monkeypatch.setattr(
-        "graphify.llm.extract_corpus_parallel", _one_chunk_succeeded
+        "monarch_atlas.llm.extract_corpus_parallel", _one_chunk_succeeded
     )
     cache_call = {}
 
@@ -201,13 +201,13 @@ def test_extract_succeeds_when_at_least_one_chunk_completes(
         return 0
 
     monkeypatch.setattr(
-        "graphify.cache.save_semantic_cache", _capture_semantic_cache
+        "monarch_atlas.cache.save_semantic_cache", _capture_semantic_cache
     )
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys,
         "argv",
-        ["graphify", "extract", str(corpus), "--backend", "claude",
+        ["atlas", "extract", str(corpus), "--backend", "claude",
          "--out", str(out_dir)],
     )
 
@@ -219,7 +219,7 @@ def test_extract_succeeds_when_at_least_one_chunk_completes(
         assert exc.code in (None, 0), f"unexpected exit code {exc.code}"
 
     # graph.json should exist on the happy path
-    assert (out_dir / "graphify-out" / "graph.json").exists(), (
+    assert (out_dir / "atlas-out" / "graph.json").exists(), (
         "graph.json must be written on the happy path"
     )
     assert {
@@ -263,14 +263,14 @@ def test_incremental_partial_run_preserves_untouched_semantic_hash(
         }
 
     monkeypatch.setattr(
-        "graphify.llm.extract_corpus_parallel", _stamp_everything_sent
+        "monarch_atlas.llm.extract_corpus_parallel", _stamp_everything_sent
     )
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
 
     def _run_extract():
         monkeypatch.setattr(
             mainmod.sys, "argv",
-            ["graphify", "extract", str(corpus), "--backend", "claude",
+            ["atlas", "extract", str(corpus), "--backend", "claude",
              "--no-cluster", "--out", str(out_dir)],
         )
         try:
@@ -280,7 +280,7 @@ def test_incremental_partial_run_preserves_untouched_semantic_hash(
 
     # Run 1: full scan — both docs dispatched and stamped.
     _run_extract()
-    manifest_path = out_dir / "graphify-out" / "manifest.json"
+    manifest_path = out_dir / "atlas-out" / "manifest.json"
     m1 = json.loads(manifest_path.read_text())
     assert m1["README.md"].get("semantic_hash")
     assert m1["OTHER.md"].get("semantic_hash")
@@ -326,19 +326,19 @@ def test_truncated_doc_semantic_hash_is_cleared_for_requeue(monkeypatch, tmp_pat
         return {"nodes": [node] if "README.md" in rels else [],
                 "edges": [], "hyperedges": [], "input_tokens": 10, "output_tokens": 5}
 
-    monkeypatch.setattr("graphify.llm.extract_corpus_parallel", _extract)
+    monkeypatch.setattr("monarch_atlas.llm.extract_corpus_parallel", _extract)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
 
     def _run():
         monkeypatch.setattr(mainmod.sys, "argv",
-                            ["graphify", "extract", str(corpus), "--backend", "claude",
+                            ["atlas", "extract", str(corpus), "--backend", "claude",
                              "--no-cluster", "--out", str(out_dir)])
         try:
             mainmod.main()
         except SystemExit as exc:
             assert exc.code in (None, 0)
 
-    manifest_path = out_dir / "graphify-out" / "manifest.json"
+    manifest_path = out_dir / "atlas-out" / "manifest.json"
     _run()  # run 1: complete
     assert json.loads(manifest_path.read_text())["README.md"].get("semantic_hash")
 
@@ -382,11 +382,11 @@ def test_manifest_stamps_freshly_extracted_semantic_docs(monkeypatch, tmp_path):
             "output_tokens": 5,
         }
 
-    monkeypatch.setattr("graphify.llm.extract_corpus_parallel", _fresh_relative)
+    monkeypatch.setattr("monarch_atlas.llm.extract_corpus_parallel", _fresh_relative)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(corpus), "--backend", "claude",
+        ["atlas", "extract", str(corpus), "--backend", "claude",
          "--no-cluster", "--out", str(out_dir)],
     )
 
@@ -395,7 +395,7 @@ def test_manifest_stamps_freshly_extracted_semantic_docs(monkeypatch, tmp_path):
     except SystemExit as exc:
         assert exc.code in (None, 0), f"unexpected exit code {exc.code}"
 
-    manifest_path = out_dir / "graphify-out" / "manifest.json"
+    manifest_path = out_dir / "atlas-out" / "manifest.json"
     assert manifest_path.exists()
     manifest = json.loads(manifest_path.read_text())
 
@@ -417,7 +417,7 @@ def test_stamped_manifest_files_normalizes_both_sides(tmp_path):
     """Unit test for the #1897 helper: relative (fresh) and absolute (cache-hit)
     source_file values must both match detect()'s absolute file lists; docs with
     no valid output (or edge-only output, #2927) are filtered; code files pass through untouched."""
-    from graphify.cli import _stamped_manifest_files
+    from monarch_atlas.cli import _stamped_manifest_files
 
     fresh_doc = tmp_path / "fresh.md"; fresh_doc.write_text("# fresh")
     cached_doc = tmp_path / "cached.md"; cached_doc.write_text("# cached")
@@ -452,7 +452,7 @@ def test_stamped_manifest_files_counts_hyperedge_only_docs(tmp_path):
     concept) is valid output — the semantic cache persists it per source_file —
     so it must be stamped. Before the fix the stamping loop only inspected
     ``nodes``/``edges``, leaving such a doc unstamped and re-queued forever."""
-    from graphify.cli import _stamped_manifest_files
+    from monarch_atlas.cli import _stamped_manifest_files
 
     hyper_doc = tmp_path / "hyper.md"; hyper_doc.write_text("# hyper")
     omitted_doc = tmp_path / "omitted.md"; omitted_doc.write_text("# omitted")
@@ -497,11 +497,11 @@ def test_manifest_stamps_hyperedge_only_docs(monkeypatch, tmp_path):
             "output_tokens": 5,
         }
 
-    monkeypatch.setattr("graphify.llm.extract_corpus_parallel", _hyperedge_only)
+    monkeypatch.setattr("monarch_atlas.llm.extract_corpus_parallel", _hyperedge_only)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(corpus), "--backend", "claude",
+        ["atlas", "extract", str(corpus), "--backend", "claude",
          "--no-cluster", "--out", str(out_dir)],
     )
     try:
@@ -509,7 +509,7 @@ def test_manifest_stamps_hyperedge_only_docs(monkeypatch, tmp_path):
     except SystemExit as exc:
         assert exc.code in (None, 0), f"unexpected exit code {exc.code}"
 
-    manifest = json.loads((out_dir / "graphify-out" / "manifest.json").read_text())
+    manifest = json.loads((out_dir / "atlas-out" / "manifest.json").read_text())
     assert manifest.get("README.md", {}).get("semantic_hash"), (
         f"hyperedge-only doc must be stamped (#1920): {sorted(manifest)}"
     )
@@ -551,17 +551,17 @@ def test_extract_mode_deep_dispatches_over_warm_cache(monkeypatch, tmp_path):
     cold) and be served from cache/semantic-deep/ on the second."""
     corpus = _make_corpus(tmp_path)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake-key")
-    monkeypatch.delenv("GRAPHIFY_FORCE", raising=False)
+    monkeypatch.delenv("ATLAS_FORCE", raising=False)
     calls: list[dict] = []
-    monkeypatch.setattr("graphify.llm.extract_corpus_parallel",
+    monkeypatch.setattr("monarch_atlas.llm.extract_corpus_parallel",
                         _recording_extractor(calls))
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
 
-    # No --out: the default layout (graphify-out/ beside the sources) keeps the
+    # No --out: the default layout (atlas-out/ beside the sources) keeps the
     # CLI-level cache write's root anchored at the corpus, so the stub's
     # root-relative source_file resolves (real runs also checkpoint per chunk
     # inside llm.extract_corpus_parallel, which this stub replaces).
-    base = ["graphify", "extract", str(corpus), "--backend", "claude",
+    base = ["atlas", "extract", str(corpus), "--backend", "claude",
             "--no-cluster"]
 
     # Run 1: cold standard extraction — warms manifest + plain semantic cache.
@@ -587,7 +587,7 @@ def test_extract_mode_deep_dispatches_over_warm_cache(monkeypatch, tmp_path):
     )
     # The deep entry landed in its own namespace, not cache/semantic/. Entries are
     # nested under a p{prompt-fingerprint}/ subdir (#1939), hence the recursive glob.
-    assert any((corpus / "graphify-out" / "cache" / "semantic-deep").glob("**/*.json"))
+    assert any((corpus / "atlas-out" / "cache" / "semantic-deep").glob("**/*.json"))
 
 
 def test_extract_force_flag_redispatches_and_stamps_manifest(monkeypatch, tmp_path):
@@ -598,13 +598,13 @@ def test_extract_force_flag_redispatches_and_stamps_manifest(monkeypatch, tmp_pa
 
     corpus = _make_corpus(tmp_path)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake-key")
-    monkeypatch.delenv("GRAPHIFY_FORCE", raising=False)
+    monkeypatch.delenv("ATLAS_FORCE", raising=False)
     calls: list[dict] = []
-    monkeypatch.setattr("graphify.llm.extract_corpus_parallel",
+    monkeypatch.setattr("monarch_atlas.llm.extract_corpus_parallel",
                         _recording_extractor(calls))
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
 
-    base = ["graphify", "extract", str(corpus), "--backend", "claude",
+    base = ["atlas", "extract", str(corpus), "--backend", "claude",
             "--no-cluster"]
 
     _run_extract(monkeypatch, base)
@@ -620,9 +620,9 @@ def test_extract_force_flag_redispatches_and_stamps_manifest(monkeypatch, tmp_pa
 
     # The forced run still wrote the semantic cache and stamped the manifest.
     # Entries nest under a p{prompt-fingerprint}/ subdir (#1939).
-    assert any((corpus / "graphify-out" / "cache" / "semantic").glob("**/*.json"))
+    assert any((corpus / "atlas-out" / "cache" / "semantic").glob("**/*.json"))
     manifest = json.loads(
-        (corpus / "graphify-out" / "manifest.json").read_text()
+        (corpus / "atlas-out" / "manifest.json").read_text()
     )
     assert manifest.get("README.md", {}).get("semantic_hash"), (
         "forced re-dispatch must still stamp the manifest"
@@ -630,17 +630,17 @@ def test_extract_force_flag_redispatches_and_stamps_manifest(monkeypatch, tmp_pa
     assert manifest.get("main.go", {}).get("semantic_hash")
 
 
-def test_extract_graphify_force_env_redispatches(monkeypatch, tmp_path):
-    """GRAPHIFY_FORCE=1 behaves like --force (env parity with `update`)."""
+def test_extract_atlas_force_env_redispatches(monkeypatch, tmp_path):
+    """ATLAS_FORCE=1 behaves like --force (env parity with `update`)."""
     corpus = _make_corpus(tmp_path)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake-key")
-    monkeypatch.delenv("GRAPHIFY_FORCE", raising=False)
+    monkeypatch.delenv("ATLAS_FORCE", raising=False)
     calls: list[dict] = []
-    monkeypatch.setattr("graphify.llm.extract_corpus_parallel",
+    monkeypatch.setattr("monarch_atlas.llm.extract_corpus_parallel",
                         _recording_extractor(calls))
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
 
-    base = ["graphify", "extract", str(corpus), "--backend", "claude",
+    base = ["atlas", "extract", str(corpus), "--backend", "claude",
             "--no-cluster"]
 
     _run_extract(monkeypatch, base)
@@ -648,15 +648,15 @@ def test_extract_graphify_force_env_redispatches(monkeypatch, tmp_path):
     _run_extract(monkeypatch, base)  # warm: no dispatch
     assert len(calls) == 1
 
-    monkeypatch.setenv("GRAPHIFY_FORCE", "1")
+    monkeypatch.setenv("ATLAS_FORCE", "1")
     _run_extract(monkeypatch, base)
-    assert len(calls) == 2, "GRAPHIFY_FORCE=1 must force a re-dispatch"
+    assert len(calls) == 2, "ATLAS_FORCE=1 must force a re-dispatch"
 
 
 def test_cache_check_mode_deep_reads_deep_namespace(monkeypatch, tmp_path, capsys):
     """cache-check --mode deep consults cache/semantic-deep/; without the flag
     it keeps reading cache/semantic/ (deep entries are invisible to it)."""
-    from graphify.cache import save_semantic_cache
+    from monarch_atlas.cache import save_semantic_cache
 
     doc = tmp_path / "doc.md"
     doc.write_text("# Doc\n")
@@ -666,11 +666,11 @@ def test_cache_check_mode_deep_reads_deep_namespace(monkeypatch, tmp_path, capsy
     files_from.write_text(str(doc) + "\n")
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
 
-    _run_extract(monkeypatch, ["graphify", "cache-check", str(files_from),
+    _run_extract(monkeypatch, ["atlas", "cache-check", str(files_from),
                                "--root", str(tmp_path)])
     assert "Cache: 0 hit, 1 miss" in capsys.readouterr().out
 
-    _run_extract(monkeypatch, ["graphify", "cache-check", str(files_from),
+    _run_extract(monkeypatch, ["atlas", "cache-check", str(files_from),
                                "--root", str(tmp_path), "--mode", "deep"])
     assert "Cache: 1 hit, 0 miss" in capsys.readouterr().out
 
@@ -700,7 +700,7 @@ def _clear_backend_keys(monkeypatch):
 def test_extract_codeonly_succeeds_without_api_key(monkeypatch, tmp_path):
     """A code-only corpus must run with no LLM API key.
 
-    Regression: graphify extract validated a backend upfront and exited 1 with
+    Regression: atlas extract validated a backend upfront and exited 1 with
     'no LLM API key found' even for a code-only corpus that never calls a model.
     The keyless AST path now runs to a written graph.json (#1122).
     """
@@ -710,7 +710,7 @@ def test_extract_codeonly_succeeds_without_api_key(monkeypatch, tmp_path):
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(corpus), "--out", str(out_dir)],
+        ["atlas", "extract", str(corpus), "--out", str(out_dir)],
     )
 
     try:
@@ -718,14 +718,14 @@ def test_extract_codeonly_succeeds_without_api_key(monkeypatch, tmp_path):
     except SystemExit as exc:
         assert exc.code in (None, 0), f"unexpected exit code {exc.code}"
 
-    graph = out_dir / "graphify-out" / "graph.json"
+    graph = out_dir / "atlas-out" / "graph.json"
     assert graph.exists(), "code-only extract must write graph.json without a key"
     import json
     assert len(json.loads(graph.read_text()).get("nodes", [])) > 0
 
 
 def test_missing_manifest_code_only_preserves_semantic_layer(monkeypatch, tmp_path):
-    """#1925: `graphify extract --code-only` with a MISSING manifest.json must
+    """#1925: `atlas extract --code-only` with a MISSING manifest.json must
     not degrade to a full scan that discards the committed semantic layer. An
     existing graph.json is a sufficient incremental baseline, so doc/paper/image
     nodes (excluded by --code-only, not deleted) are preserved; a genuinely
@@ -736,7 +736,7 @@ def test_missing_manifest_code_only_preserves_semantic_layer(monkeypatch, tmp_pa
     (corpus / "keep.py").write_text("def keep():\n    return 1\n")
     (corpus / "README.md").write_text("# Notes\nCurated docs.\n")
     out_dir = tmp_path / "out"
-    graphify_out = out_dir / "graphify-out"
+    atlas_out = out_dir / "atlas-out"
     _clear_backend_keys(monkeypatch)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
 
@@ -744,9 +744,9 @@ def test_missing_manifest_code_only_preserves_semantic_layer(monkeypatch, tmp_pa
         return sum(1 for n in g["nodes"] if n.get("source_file") == "README.md")
 
     # 1) seed a code-only graph
-    _run_extract(monkeypatch, ["graphify", "extract", str(corpus),
+    _run_extract(monkeypatch, ["atlas", "extract", str(corpus),
                                "--code-only", "--out", str(out_dir)])
-    graph_path = graphify_out / "graph.json"
+    graph_path = atlas_out / "graph.json"
     graph = json.loads(graph_path.read_text())
 
     # 2) inject a committed semantic layer for README.md (nodes + edge + hyperedge)
@@ -761,14 +761,14 @@ def test_missing_manifest_code_only_preserves_semantic_layer(monkeypatch, tmp_pa
         {"id": "h1", "label": "Shared", "nodes": ["doc_readme_a", "doc_readme_b"],
          "relation": "participate_in", "source_file": "README.md"})
     graph_path.write_text(json.dumps(graph))
-    (graphify_out / ".graphify_semantic_marker").write_text(
+    (atlas_out / ".atlas_semantic_marker").write_text(
         json.dumps({"output_tokens": 1}))
 
     # 3) manifest goes missing (fresh clone / deliberately untracked)
-    (graphify_out / "manifest.json").unlink()
+    (atlas_out / "manifest.json").unlink()
 
     # 4) re-run the SAME code-only extract
-    _run_extract(monkeypatch, ["graphify", "extract", str(corpus),
+    _run_extract(monkeypatch, ["atlas", "extract", str(corpus),
                                "--code-only", "--out", str(out_dir)])
     after = json.loads(graph_path.read_text())
     assert _sem_doc_count(after) >= 2, (
@@ -782,8 +782,8 @@ def test_missing_manifest_code_only_preserves_semantic_layer(monkeypatch, tmp_pa
 
     # 5) a genuine deletion still evicts the doc's semantic nodes
     (corpus / "README.md").unlink()
-    (graphify_out / "manifest.json").unlink(missing_ok=True)
-    _run_extract(monkeypatch, ["graphify", "extract", str(corpus),
+    (atlas_out / "manifest.json").unlink(missing_ok=True)
+    _run_extract(monkeypatch, ["atlas", "extract", str(corpus),
                                "--code-only", "--out", str(out_dir)])
     gone = json.loads(graph_path.read_text())
     assert _sem_doc_count(gone) == 0, (
@@ -792,8 +792,8 @@ def test_missing_manifest_code_only_preserves_semantic_layer(monkeypatch, tmp_pa
 
 
 def test_extract_out_keeps_project_root_clean(monkeypatch, tmp_path):
-    """`extract --out DIR` routes every artifact to DIR/graphify-out/ and the
-    scanned project must not grow a graphify-out/ (or anything else) beside
+    """`extract --out DIR` routes every artifact to DIR/atlas-out/ and the
+    scanned project must not grow a atlas-out/ (or anything else) beside
     its sources.
 
     Guards the centralized-output workflow: run from the project root with
@@ -809,7 +809,7 @@ def test_extract_out_keeps_project_root_clean(monkeypatch, tmp_path):
     monkeypatch.chdir(corpus)  # run from the project root, like a real user
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", ".", "--out", str(external)],
+        ["atlas", "extract", ".", "--out", str(external)],
     )
 
     try:
@@ -817,11 +817,11 @@ def test_extract_out_keeps_project_root_clean(monkeypatch, tmp_path):
     except SystemExit as exc:
         assert exc.code in (None, 0), f"unexpected exit code {exc.code}"
 
-    out = external / "graphify-out"
+    out = external / "atlas-out"
     assert (out / "graph.json").exists(), "graph.json must land under --out"
     assert (out / "manifest.json").exists(), "manifest.json must land under --out"
-    assert not (corpus / "graphify-out").exists(), (
-        "scanned project must not grow a graphify-out/ when --out is set"
+    assert not (corpus / "atlas-out").exists(), (
+        "scanned project must not grow a atlas-out/ when --out is set"
     )
     assert sorted(p.name for p in corpus.iterdir()) == ["auth.py"], (
         "no stray files may appear in the project root"
@@ -840,11 +840,11 @@ def test_extract_without_key_still_errors_when_docs_present(
     out_dir = tmp_path / "out"
     _clear_backend_keys(monkeypatch)
     # Patch detect_backend too so ambient AWS/ollama env can't slip through.
-    monkeypatch.setattr("graphify.llm.detect_backend", lambda: None)
+    monkeypatch.setattr("monarch_atlas.llm.detect_backend", lambda: None)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(corpus), "--out", str(out_dir)],
+        ["atlas", "extract", str(corpus), "--out", str(out_dir)],
     )
 
     with pytest.raises(SystemExit) as exc_info:
@@ -853,11 +853,11 @@ def test_extract_without_key_still_errors_when_docs_present(
     err = capsys.readouterr().err
     assert "no LLM API key found" in err
     assert "code-only corpus needs no key" in err
-    assert not (out_dir / "graphify-out" / "graph.json").exists()
+    assert not (out_dir / "atlas-out" / "graph.json").exists()
 
 
 def test_extract_timing_flag_emits_stage_timings(monkeypatch, tmp_path, capsys):
-    """--timing prints per-stage `[graphify timing]` lines to stderr (#1490); omitting
+    """--timing prints per-stage `[atlas timing]` lines to stderr (#1490); omitting
     it prints none, so default output is unchanged. Code-only corpus => no API key."""
     code = tmp_path / "code"
     code.mkdir()
@@ -866,24 +866,24 @@ def test_extract_timing_flag_emits_stage_timings(monkeypatch, tmp_path, capsys):
     # with --timing
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(code), "--no-cluster", "--out", str(tmp_path / "o1"), "--timing"],
+        ["atlas", "extract", str(code), "--no-cluster", "--out", str(tmp_path / "o1"), "--timing"],
     )
     with pytest.raises(SystemExit) as exc:
         mainmod.main()
     assert exc.value.code == 0
     err = capsys.readouterr().err
-    assert "[graphify timing] detect:" in err
-    assert "[graphify timing] total:" in err
+    assert "[atlas timing] detect:" in err
+    assert "[atlas timing] total:" in err
 
     # without --timing => no timing lines
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(code), "--no-cluster", "--out", str(tmp_path / "o2")],
+        ["atlas", "extract", str(code), "--no-cluster", "--out", str(tmp_path / "o2")],
     )
     with pytest.raises(SystemExit) as exc2:
         mainmod.main()
     assert exc2.value.code == 0
-    assert "graphify timing" not in capsys.readouterr().err
+    assert "atlas timing" not in capsys.readouterr().err
 
 
 @pytest.mark.parametrize(
@@ -918,10 +918,10 @@ def test_pathless_postgres_extract_initializes_empty_detection(
     launcher.mkdir()
     monkeypatch.chdir(launcher)
     out_root = tmp_path / "output"
-    graph_path = out_root / "graphify-out" / "graph.json"
-    manifest = out_root / "graphify-out" / "manifest.json"
+    graph_path = out_root / "atlas-out" / "graph.json"
+    manifest = out_root / "atlas-out" / "manifest.json"
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
-    monkeypatch.setattr("graphify.pg_introspect.introspect_postgres", _introspect)
+    monkeypatch.setattr("monarch_atlas.pg_introspect.introspect_postgres", _introspect)
 
     def _run(argv):
         monkeypatch.setattr(mainmod.sys, "argv", argv)
@@ -932,7 +932,7 @@ def test_pathless_postgres_extract_initializes_empty_detection(
 
     _run(
         [
-            "graphify",
+            "atlas",
             "extract",
             str(corpus),
             "--code-only",
@@ -944,13 +944,13 @@ def test_pathless_postgres_extract_initializes_empty_detection(
     assert manifest.exists()
     assert "app.py" in _node_sources(graph_path)
     manifest_content = manifest.read_text()
-    (out_root / "graphify-out" / ".graphify_semantic_marker").write_text(
+    (out_root / "atlas-out" / ".atlas_semantic_marker").write_text(
         '{"output_tokens": 1}'
     )
 
     cache_entry = (
         out_root
-        / "graphify-out"
+        / "atlas-out"
         / "cache"
         / "semantic"
         / "deadbeef.json"
@@ -959,7 +959,7 @@ def test_pathless_postgres_extract_initializes_empty_detection(
     cache_entry.write_text('{"nodes": [], "edges": []}')
     _run(
         [
-            "graphify",
+            "atlas",
             "extract",
             *postgres_args,
             *cluster_args,
@@ -973,7 +973,7 @@ def test_pathless_postgres_extract_initializes_empty_detection(
     assert "postgresql:/localhost/test" in _node_sources(graph_path)
     backups = [
         path
-        for path in (out_root / "graphify-out").iterdir()
+        for path in (out_root / "atlas-out").iterdir()
         if path.is_dir() and (path / "manifest.json").exists()
     ]
     assert backups
@@ -981,7 +981,7 @@ def test_pathless_postgres_extract_initializes_empty_detection(
 
     _run(
         [
-            "graphify",
+            "atlas",
             "extract",
             str(corpus),
             "--code-only",
@@ -1036,7 +1036,7 @@ def test_incremental_extract_prunes_newly_excluded_file_not_in_manifest(
 ):
     """Seed a graph with nodes for x.py, drop x.py from the manifest (pre-#1897
     manifests never listed excluded/omitted files), exclude x.py via
-    .graphifyignore, re-run extract: x.py's nodes must be gone even though it
+    .atlasignore, re-run extract: x.py's nodes must be gone even though it
     was never on the deleted list."""
     import json
     project = _two_file_corpus(tmp_path)
@@ -1046,10 +1046,10 @@ def test_incremental_extract_prunes_newly_excluded_file_not_in_manifest(
 
     _run_extract(
         monkeypatch,
-        ["graphify", "extract", str(project), "--out", str(out_dir)],
+        ["atlas", "extract", str(project), "--out", str(out_dir)],
     )
-    graph_path = out_dir / "graphify-out" / "graph.json"
-    manifest_path = out_dir / "graphify-out" / "manifest.json"
+    graph_path = out_dir / "atlas-out" / "graph.json"
+    manifest_path = out_dir / "atlas-out" / "manifest.json"
     assert any("x.py" in s for s in _node_sources(graph_path)), (
         "seed extract must produce nodes for x.py"
     )
@@ -1060,10 +1060,10 @@ def test_incremental_extract_prunes_newly_excluded_file_not_in_manifest(
     manifest = {k: v for k, v in manifest.items() if "x.py" not in k}
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
-    (project / ".graphifyignore").write_text("x.py\n")
+    (project / ".atlasignore").write_text("x.py\n")
     _run_extract(
         monkeypatch,
-        ["graphify", "extract", str(project), "--out", str(out_dir)],
+        ["atlas", "extract", str(project), "--out", str(out_dir)],
     )
 
     sources = _node_sources(graph_path)
@@ -1094,16 +1094,16 @@ def test_incremental_extract_prunes_excluded_file_listed_in_manifest(
 
     _run_extract(
         monkeypatch,
-        ["graphify", "extract", str(project), "--out", str(out_dir)],
+        ["atlas", "extract", str(project), "--out", str(out_dir)],
     )
-    graph_path = out_dir / "graphify-out" / "graph.json"
-    manifest_path = out_dir / "graphify-out" / "manifest.json"
+    graph_path = out_dir / "atlas-out" / "graph.json"
+    manifest_path = out_dir / "atlas-out" / "manifest.json"
     assert any("x.py" in k for k in json.loads(manifest_path.read_text()))
 
-    (project / ".graphifyignore").write_text("x.py\n")
+    (project / ".atlasignore").write_text("x.py\n")
     _run_extract(
         monkeypatch,
-        ["graphify", "extract", str(project), "--out", str(out_dir)],
+        ["atlas", "extract", str(project), "--out", str(out_dir)],
     )
 
     sources = _node_sources(graph_path)
@@ -1117,7 +1117,7 @@ def test_incremental_extract_prunes_excluded_file_listed_in_manifest(
     # Steady state: a third run neither resurrects x.py nor loses keep.py.
     _run_extract(
         monkeypatch,
-        ["graphify", "extract", str(project), "--out", str(out_dir)],
+        ["atlas", "extract", str(project), "--out", str(out_dir)],
     )
     sources = _node_sources(graph_path)
     assert not any("x.py" in s for s in sources)
@@ -1138,16 +1138,16 @@ def test_no_cluster_incremental_prunes_newly_excluded_file(
 
     monkeypatch.setattr(
         mainmod.sys, "argv",
-        ["graphify", "extract", str(project), "--no-cluster", "--out", str(out_dir)],
+        ["atlas", "extract", str(project), "--no-cluster", "--out", str(out_dir)],
     )
     with pytest.raises(SystemExit) as exc:
         mainmod.main()
     assert exc.value.code == 0
-    graph_path = out_dir / "graphify-out" / "graph.json"
+    graph_path = out_dir / "atlas-out" / "graph.json"
     assert any("x.py" in s for s in _node_sources(graph_path))
     capsys.readouterr()
 
-    (project / ".graphifyignore").write_text("x.py\n")
+    (project / ".atlasignore").write_text("x.py\n")
     with pytest.raises(SystemExit) as exc:
         mainmod.main()
     assert exc.value.code == 0
@@ -1167,7 +1167,7 @@ def test_no_cluster_incremental_prunes_newly_excluded_file(
 # #2543: a code file whose AST extraction FAILED (error result — e.g. missing
 # optional extra — or extractor-present zero nodes) must not be stamped in the
 # incremental manifest, or detect_incremental reports it unchanged forever and
-# only `rm -rf graphify-out` recovers. The extractor is swapped through
+# only `rm -rf atlas-out` recovers. The extractor is swapped through
 # extract._DISPATCH so the tests run without tree-sitter-sql installed.
 # ---------------------------------------------------------------------------
 
@@ -1209,15 +1209,15 @@ def test_failed_extra_is_retried_and_recovers(monkeypatch, tmp_path, capsys):
     """Run 1 fails on schema.sql (missing extra) -> no live manifest hash;
     run 2 with the extra 'installed' re-queues it and the graph gains its
     nodes; run 3 settles at 0 re-extracted (no requeue loop)."""
-    import graphify.extract as extractmod
+    import monarch_atlas.extract as extractmod
 
     project = _sql_failure_corpus(tmp_path)
     out_dir = tmp_path / "out"
     _clear_backend_keys(monkeypatch)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
-    graph_path = out_dir / "graphify-out" / "graph.json"
-    manifest_path = out_dir / "graphify-out" / "manifest.json"
-    argv = ["graphify", "extract", str(project), "--out", str(out_dir)]
+    graph_path = out_dir / "atlas-out" / "graph.json"
+    manifest_path = out_dir / "atlas-out" / "manifest.json"
+    argv = ["atlas", "extract", str(project), "--out", str(out_dir)]
 
     # Run 1: extraction of schema.sql fails.
     failing = pytest.MonkeyPatch()
@@ -1257,16 +1257,16 @@ def test_failed_extra_is_retried_and_recovers(monkeypatch, tmp_path, capsys):
 def test_permanent_failure_does_not_wedge(monkeypatch, tmp_path, capsys):
     """A file that keeps failing is retried on every run (exactly 1 file), the
     runs complete, and the rest of the graph stays stable — no wedge, no loop."""
-    import graphify.extract as extractmod
+    import monarch_atlas.extract as extractmod
 
     project = _sql_failure_corpus(tmp_path)
     out_dir = tmp_path / "out"
     _clear_backend_keys(monkeypatch)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setitem(extractmod._DISPATCH, ".sql", _failing_sql)
-    graph_path = out_dir / "graphify-out" / "graph.json"
-    manifest_path = out_dir / "graphify-out" / "manifest.json"
-    argv = ["graphify", "extract", str(project), "--out", str(out_dir)]
+    graph_path = out_dir / "atlas-out" / "graph.json"
+    manifest_path = out_dir / "atlas-out" / "manifest.json"
+    argv = ["atlas", "extract", str(project), "--out", str(out_dir)]
 
     _run_extract(monkeypatch, argv)  # seed (full scan)
     capsys.readouterr()
@@ -1293,8 +1293,8 @@ def test_success_and_unchanged_unaffected(monkeypatch, tmp_path, capsys):
     out_dir = tmp_path / "out"
     _clear_backend_keys(monkeypatch)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
-    manifest_path = out_dir / "graphify-out" / "manifest.json"
-    argv = ["graphify", "extract", str(project), "--out", str(out_dir)]
+    manifest_path = out_dir / "atlas-out" / "manifest.json"
+    argv = ["atlas", "extract", str(project), "--out", str(out_dir)]
 
     _run_extract(monkeypatch, argv)
     capsys.readouterr()
@@ -1311,17 +1311,17 @@ def test_poisoned_manifest_is_healed(monkeypatch, tmp_path, capsys):
     """A manifest poisoned BEFORE the #2543 fix (live hash stamped, file absent
     from graph.json) must be re-queued and healed by the next run."""
     import json
-    import graphify.extract as extractmod
-    from graphify.detect import save_manifest
+    import monarch_atlas.extract as extractmod
+    from monarch_atlas.detect import save_manifest
 
     project = _sql_failure_corpus(tmp_path)
     out_dir = tmp_path / "out"
     _clear_backend_keys(monkeypatch)
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
     monkeypatch.setitem(extractmod._DISPATCH, ".sql", _ok_sql)
-    graph_path = out_dir / "graphify-out" / "graph.json"
-    manifest_path = out_dir / "graphify-out" / "manifest.json"
-    argv = ["graphify", "extract", str(project), "--out", str(out_dir)]
+    graph_path = out_dir / "atlas-out" / "graph.json"
+    manifest_path = out_dir / "atlas-out" / "manifest.json"
+    argv = ["atlas", "extract", str(project), "--out", str(out_dir)]
 
     _run_extract(monkeypatch, argv)  # healthy seed: schema.sql stamped + in graph
     capsys.readouterr()
@@ -1355,7 +1355,7 @@ def test_cache_check_prompt_file_scopes_hits_to_that_prompt(monkeypatch, tmp_pat
     """#1939: cache-check --prompt-file only counts entries produced by that same
     extraction prompt, so an upgraded prompt reports a miss (re-extract) rather
     than replaying the older vintage."""
-    from graphify.cache import save_semantic_cache
+    from monarch_atlas.cache import save_semantic_cache
 
     doc = tmp_path / "doc.md"
     doc.write_text("# Doc\n")
@@ -1367,7 +1367,7 @@ def test_cache_check_prompt_file_scopes_hits_to_that_prompt(monkeypatch, tmp_pat
     files_from.write_text(str(doc) + "\n")
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
 
-    base = ["graphify", "cache-check", str(files_from), "--root", str(tmp_path)]
+    base = ["atlas", "cache-check", str(files_from), "--root", str(tmp_path)]
     _run_extract(monkeypatch, base + ["--prompt-file", str(spec)])
     assert "Cache: 1 hit, 0 miss" in capsys.readouterr().out
 
@@ -1385,7 +1385,7 @@ def test_edge_only_semantic_extraction_not_stamped_and_retried(monkeypatch, tmp_
     edges but zero nodes must NOT be cached or stamped into manifest.json, so
     subsequent incremental runs re-dispatch and retry the file."""
     import json
-    from graphify.cache import check_semantic_cache
+    from monarch_atlas.cache import check_semantic_cache
 
     corpus = _make_corpus(tmp_path)  # main.go + README.md
     arch = corpus / "ARCH.md"
@@ -1437,14 +1437,14 @@ def test_edge_only_semantic_extraction_not_stamped_and_retried(monkeypatch, tmp_
             "output_tokens": 5,
         }
 
-    monkeypatch.setattr("graphify.llm.extract_corpus_parallel", _mock_llm)
-    argv = ["graphify", "extract", str(corpus), "--backend", "claude",
+    monkeypatch.setattr("monarch_atlas.llm.extract_corpus_parallel", _mock_llm)
+    argv = ["atlas", "extract", str(corpus), "--backend", "claude",
             "--no-cluster", "--out", str(out_dir)]
 
     # --- Run 1: ARCH.md produces only edges ---
     _run_extract(monkeypatch, argv)
 
-    manifest_path = out_dir / "graphify-out" / "manifest.json"
+    manifest_path = out_dir / "atlas-out" / "manifest.json"
     assert manifest_path.exists()
     m1 = json.loads(manifest_path.read_text(encoding="utf-8"))
 
@@ -1456,8 +1456,8 @@ def test_edge_only_semantic_extraction_not_stamped_and_retried(monkeypatch, tmp_
     )
 
     # Cache check: README.md is cached, ARCH.md is NOT cached
-    from graphify.cache import file_hash
-    cache_sem_dir = out_dir / "graphify-out" / "cache" / "semantic"
+    from monarch_atlas.cache import file_hash
+    cache_sem_dir = out_dir / "atlas-out" / "cache" / "semantic"
     arch_h = file_hash(arch, corpus)
     readme_h = file_hash(corpus / "README.md", corpus)
     assert not list(cache_sem_dir.rglob(f"{arch_h}.json")), "ARCH.md must not have a cache file"
@@ -1473,7 +1473,7 @@ def test_edge_only_semantic_extraction_not_stamped_and_retried(monkeypatch, tmp_
         "ARCH.md must now be stamped after successful node extraction"
     )
 
-    graph_path = out_dir / "graphify-out" / "graph.json"
+    graph_path = out_dir / "atlas-out" / "graph.json"
     g2 = json.loads(graph_path.read_text(encoding="utf-8"))
     node_ids = {n["id"] for n in g2.get("nodes", [])}
     assert "arch_concept" in node_ids, "ARCH.md nodes must be present in graph.json"
@@ -1484,7 +1484,7 @@ def test_stale_poisoned_manifest_semantic_source_healed(monkeypatch, tmp_path, c
     for a semantic file with zero nodes/hyperedges in graph.json) is healed by
     re-queuing the file on an incremental extract."""
     import json
-    from graphify.detect import save_manifest
+    from monarch_atlas.detect import save_manifest
 
     project = tmp_path / "proj"
     project.mkdir()
@@ -1494,10 +1494,10 @@ def test_stale_poisoned_manifest_semantic_source_healed(monkeypatch, tmp_path, c
     app.write_text("def run(): pass\n", encoding="utf-8")
 
     out_dir = tmp_path / "out"
-    graphify_out = out_dir / "graphify-out"
-    graphify_out.mkdir(parents=True, exist_ok=True)
-    graph_path = graphify_out / "graph.json"
-    manifest_path = graphify_out / "manifest.json"
+    atlas_out = out_dir / "atlas-out"
+    atlas_out.mkdir(parents=True, exist_ok=True)
+    graph_path = atlas_out / "graph.json"
+    manifest_path = atlas_out / "manifest.json"
 
     # 1) Seed a graph where guide.md has 0 nodes and 0 hyperedges
     graph_path.write_text(
@@ -1537,8 +1537,8 @@ def test_stale_poisoned_manifest_semantic_source_healed(monkeypatch, tmp_path, c
             "output_tokens": 5,
         }
 
-    monkeypatch.setattr("graphify.llm.extract_corpus_parallel", _mock_llm)
-    argv = ["graphify", "extract", str(project), "--backend", "claude",
+    monkeypatch.setattr("monarch_atlas.llm.extract_corpus_parallel", _mock_llm)
+    argv = ["atlas", "extract", str(project), "--backend", "claude",
             "--no-cluster", "--out", str(out_dir)]
 
     _run_extract(monkeypatch, argv)
@@ -1600,14 +1600,14 @@ def test_incremental_stray_attribution_preserves_undispatched_file(
         return {**chunk, "input_tokens": 100, "output_tokens": 50}
 
     monkeypatch.setattr(
-        "graphify.llm.extract_corpus_parallel", _seed_extraction
+        "monarch_atlas.llm.extract_corpus_parallel", _seed_extraction
     )
     monkeypatch.setattr(mainmod, "_check_skill_version", lambda _: None)
-    argv = ["graphify", "extract", str(project), "--out", str(out_dir)]
+    argv = ["atlas", "extract", str(project), "--out", str(out_dir)]
     _run_extract(monkeypatch, argv)
     capsys.readouterr()
 
-    graph_path = out_dir / "graphify-out" / "graph.json"
+    graph_path = out_dir / "atlas-out" / "graph.json"
 
     def _node_ids():
         import json
@@ -1648,7 +1648,7 @@ def test_incremental_stray_attribution_preserves_undispatched_file(
         return {**chunk, "input_tokens": 10, "output_tokens": 5}
 
     monkeypatch.setattr(
-        "graphify.llm.extract_corpus_parallel", _straying_extraction
+        "monarch_atlas.llm.extract_corpus_parallel", _straying_extraction
     )
     _run_extract(monkeypatch, argv)
 

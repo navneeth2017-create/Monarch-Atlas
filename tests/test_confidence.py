@@ -5,11 +5,11 @@ from pathlib import Path
 
 import networkx as nx
 
-from graphify.build import build_from_json
-from graphify.cluster import cluster, score_all
-from graphify.analyze import god_nodes, surprising_connections
-from graphify.export import to_json
-from graphify.report import generate
+from monarch_atlas.build import build_from_json
+from monarch_atlas.cluster import cluster, score_all
+from monarch_atlas.analyze import god_nodes, surprising_connections
+from monarch_atlas.export import to_json
+from monarch_atlas.report import generate
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

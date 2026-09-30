@@ -18,7 +18,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from graphify import llm
+from monarch_atlas import llm
 
 # A 1x1 PNG is unnecessary — the renderers never decode pixels, they only base64
 # the bytes — so any non-empty byte string stands in for image content.
@@ -50,7 +50,7 @@ def test_pdf_routed_through_pypdf_not_readtext(tmp_path, monkeypatch):
     # prompt.
     pdf = tmp_path / "paper.pdf"
     pdf.write_bytes(b"%PDF-1.4 RAWBINARYGARBAGE\x00\xff")
-    import graphify.detect as detect
+    import monarch_atlas.detect as detect
     monkeypatch.setattr(detect, "extract_pdf_text", lambda p: "EXTRACTED PDF TEXT")
     out = llm._read_files([pdf], tmp_path)
     assert "EXTRACTED PDF TEXT" in out
@@ -165,9 +165,9 @@ def test_capability_flags(monkeypatch):
         assert llm._backend_supports_vision(b), b
     assert not llm._backend_supports_vision("deepseek")
     # ollama is opt-in via env (default model is text-only)
-    monkeypatch.delenv("GRAPHIFY_OLLAMA_VISION", raising=False)
+    monkeypatch.delenv("ATLAS_OLLAMA_VISION", raising=False)
     assert not llm._backend_supports_vision("ollama")
-    monkeypatch.setenv("GRAPHIFY_OLLAMA_VISION", "1")
+    monkeypatch.setenv("ATLAS_OLLAMA_VISION", "1")
     assert llm._backend_supports_vision("ollama")
 
 
@@ -425,7 +425,7 @@ def test_anthropic_response_text_falls_back_without_text():
 
 
 def test_anthropic_response_text_returns_first_text_block_not_concatenation():
-    """Locks the first-wins semantics: graphify's claude calls return a single
+    """Locks the first-wins semantics: atlas's claude calls return a single
     JSON payload, so the helper must return the FIRST text block, never
     concatenate multiple (which would corrupt the JSON)."""
     content = [
@@ -493,11 +493,11 @@ def test_call_bedrock_parses_reasoning_model_response(monkeypatch):
     # Hard-indexing block 0 yielded "{}" -> zero nodes -> relabelled "length".
     assert result["finish_reason"] == "stop"
 def test_call_bedrock_honors_api_timeout(monkeypatch):
-    # GRAPHIFY_API_TIMEOUT must reach the botocore client's read_timeout; else
+    # ATLAS_API_TIMEOUT must reach the botocore client's read_timeout; else
     # Converse falls back to botocore's 60s default and a long generation dies
     # with "Read timeout on endpoint URL" regardless of the env var.
-    monkeypatch.setenv("GRAPHIFY_API_TIMEOUT", "1800")
-    monkeypatch.delenv("GRAPHIFY_MAX_RETRIES", raising=False)
+    monkeypatch.setenv("ATLAS_API_TIMEOUT", "1800")
+    monkeypatch.delenv("ATLAS_MAX_RETRIES", raising=False)
     captured: dict = {}
     _fake_boto3(monkeypatch, captured)
     llm._call_bedrock("model", "CORPUS")
@@ -511,7 +511,7 @@ def test_call_bedrock_honors_api_timeout(monkeypatch):
 def test_call_bedrock_api_timeout_defaults_when_unset(monkeypatch):
     # With no override the client still gets an explicit 600s read timeout,
     # not botocore's silent 60s default.
-    monkeypatch.delenv("GRAPHIFY_API_TIMEOUT", raising=False)
+    monkeypatch.delenv("ATLAS_API_TIMEOUT", raising=False)
     captured: dict = {}
     _fake_boto3(monkeypatch, captured)
     llm._call_bedrock("model", "CORPUS")

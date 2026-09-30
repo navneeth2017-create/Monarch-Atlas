@@ -15,8 +15,8 @@ package regardless of nested tsconfigs.
 """
 from pathlib import Path
 
-from graphify.extract import _make_id, extract
-from graphify.extractors.resolution import _resolve_js_module_path
+from monarch_atlas.extract import _make_id, extract
+from monarch_atlas.extractors.resolution import _resolve_js_module_path
 
 
 def _write(path: Path, text: str) -> Path:

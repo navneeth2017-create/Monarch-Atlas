@@ -3,7 +3,7 @@ to stay under the 255-byte filesystem limit, instead of crashing with
 OSError ENAMETOOLONG on long node labels."""
 import networkx as nx
 
-from graphify.export import to_obsidian, to_canvas
+from monarch_atlas.export import to_obsidian, to_canvas
 
 
 def _graph(labels: list[str]) -> tuple[nx.Graph, dict[int, list[str]]]:

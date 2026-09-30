@@ -1,6 +1,6 @@
 """Full per-platform install + uninstall round-trip suite.
 
-Every platform graphify knows about installs its SKILL.md at a specific real
+Every platform atlas knows about installs its SKILL.md at a specific real
 destination (the ``_platform_skill_destination`` map), optionally with a
 references/ sidecar, and uninstall must put the tree back exactly as it found
 it. This file walks every platform through that round trip at both project and
@@ -23,11 +23,11 @@ from unittest.mock import patch
 
 import pytest
 
-import graphify
-import graphify.__main__ as mainmod
+import monarch_atlas
+import monarch_atlas.__main__ as mainmod
 
 
-PKG_DIR = Path(graphify.__file__).parent
+PKG_DIR = Path(monarch_atlas.__file__).parent
 
 # Every platform in the config plus the scope each is exercised at. The
 # destination is resolved from _platform_skill_destination so the assertions
@@ -58,7 +58,7 @@ def test_skill_roundtrip_at_real_destination(platform, project, tmp_path, monkey
     project_dir.mkdir()
     monkeypatch.chdir(project_dir)
 
-    with patch("graphify.__main__.Path.home", return_value=home):
+    with patch("monarch_atlas.__main__.Path.home", return_value=home):
         dst = mainmod._platform_skill_destination(
             platform, project=project, project_dir=project_dir
         )
@@ -74,7 +74,7 @@ def test_skill_roundtrip_at_real_destination(platform, project, tmp_path, monkey
         )
         assert returned == dst
         assert dst.exists(), f"{platform} ({'project' if project else 'user'}) skill not installed"
-        assert (dst.parent / ".graphify_version").read_text() == mainmod.__version__
+        assert (dst.parent / ".atlas_version").read_text() == mainmod.__version__
 
         refs = dst.parent / "references"
         if _has_real_bundle(platform):
@@ -90,7 +90,7 @@ def test_skill_roundtrip_at_real_destination(platform, project, tmp_path, monkey
         )
         assert removed
         assert not dst.exists()
-        assert not (dst.parent / ".graphify_version").exists()
+        assert not (dst.parent / ".atlas_version").exists()
         assert not refs.exists()
 
 
@@ -99,9 +99,9 @@ def test_amp_user_install_at_corrected_agents_path(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.chdir(tmp_path)
-    with patch("graphify.__main__.Path.home", return_value=home):
+    with patch("monarch_atlas.__main__.Path.home", return_value=home):
         dst = mainmod._copy_skill_file("amp", project=False)
-        assert dst == home / ".config" / "agents" / "skills" / "graphify" / "SKILL.md"
+        assert dst == home / ".config" / "agents" / "skills" / "atlas" / "SKILL.md"
         assert dst.exists()
         # The legacy ~/.amp/skills location is not written.
         assert not (home / ".amp" / "skills").exists()
@@ -114,37 +114,37 @@ def test_amp_project_install_at_agents_path(tmp_path, monkeypatch):
     project_dir = tmp_path / "proj"
     project_dir.mkdir()
     monkeypatch.chdir(project_dir)
-    with patch("graphify.__main__.Path.home", return_value=tmp_path / "home"):
+    with patch("monarch_atlas.__main__.Path.home", return_value=tmp_path / "home"):
         dst = mainmod._copy_skill_file("amp", project=True, project_dir=project_dir)
-        assert dst == project_dir / ".agents" / "skills" / "graphify" / "SKILL.md"
+        assert dst == project_dir / ".agents" / "skills" / "atlas" / "SKILL.md"
         assert dst.exists()
         mainmod._remove_skill_file("amp", project=True, project_dir=project_dir)
         assert not dst.exists()
 
 
 def test_vscode_install_uninstall_roundtrip(tmp_path, monkeypatch):
-    """VS Code Copilot Chat round trip at ~/.copilot/skills/graphify + instructions file."""
+    """VS Code Copilot Chat round trip at ~/.copilot/skills/atlas + instructions file."""
     home = tmp_path / "home"
     project_dir = tmp_path / "proj"
     home.mkdir()
     project_dir.mkdir()
     monkeypatch.chdir(project_dir)
-    with patch("graphify.__main__.Path.home", return_value=home):
+    with patch("monarch_atlas.__main__.Path.home", return_value=home):
         mainmod.vscode_install(project_dir=project_dir)
-        skill = home / ".copilot" / "skills" / "graphify" / "SKILL.md"
+        skill = home / ".copilot" / "skills" / "atlas" / "SKILL.md"
         instructions = project_dir / ".github" / "copilot-instructions.md"
         assert skill.exists()
         assert instructions.exists()
-        assert "## graphify" in instructions.read_text(encoding="utf-8")
-        assert (skill.parent / ".graphify_version").read_text() == mainmod.__version__
+        assert "## atlas" in instructions.read_text(encoding="utf-8")
+        assert (skill.parent / ".atlas_version").read_text() == mainmod.__version__
 
         mainmod.vscode_uninstall(project_dir=project_dir)
         assert not skill.exists()
         # The skill dir tree is walked away.
         assert not (home / ".copilot" / "skills").exists()
-        # The graphify section is stripped from the instructions file.
+        # The atlas section is stripped from the instructions file.
         if instructions.exists():
-            assert "## graphify" not in instructions.read_text(encoding="utf-8")
+            assert "## atlas" not in instructions.read_text(encoding="utf-8")
 
 
 def _install_via_entrypoint(tmp_path, platform):
@@ -152,7 +152,7 @@ def _install_via_entrypoint(tmp_path, platform):
     old_cwd = Path.cwd()
     try:
         os.chdir(tmp_path)
-        with patch("graphify.__main__.Path.home", return_value=tmp_path):
+        with patch("monarch_atlas.__main__.Path.home", return_value=tmp_path):
             mainmod.install(platform=platform)
     finally:
         os.chdir(old_cwd)
@@ -163,7 +163,7 @@ def _copy_in_tmp(tmp_path, platform):
     old_cwd = Path.cwd()
     try:
         os.chdir(tmp_path)
-        with patch("graphify.__main__.Path.home", return_value=tmp_path):
+        with patch("monarch_atlas.__main__.Path.home", return_value=tmp_path):
             mainmod._copy_skill_file(platform)
     finally:
         os.chdir(old_cwd)
@@ -177,8 +177,8 @@ def test_install_entrypoint_roundtrip_for_progressive_and_monolith(tmp_path):
     landing at and clearing their real destinations.
     """
     for platform, rel in (
-        ("claude", Path(".claude") / "skills" / "graphify"),
-        ("aider", Path(".aider") / "graphify"),
+        ("claude", Path(".claude") / "skills" / "atlas"),
+        ("aider", Path(".aider") / "atlas"),
     ):
         _install_via_entrypoint(tmp_path, platform)
         skill_dir = tmp_path / rel
@@ -187,7 +187,7 @@ def test_install_entrypoint_roundtrip_for_progressive_and_monolith(tmp_path):
             assert (skill_dir / "references").is_dir()
         else:
             assert not (skill_dir / "references").exists()
-        with patch("graphify.__main__.Path.home", return_value=tmp_path):
+        with patch("monarch_atlas.__main__.Path.home", return_value=tmp_path):
             mainmod._remove_skill_file(platform)
         assert not (skill_dir / "SKILL.md").exists()
 
@@ -233,12 +233,12 @@ def fake_progressive_bundle():
 def test_monolith_to_progressive_upgrade(tmp_path, fake_progressive_bundle):
     """A pre-progressive install (SKILL.md, no references/) gains references/ on upgrade."""
     platform, bundle_dir, _ = fake_progressive_bundle
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
 
     # Simulate the old on-disk state: a monolithic SKILL.md with no sidecar.
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text("old monolith body\n", encoding="utf-8")
-    (skill_dir / ".graphify_version").write_text("0.0.1", encoding="utf-8")
+    (skill_dir / ".atlas_version").write_text("0.0.1", encoding="utf-8")
     assert not (skill_dir / "references").exists()
 
     # Upgrade: the platform now ships a bundle, so install adds references/.
@@ -247,14 +247,14 @@ def test_monolith_to_progressive_upgrade(tmp_path, fake_progressive_bundle):
     refs = skill_dir / "references"
     assert refs.is_dir()
     assert (refs / "extraction-spec.md").read_text() == "# spec\n"
-    assert (skill_dir / ".graphify_version").read_text() == mainmod.__version__
+    assert (skill_dir / ".atlas_version").read_text() == mainmod.__version__
     assert not (skill_dir / "references.tmp").exists()
 
 
 def test_progressive_to_monolith_downgrade_clears_references(tmp_path, fake_progressive_bundle):
     """If a host loses its bundle, the next install clears the orphan references/."""
     platform, bundle_dir, _ = fake_progressive_bundle
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
 
     # First install: progressive, references/ present.
     _copy_in_tmp(tmp_path, platform)
@@ -274,7 +274,7 @@ def test_progressive_to_monolith_downgrade_clears_references(tmp_path, fake_prog
 def test_interrupted_references_staging_self_heals(tmp_path, fake_progressive_bundle):
     """A leftover references.tmp from a crashed install is cleared on the next install."""
     platform, _, _ = fake_progressive_bundle
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text("body\n", encoding="utf-8")
 
@@ -296,7 +296,7 @@ def test_interrupted_references_staging_self_heals(tmp_path, fake_progressive_bu
 def test_failed_copytree_leaves_no_partial_references(tmp_path, fake_progressive_bundle):
     """If copytree blows up mid-stage, no half-written references/ is left visible."""
     platform, _, _ = fake_progressive_bundle
-    skill_dir = tmp_path / ".claude" / "skills" / "graphify"
+    skill_dir = tmp_path / ".claude" / "skills" / "atlas"
     skill_dir.mkdir(parents=True)
     skill_dst = skill_dir / "SKILL.md"
     skill_dst.write_text("body\n", encoding="utf-8")
@@ -307,7 +307,7 @@ def test_failed_copytree_leaves_no_partial_references(tmp_path, fake_progressive
     (good / "keep.md").write_text("keep\n", encoding="utf-8")
 
     boom = RuntimeError("disk full")
-    with patch("graphify.__main__.shutil.copytree", side_effect=boom):
+    with patch("monarch_atlas.__main__.shutil.copytree", side_effect=boom):
         with pytest.raises(RuntimeError):
             mainmod._install_skill_references(skill_dst, PKG_DIR / "skills" / "claude" / "references")
 

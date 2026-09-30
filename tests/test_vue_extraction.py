@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graphify.detect import CODE_EXTENSIONS
-from graphify.extract import (
+from monarch_atlas.detect import CODE_EXTENSIONS
+from monarch_atlas.extract import (
     _make_id,
     _vue_mask_non_script,
     extract,

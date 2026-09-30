@@ -1,5 +1,5 @@
 from pathlib import Path
-from graphify.extract import extract
+from monarch_atlas.extract import extract
 
 
 def graph_for(root, files):
@@ -27,9 +27,9 @@ def test_star_cycle_with_real_definition_does_not_mask_unique_origin(tmp_path):
 
 
 def test_sourceless_owned_node_is_not_an_export_definition(tmp_path):
-    from graphify.extractors.resolution import _apply_symbol_resolution_facts
-    from graphify.extractors.models import _SymbolResolutionFacts, _SymbolExportFact
-    from graphify.extractors.base import _make_id, _file_stem
+    from monarch_atlas.extractors.resolution import _apply_symbol_resolution_facts
+    from monarch_atlas.extractors.models import _SymbolResolutionFacts, _SymbolExportFact
+    from monarch_atlas.extractors.base import _make_id, _file_stem
 
     base = tmp_path / "base.ts"
     api = tmp_path / "api.ts"
@@ -56,7 +56,7 @@ def test_sourceless_owned_node_is_not_an_export_definition(tmp_path):
 
 
 def test_legacy_aggregate_pattern_facts_and_nodes_are_preserved(tmp_path):
-    from graphify.extractors.resolution import (
+    from monarch_atlas.extractors.resolution import (
         _parse_js_tree,
         _walk_js_tree,
         _js_exported_declaration_names,
@@ -82,7 +82,7 @@ def test_legacy_aggregate_pattern_facts_and_nodes_are_preserved(tmp_path):
 
 
 def test_identifier_alias_fact_and_binding_are_preserved(tmp_path):
-    from graphify.extractors.resolution import (
+    from monarch_atlas.extractors.resolution import (
         _parse_js_tree,
         _walk_js_tree,
         _js_exported_declaration_names,
