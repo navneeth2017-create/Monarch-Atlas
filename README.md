@@ -6,7 +6,7 @@ contributors (Apache-2.0; see `LICENSE`, `LICENSE-MIT`, `NOTICE`) — shipped as
 Monarch product with our own viewer.
 
 Everything graphify does, this does: tree-sitter extraction, community
-detection, `graphify query / path / explain`, the Claude Code skill, the
+detection, `atlas query / path / explain`, the Claude Code skill, the
 commit hook. What's different is the **`graph.html`** it writes:
 
 - **3D galaxy (default).** Every community is a solar system: its hub is the
@@ -29,11 +29,15 @@ commit hook. What's different is the **`graph.html`** it writes:
 
 ```bash
 pip install git+https://github.com/navneeth2017-create/Monarch-Atlas.git
-graphify install          # registers the /graphify skill (unchanged)
-graphify update .         # builds graphify-out/ with the Atlas viewer
+atlas install             # registers the /graphify skill (unchanged)
+atlas update .            # builds atlas-out/ with the Atlas viewer
 ```
 
-Both `graphify` and `atlas` are installed as the same CLI.
+`atlas` is the command; `graphify` is installed as the same CLI. The graph lives
+in `atlas-out/`. A project built before the rename keeps working from its
+`graphify-out/` until you move it: `git mv graphify-out atlas-out` (and change
+`graphify-out/graph.json merge=graphify` in `.gitattributes` to
+`atlas-out/graph.json merge=atlas`).
 
 ## All your repos in one universe
 
@@ -81,7 +85,12 @@ is pushed and an issue is opened naming the files that need a human.
 | `graphify/exporters/atlas_html.py` | **New.** The Atlas viewer: styles, script, document. |
 | `graphify/exporters/html.py` | 6-line hook at the end of `to_html`: uses the Atlas document unless `GRAPHIFY_THEME=classic`. |
 | `graphify/atlas_merge.py` | **New.** Merges several repos' graphs into one universe with realms and cross-repo links. |
-| `pyproject.toml` | extra `atlas` console script. The distribution name stays `graphifyy` on purpose: upstream looks its own version up by that name in four places, and renaming it breaks `graphify --version` and the skill-version check. |
+| `graphify/atlas_cli.py` | **New.** The `atlas`/`graphify` entry point: picks `atlas-out/` (or a not-yet-moved `graphify-out/`) for the repo a command points at, and words the Claude Code `hook-guard` reminders with `atlas`. |
+| `graphify/paths.py` | Default output folder `atlas-out`, falling back to an existing `graphify-out` (`default_out_name`). |
+| `graphify/hooks.py` | Git-hook scripts use the same folder fallback; the graph.json merge driver is named `atlas` (legacy `merge=graphify` lines are recognised and upgraded). |
+| `graphify/detect.py`, `graphify/exporters/html.py` | `atlas-out` treated like `graphify-out` (never scanned as source; portable page title). |
+| `conftest.py`, `tests/test_atlas_naming.py`, `tests/test_hooks.py` | Upstream tests run with `GRAPHIFY_OUT=graphify-out`; our naming has its own tests; merge-driver assertions say `atlas`. |
+| `pyproject.toml` | `atlas` and `graphify` console scripts both start `graphify.atlas_cli`. The distribution name stays `graphifyy` on purpose: upstream looks its own version up by that name in four places, and renaming it breaks `graphify --version` and the skill-version check. |
 | `README.md` | This file, replacing upstream's README. upstream README edits are excluded from the sync patch (their README is always at the upstream link above). |
 | `.upstream-sha`, `.github/workflows/upstream-sync.yml` | The upstream commit this tree matches; the sync workflow. |
 

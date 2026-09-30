@@ -40,3 +40,4 @@ paper/
 
 # macOS Finder metadata
 .DS_Store
+atlas-out/

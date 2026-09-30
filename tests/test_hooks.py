@@ -1055,12 +1055,12 @@ def test_hooks_dir_duplicate_config_keys_honor_custom_hookspath(tmp_path, capsys
 # ── #1902: hook install must register the graph.json union merge driver ─────
 
 def test_install_registers_merge_driver(tmp_path):
-    """install() must set merge.graphify.* via git config and add the
+    """install() must set merge.atlas.* via git config and add the
     .gitattributes line that README/CHANGELOG 0.7.0 document (#1902)."""
     repo = _make_git_repo(tmp_path)
     result = install(repo)
     res = subprocess.run(
-        ["git", "-C", str(repo), "config", "--get", "merge.graphify.driver"],
+        ["git", "-C", str(repo), "config", "--get", "merge.atlas.driver"],
         capture_output=True, text=True,
     )
     assert res.returncode == 0
@@ -1069,7 +1069,7 @@ def test_install_registers_merge_driver(tmp_path):
     assert "merge-driver %O %A %B" in driver
     attrs = (repo / ".gitattributes").read_text(encoding="utf-8")
     assert any(
-        "graph.json" in line and "merge=graphify" in line
+        "graph.json" in line and "merge=atlas" in line
         for line in attrs.splitlines()
     )
     assert "merge driver" in result
@@ -1081,7 +1081,7 @@ def test_install_merge_driver_idempotent(tmp_path):
     install(repo)
     install(repo)
     lines = (repo / ".gitattributes").read_text(encoding="utf-8").splitlines()
-    matches = [l for l in lines if "merge=graphify" in l]
+    matches = [l for l in lines if "merge=atlas" in l]
     assert len(matches) == 1
 
 
@@ -1092,24 +1092,24 @@ def test_install_preserves_existing_gitattributes(tmp_path):
     install(repo)
     content = (repo / ".gitattributes").read_text(encoding="utf-8")
     assert "*.png binary" in content
-    assert "merge=graphify" in content
+    assert "merge=atlas" in content
 
 
 def test_uninstall_removes_merge_driver_keeps_other_attrs(tmp_path):
-    """uninstall() must unset merge.graphify.* and remove only the graphify
+    """uninstall() must unset merge.atlas.* and remove only the graphify
     .gitattributes line, keeping the file when other entries exist."""
     repo = _make_git_repo(tmp_path)
     (repo / ".gitattributes").write_text("*.png binary\n", encoding="utf-8")
     install(repo)
     uninstall(repo)
     res = subprocess.run(
-        ["git", "-C", str(repo), "config", "--get", "merge.graphify.driver"],
+        ["git", "-C", str(repo), "config", "--get", "merge.atlas.driver"],
         capture_output=True, text=True,
     )
     assert res.returncode != 0
     content = (repo / ".gitattributes").read_text(encoding="utf-8")
     assert "*.png binary" in content
-    assert "merge=graphify" not in content
+    assert "merge=atlas" not in content
 
 
 @pytest.mark.parametrize("exe", [
@@ -1167,7 +1167,7 @@ def test_merge_driver_quotes_interpreter_with_spaces(tmp_path, monkeypatch):
     install(repo)
 
     driver = subprocess.run(
-        ["git", "-C", str(repo), "config", "--get", "merge.graphify.driver"],
+        ["git", "-C", str(repo), "config", "--get", "merge.atlas.driver"],
         capture_output=True, text=True, check=True,
     ).stdout.strip()
     assert driver.startswith(f'"{exe}"'), f"interpreter not quoted in merge driver: {driver!r}"

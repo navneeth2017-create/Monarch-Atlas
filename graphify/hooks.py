@@ -37,7 +37,8 @@ fi
 # Second probe: read graphify-out/.graphify_python (written by the skill and
 # CLI; survives uv-tool reinstalls and is the same source the README documents).
 if [ -z "$GRAPHIFY_PYTHON" ]; then
-    _GFY_PYTHON_FILE="graphify-out/.graphify_python"
+    _GFY_PYTHON_FILE="atlas-out/.graphify_python"
+    [ -f "$_GFY_PYTHON_FILE" ] || _GFY_PYTHON_FILE="graphify-out/.graphify_python"
     if [ -f "$_GFY_PYTHON_FILE" ]; then
         _FROM_FILE=$(cat "$_GFY_PYTHON_FILE" 2>/dev/null | tr -d '[:space:]')
         case "$_FROM_FILE" in
@@ -183,7 +184,7 @@ try:
             _watchdog.start()
     _force = os.environ.get('GRAPHIFY_FORCE', '').lower() in ('1', 'true', 'yes')
     _root = Path('.')
-    _out = os.environ.get('GRAPHIFY_OUT', 'graphify-out')
+    from graphify.paths import GRAPHIFY_OUT as _out
     _saved = Path(_out) / '.graphify_root'
     if _saved.exists():
         _txt = _saved.read_text(encoding='utf-8-sig').strip()
@@ -258,7 +259,7 @@ try:
     # (no changed_paths) is correct here. The flock inside _rebuild_code still
     # prevents pile-ups when commit + checkout fire back-to-back.
     _root = Path('.')
-    _out = os.environ.get('GRAPHIFY_OUT', 'graphify-out')
+    from graphify.paths import GRAPHIFY_OUT as _out
     _saved = Path(_out) / '.graphify_root'
     if _saved.exists():
         _txt = _saved.read_text(encoding='utf-8-sig').strip()
@@ -419,7 +420,8 @@ fi
 # outputs are tracked in git). The dir is whatever GRAPHIFY_OUT names, the same
 # source the rebuild body reads (#1423): a literal graphify-out/ here let a
 # commit touching only a renamed output dir's graph.json trigger a full rebuild.
-_GFY_OUT="${GRAPHIFY_OUT:-graphify-out}"
+_GFY_OUT="${GRAPHIFY_OUT:-atlas-out}"
+if [ -z "$GRAPHIFY_OUT" ] && [ ! -d atlas-out ] && [ -d graphify-out ]; then _GFY_OUT="graphify-out"; fi
 _GFY_OUT="${_GFY_OUT%/}"
 # The leading ( on each pattern is POSIX and keeps bash 3.2 (macOS /bin/sh)
 # from mis-parsing the pattern's ) as the end of the $(...) substitution.
@@ -483,7 +485,8 @@ fi
 # Only run if the output dir exists (graph has been built before). Resolve it
 # from GRAPHIFY_OUT like the rebuild body does (#1423): a literal graphify-out/
 # here made the branch-switch rebuild a silent no-op for every renamed output dir.
-_GFY_OUT="${GRAPHIFY_OUT:-graphify-out}"
+_GFY_OUT="${GRAPHIFY_OUT:-atlas-out}"
+if [ -z "$GRAPHIFY_OUT" ] && [ ! -d atlas-out ] && [ -d graphify-out ]; then _GFY_OUT="graphify-out"; fi
 if [ ! -d "${_GFY_OUT%/}" ]; then
     exit 0
 fi
@@ -729,21 +732,28 @@ def _merge_attr_line() -> str:
     absolute output-dir override cannot be expressed there — fall back to the
     default name in that case.
     """
-    from graphify.paths import GRAPHIFY_OUT
+    from graphify.paths import GRAPHIFY_OUT, default_out_name
     out = GRAPHIFY_OUT
     if not out or Path(out).is_absolute() or "\\" in out:
-        out = "graphify-out"
-    return f"{out.rstrip('/')}/graph.json merge=graphify"
+        out = default_out_name()
+    return f"{out.rstrip('/')}/graph.json merge={_MERGE_DRIVER}"
+
+
+# Monarch Atlas names the graph.json merge driver "atlas"; "graphify" is the
+# name from before the rename, still recognised (and upgraded on register).
+_MERGE_DRIVER = "atlas"
+_LEGACY_MERGE_DRIVER = "graphify"
+_MERGE_ATTRS = (f"merge={_MERGE_DRIVER}", f"merge={_LEGACY_MERGE_DRIVER}")
 
 
 def _has_merge_attr(content: str) -> bool:
-    """True if a (non-comment) `<...>graph.json ... merge=graphify` line exists."""
+    """True if a (non-comment) `<...>graph.json ... merge=atlas` (or legacy merge=graphify) line exists."""
     for raw in content.splitlines():
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
         fields = line.split()
-        if fields and fields[0].endswith("graph.json") and "merge=graphify" in fields[1:]:
+        if fields and fields[0].endswith("graph.json") and any(a in fields[1:] for a in _MERGE_ATTRS):
             return True
     return False
 
@@ -768,11 +778,11 @@ def _register_merge_driver(root: Path) -> str:
         # '$' and backticks out, so double quotes cannot introduce expansion.
         driver = f'"{pinned}" -m graphify merge-driver %O %A %B'
     else:
-        driver = "graphify merge-driver %O %A %B"
+        driver = "atlas merge-driver %O %A %B"
     try:
         for key, value in (
-            ("merge.graphify.name", "graphify graph.json union merge"),
-            ("merge.graphify.driver", driver),
+            (f"merge.{_MERGE_DRIVER}.name", "Monarch Atlas graph.json union merge"),
+            (f"merge.{_MERGE_DRIVER}.driver", driver),
         ):
             _sp.run(
                 ["git", "-C", str(root), "config", key, value],
@@ -786,6 +796,14 @@ def _register_merge_driver(root: Path) -> str:
     if attrs.exists():
         content = attrs.read_text(encoding="utf-8")
         if _has_merge_attr(content):
+            legacy = f"merge={_LEGACY_MERGE_DRIVER}"
+            if legacy in content.split():
+                upgraded = "\n".join(
+                    raw.replace(legacy, f"merge={_MERGE_DRIVER}") if _has_merge_attr(raw) else raw
+                    for raw in content.split("\n")
+                )
+                attrs.write_text(upgraded, encoding="utf-8", newline="\n")
+                return f"registered (renamed merge={_LEGACY_MERGE_DRIVER} to merge={_MERGE_DRIVER})"
             return f"already registered ({line})"
         # Never clobber other entries; preserve a trailing newline.
         if content and not content.endswith("\n"):
@@ -799,7 +817,7 @@ def _register_merge_driver(root: Path) -> str:
 def _unregister_merge_driver(root: Path) -> str:
     """Remove the merge-driver git config keys and the .gitattributes line."""
     import subprocess as _sp
-    for key in ("merge.graphify.name", "merge.graphify.driver"):
+    for key in (f"merge.{n}.{k}" for n in (_MERGE_DRIVER, _LEGACY_MERGE_DRIVER) for k in ("name", "driver")):
         try:
             # --unset exits nonzero if the key is absent; that is fine.
             _sp.run(
@@ -829,14 +847,16 @@ def _unregister_merge_driver(root: Path) -> str:
 def _merge_driver_status(root: Path) -> str:
     """Report whether the merge driver is registered (config + gitattributes)."""
     import subprocess as _sp
-    try:
-        res = _sp.run(
-            ["git", "-C", str(root), "config", "--get", "merge.graphify.driver"],
-            capture_output=True, text=True,
-        )
-        cfg_ok = res.returncode == 0 and bool(res.stdout.strip())
-    except OSError:
-        cfg_ok = False
+    cfg_ok = False
+    for name in (_MERGE_DRIVER, _LEGACY_MERGE_DRIVER):
+        try:
+            res = _sp.run(
+                ["git", "-C", str(root), "config", "--get", f"merge.{name}.driver"],
+                capture_output=True, text=True,
+            )
+            cfg_ok = cfg_ok or (res.returncode == 0 and bool(res.stdout.strip()))
+        except OSError:
+            pass
     attrs = root / ".gitattributes"
     attr_ok = attrs.exists() and _has_merge_attr(attrs.read_text(encoding="utf-8"))
     if cfg_ok and attr_ok:

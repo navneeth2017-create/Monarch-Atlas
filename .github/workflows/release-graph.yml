@@ -8,6 +8,8 @@ on:
 jobs:
   build-graph:
     runs-on: ubuntu-latest
+    env:
+      GRAPHIFY_OUT: graphify-out  # Monarch Atlas defaults to atlas-out; this upstream job reads graphify-out
     permissions:
       contents: write  # needed to upload release assets
 

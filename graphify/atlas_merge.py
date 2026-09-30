@@ -1,11 +1,12 @@
-"""Monarch Atlas: merge several graphify-out graphs into one universe.
+"""Monarch Atlas: merge several repo graphs into one universe.
 
     python -m graphify.atlas_merge --out universe.html \\
         AddyDSD=/path/addydsd WowCow=/path/wowcow [...] \\
         [--links links.json] [--title "Monarch Universe"]
 
-Each ``Name=path`` is a repo whose ``graphify-out/graph.json`` (and
-``.graphify_labels.json``) is loaded. Nodes are namespaced ``name::id``,
+Each ``Name=path`` is a repo whose ``atlas-out/graph.json`` (or, for a repo
+not moved yet, ``graphify-out/graph.json``) and ``.graphify_labels.json`` are
+loaded. Nodes are namespaced ``name::id``,
 tagged ``realm=Name``, and community ids are offset per repo so the merged
 graph keeps every repo's own clustering. The Atlas viewer lays each realm
 out as its own galaxy.
@@ -40,15 +41,17 @@ from pathlib import Path
 
 import networkx as nx
 
+from graphify.paths import default_out_name
+
 REALM_COLORS = ["#3CCB7F", "#E8873B", "#5B8DEF", "#C77DFF", "#F2C14E", "#EF6F6C", "#4DD0E1"]
 SERVICES_COLOR = "#e2e2e6"
 
 
 def _load_repo(name: str, root: str):
-    out = Path(root) / "graphify-out"
+    out = Path(root) / default_out_name(root)
     gp = out / "graph.json"
     if not gp.exists():
-        sys.exit(f"{name}: {gp} not found — run `graphify update {root}` first")
+        sys.exit(f"{name}: {gp} not found — run `atlas update {root}` first")
     raw = json.loads(gp.read_text(encoding="utf-8"))
     labels = {}
     lp = out / ".graphify_labels.json"

@@ -23,7 +23,21 @@ import stat
 import tempfile
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
-GRAPHIFY_OUT = os.environ.get("GRAPHIFY_OUT", "graphify-out")
+# Monarch Atlas keeps the graph in atlas-out/. A project built before the rename
+# keeps its graphify-out/ until it is moved (git mv graphify-out atlas-out).
+ATLAS_OUT = "atlas-out"
+LEGACY_OUT = "graphify-out"
+
+
+def default_out_name(root: "str | os.PathLike[str]" = ".") -> str:
+    """``atlas-out``, unless *root* only has a ``graphify-out`` from before the rename."""
+    if not os.path.isdir(os.path.join(root, ATLAS_OUT)) and os.path.isdir(os.path.join(root, LEGACY_OUT)):
+        return LEGACY_OUT
+    return ATLAS_OUT
+
+
+_ENV_OUT = os.environ.get("GRAPHIFY_OUT")
+GRAPHIFY_OUT = _ENV_OUT if _ENV_OUT is not None else default_out_name()
 
 
 def os_replace_with_fallback(src: "str | Path", dst: "str | Path") -> None:

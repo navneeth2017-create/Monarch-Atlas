@@ -842,7 +842,7 @@ _SKIP_DIRS = {
     "site-packages", "lib64",
     ".pytest_cache", ".mypy_cache", ".ruff_cache",
     ".tox", ".nox", ".eggs", "*.egg-info",  # nox is tox's successor, same .nox/ venv shape (#1804)
-    "graphify-out",  # never treat the default output as source input (#524)
+    "graphify-out", "atlas-out",  # never treat the default output as source input (#524)
     # Coverage/test-artefact dirs — generated, never architecturally meaningful
     "lcov-report",                          # Vitest/Istanbul/nyc HTML reports (#870);
                                             # bare "coverage" is gated on report

@@ -383,7 +383,7 @@ def _html_document_title(output_path: str) -> str:
     # the graph is built from a directory ABOVE the project (#2598 follow-up).
     marker = GRAPHIFY_OUT_NAME
     for i, part in enumerate(parts):
-        if part == marker or part.startswith("graphify-out"):
+        if part == marker or part.startswith(("graphify-out", "atlas-out")):
             return "/".join(parts[i:])
 
     # No standard out-dir marker (fully custom output path): fall back to a
