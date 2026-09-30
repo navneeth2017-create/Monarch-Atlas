@@ -76,7 +76,7 @@ def wheel_namelist(tmp_path_factory) -> set[str]:
     ids=lambda p: str(p.relative_to(PKG)),
 )
 def test_skill_artifact_ships_in_wheel(artifact: Path, wheel_namelist: set[str]) -> None:
-    rel = "atlas/" + artifact.relative_to(PKG).as_posix()
+    rel = "monarch_atlas/" + artifact.relative_to(PKG).as_posix()
     assert rel in wheel_namelist, (
         f"{rel} is committed in the repo but NOT in the built wheel — "
         f"`atlas install` would hard-exit for this host. Check the "

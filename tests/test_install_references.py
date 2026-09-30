@@ -443,7 +443,7 @@ def test_built_wheel_ships_the_full_skill_payload():
 
     names = _build_wheel_names(repo_root)
 
-    missing_bodies = [b for b in _EXPECTED_SKILL_BODIES if f"atlas/{b}" not in names]
+    missing_bodies = [b for b in _EXPECTED_SKILL_BODIES if f"monarch_atlas/{b}" not in names]
     assert not missing_bodies, f"wheel is missing skill bodies: {missing_bodies}"
     assert len(_EXPECTED_SKILL_BODIES) == 15
 
