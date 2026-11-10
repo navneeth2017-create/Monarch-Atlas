@@ -523,6 +523,8 @@ def _pin_hash_seed_if_needed() -> None:
         return
     if "PYTHONHASHSEED" in os.environ or "PYTEST_CURRENT_TEST" in os.environ:
         return
+    child_env = {**os.environ, "PYTHONHASHSEED": "0"}
+    child_argv = [sys.executable, "-m", "monarch_atlas", *sys.argv[1:]]
     try:
         # Re-exec as a module (-m monarch_atlas) rather than replaying sys.argv[0]
         # as a script path: that works for a POSIX console-script wrapper or
@@ -530,11 +532,16 @@ def _pin_hash_seed_if_needed() -> None:
         # launcher on Windows is a native .exe with no .py content, so
         # `python.exe <that .exe path>` fails outright with "can't open
         # file" -- every command this function touches (#3779).
-        os.execvpe(
-            sys.executable,
-            [sys.executable, "-m", "monarch_atlas", *sys.argv[1:]],
-            {**os.environ, "PYTHONHASHSEED": "0"},
-        )
+        #
+        # Windows has no real exec: os.execvpe there raises an access
+        # violation inside the CRT on current CPython builds instead of
+        # replacing the process. Spawn the pinned child and wait; the
+        # PYTHONHASHSEED in child_env stops it from recursing.
+        if os.name == "nt":
+            import subprocess
+
+            raise SystemExit(subprocess.call(child_argv, env=child_env))
+        os.execvpe(sys.executable, child_argv, child_env)
     except OSError:
         pass
 

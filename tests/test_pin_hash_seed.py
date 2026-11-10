@@ -4,9 +4,10 @@ like the generated git hooks already do.
 PYTHONHASHSEED is read once at interpreter startup, so it cannot be fixed by
 setting os.environ from inside an already-running process -- the only way to
 pin it for a command already in flight is to restart the interpreter with it
-set from the start. `_pin_hash_seed_if_needed` does this via os.execvpe,
-which replaces the current process, so a real call can only ever be observed
-from OUTSIDE that process.
+set from the start. `_pin_hash_seed_if_needed` does this via os.execvpe on
+POSIX (replacing the current process) and via a spawned, waited-on child on
+Windows (where execvpe crashes), so a real call can only ever be observed
+from OUTSIDE that process on POSIX.
 
 That is also exactly why the function must never fire while running under
 pytest in the first place: dozens of existing tests across the suite call
@@ -30,14 +31,27 @@ import subprocess
 import sys
 
 _PROBE = """
-import json, os, sys
+import json, os, subprocess, sys
 calls = []
-os.execvpe = lambda *a: calls.append(a)
+def record(*args, **kwargs):
+    # POSIX re-exec: os.execvpe(path, argv, env)
+    if len(args) >= 3 and not kwargs:
+        calls.append({{"argv": args[1], "env": args[2]}})
+        return None
+    # Windows spawn: subprocess.call(argv, env=env)
+    env = kwargs.get("env", args[1] if len(args) > 1 else None)
+    calls.append({{"argv": args[0] if args else None, "env": env or {{}}}})
+    return 0
+os.execvpe = record
+subprocess.call = record
 sys.argv = {argv!r}
 import monarch_atlas.__main__ as mainmod
-mainmod._pin_hash_seed_if_needed()
-print(json.dumps({{"called": bool(calls), "argv": calls[0][1] if calls else None,
-                    "env_hashseed": calls[0][2].get("PYTHONHASHSEED") if calls else None}}))
+try:
+    mainmod._pin_hash_seed_if_needed()
+except SystemExit:
+    pass
+print(json.dumps({{"called": bool(calls), "argv": calls[0]["argv"] if calls else None,
+                    "env_hashseed": calls[0]["env"].get("PYTHONHASHSEED") if calls else None}}))
 """
 
 
@@ -103,10 +117,11 @@ def test_does_not_reexec_while_pytest_current_test_is_set():
 
 def test_degrades_instead_of_raising_when_reexec_fails():
     probe = """
-import os, sys
-def _raise(*a):
+import os, subprocess, sys
+def _raise(*a, **kw):
     raise OSError("exec not permitted")
 os.execvpe = _raise
+subprocess.call = _raise
 sys.argv = ["atlas", "update", "."]
 import monarch_atlas.__main__ as mainmod
 mainmod._pin_hash_seed_if_needed()  # must not raise
